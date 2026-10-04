@@ -119,12 +119,50 @@ export function validatePalette(palette) {
 }
 
 // --- Color distance (2.2 hook) ---
-// v1: Euclidean RGB. OKLCH upgrade is isolated to swapping `colorDistance`.
+// v1 default: Euclidean RGB. OKLCH upgrade is isolated to swapping `colorDistance`
+// (pass `oklchDistance` explicitly, or via `mapFrameToPalette` opts). No pipeline change.
 export function euclideanDistance(a, b) {
   const dr = a.r - b.r;
   const dg = a.g - b.g;
   const db = a.b - b.b;
   return Math.sqrt(dr * dr + dg * dg + db * db);
+}
+
+// sRGB (0-255) -> OKLCH. Zero-dep port of the standard linear -> LMS -> Lab -> LCH chain.
+export function srgbToOklch(r, g, b) {
+  const toLinear = (c) => {
+    const x = c / 255;
+    return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  };
+  const lr = toLinear(r);
+  const lg = toLinear(g);
+  const lb = toLinear(b);
+  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
+  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+  const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
+  const a = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
+  const bb = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
+  const C = Math.sqrt(a * a + bb * bb);
+  const H = Math.atan2(bb, a);
+  return { L, C, H };
+}
+
+// Perceptual replacement hook (v2 path). Hue-aware: dH wrapped, weighted by mean chroma.
+export function oklchDistance(a, b) {
+  const ka = srgbToOklch(a.r, a.g, a.b);
+  const kb = srgbToOklch(b.r, b.g, b.b);
+  const dL = (ka.L - kb.L) * 100;
+  const dC = (ka.C - kb.C) * 100;
+  let dH = ka.H - kb.H;
+  while (dH > Math.PI) dH -= Math.PI * 2;
+  while (dH < -Math.PI) dH += Math.PI * 2;
+  const cMean = (ka.C + kb.C) / 2;
+  const hTerm = cMean * 100 * dH;
+  return Math.sqrt(dL * dL + dC * dC + hTerm * hTerm);
 }
 
 export function nearestColor(r, g, b, mappable, colorDistance = euclideanDistance) {
@@ -140,8 +178,103 @@ export function nearestColor(r, g, b, mappable, colorDistance = euclideanDistanc
   return best;
 }
 
+// 4x4 ordered-Bayer offsets in [-0.5, 0.5). Deterministic per (x, y): no shimmer.
+const BAYER_4X4 = [
+  [0, 8, 2, 10],
+  [12, 4, 14, 6],
+  [3, 11, 1, 9],
+  [15, 7, 13, 5],
+];
+const BAYER_SPREAD = 12; // +/-6 on 0-255 channels before nearest lookup
+
+function assertDither(palette, dither) {
+  const allowed = palette.dither?.allowed ?? ['none'];
+  if (dither === 'error-diffusion') throw new Error('dither error-diffusion SHALL NOT ship in v1');
+  if (dither !== 'none' && !allowed.includes(dither)) {
+    throw new Error(`dither ${JSON.stringify(dither)} not allowed for kind=${palette.kind} (allowed: ${allowed})`);
+  }
+}
+
+// 2.2 frame mapping: every opaque pixel -> nearest palette entry (Euclidean v1,
+// swappable to OKLCH); alpha < threshold -> transparent BEFORE mapping.
+// Reuses getMappableColors/nearestColor; returns { data, names } with data RGBA
+// (opaque hits a=255, discarded a=0) and names per-pixel palette entry (null if transparent).
+export function mapFrameToPalette(data, width, height, palette, opts = {}) {
+  if (!(data instanceof Uint8ClampedArray)) throw new Error('data must be Uint8ClampedArray RGBA');
+  if (data.length !== width * height * 4) throw new Error('data length mismatch width*height');
+  const threshold = opts.threshold ?? ALPHA_THRESHOLD;
+  const dither = opts.dither ?? palette.dither?.default ?? 'none';
+  const colorDistance = opts.colorDistance ?? euclideanDistance;
+  assertDither(palette, dither);
+  const mappable = getMappableColors(palette);
+  if (mappable.length === 0) throw new Error('palette has no mappable colors');
+  const out = new Uint8ClampedArray(data.length);
+  const names = new Array(width * height).fill(null);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const a = data[i + 3];
+      if (a < threshold) {
+        out[i] = 0;
+        out[i + 1] = 0;
+        out[i + 2] = 0;
+        out[i + 3] = 0;
+        names[y * width + x] = null;
+        continue;
+      }
+      let r = data[i];
+      let g = data[i + 1];
+      let b = data[i + 2];
+      if (dither === 'ordered-bayer') {
+        const t = BAYER_4X4[y % 4][x % 4] / 16 - 0.5;
+        r = Math.min(255, Math.max(0, Math.round(r + t * BAYER_SPREAD)));
+        g = Math.min(255, Math.max(0, Math.round(g + t * BAYER_SPREAD)));
+        b = Math.min(255, Math.max(0, Math.round(b + t * BAYER_SPREAD)));
+      }
+      const hit = nearestColor(r, g, b, mappable, colorDistance);
+      out[i] = hit.r;
+      out[i + 1] = hit.g;
+      out[i + 2] = hit.b;
+      out[i + 3] = 255;
+      names[y * width + x] = hit.name;
+    }
+  }
+  return { data: out, names };
+}
+
 function main() {
   const [cmd, ...targets] = process.argv.slice(2);
+  if (cmd === 'map-selfcheck') {
+    const root = targets[0] ?? 'palettes/palette_character.v1.json';
+    const palette = loadPalette(resolve(root));
+    const mappable = getMappableColors(palette);
+    const front = nearestColor(0xc2, 0x32, 0x2a, mappable, euclideanDistance);
+    const back = nearestColor(0xbe, 0x2e, 0x26, mappable, euclideanDistance);
+    const frontP = nearestColor(0xc2, 0x32, 0x2a, mappable, oklchDistance);
+    const backP = nearestColor(0xbe, 0x2e, 0x26, mappable, oklchDistance);
+    // 2x1 frame: [front-red, back-red] must converge under both metrics.
+    const frame = new Uint8ClampedArray([0xc2, 0x32, 0x2a, 255, 0xbe, 0x2e, 0x26, 255]);
+    const mapped = mapFrameToPalette(frame, 2, 1, palette);
+    const ok =
+      front?.name === back?.name && frontP?.name === backP?.name && mapped.names[0] === mapped.names[1];
+    if (ok) {
+      console.log(`OK: cross-view converge on ${mapped.names[0]} (euclidean=${front.name}, oklch=${frontP.name})`);
+    } else {
+      console.log(
+        `FAIL: front=${front?.name}/${frontP?.name} back=${back?.name}/${backP?.name} frame=${mapped.names}`,
+      );
+      process.exit(1);
+    }
+    // Character must lock dither to none.
+    try {
+      mapFrameToPalette(frame, 2, 1, palette, { dither: 'ordered-bayer' });
+      console.log('FAIL: character accepted ordered-bayer');
+      process.exit(1);
+    } catch {
+      console.log('OK: character dither locked to none');
+    }
+    return;
+  }
   if (cmd !== 'validate' || targets.length === 0) {
     console.error('usage: node tools/palette.mjs validate <palette.json...>');
     process.exit(2);
