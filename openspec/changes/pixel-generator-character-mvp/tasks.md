@@ -14,7 +14,7 @@
 ## 3. SVG 工程与清单
 
 - [ ] 3.1 实现每像素 rect 矢量化（按色分组 g）与 body/limb/outfit/weapon-slot 语义重标，验证 view SVG 图层可单独选中
-- [ ] 3.2 实现 asset.json 读写（视角×方向×动作×帧、fps/loop/next、seed/prompt_hash、色板引用），验证缺格检测报错命名到 clip
+- [x] 3.2 实现 asset.json 读写（视角×方向×动作×帧、fps/loop/next、seed/prompt_hash、色板引用），验证缺格检测报错命名到 clip
 - [ ] 3.3 实现 png/svg 参考合集导入与散装 SVG 导出/重导入回环，验证导出再导入零丢失
 
 ## 4. prompt 模板与派生位

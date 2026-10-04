@@ -1,0 +1,132 @@
+// asset-manifest.mjs — asset.json read/write + full-matrix validation (OpenSpec 3.2).
+// Zero dependencies so the Web app can import it directly later.
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+
+export const PERSPECTIVES = ['td', 'sd'];
+export const DIRS = ['fr', 'bk', 'lf', 'rt'];
+export const CHARACTER_SIZES = [32, 48, 64];
+
+const FILE_RE = /^[a-z0-9_]+_(td|sd)_(idle|walk|attack)_(fr|bk|lf|rt)[0-9]+\.svg$/;
+
+const ACTION_RULES = {
+  idle: { min: 1, max: 1, loop: true },
+  walk: { min: 2, max: 5, loop: true },
+  attack: { min: 2, max: 5, loop: false, next: 'idle' },
+};
+
+const sameSet = (a, b) =>
+  a.length === b.length && [...a].sort().join() === [...b].sort().join();
+
+export function loadAsset(path) {
+  return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+export function saveAsset(path, asset) {
+  writeFileSync(path, JSON.stringify(asset, null, 2) + '\n');
+}
+
+export function validateAsset(asset, opts = {}) {
+  const errors = [];
+  const missing = [];
+  const fail = (msg) => errors.push(msg);
+  const missClip = (persp, action, dir, detail) => {
+    const id = `${persp}/${action}/${dir}${detail ? `:${detail}` : ''}`;
+    missing.push(id);
+    errors.push(`missing clip: ${id}`);
+  };
+
+  if (!asset || typeof asset !== 'object') return { ok: false, errors: ['manifest is not an object'], missing };
+  if (typeof asset.id !== 'string' || !asset.id) fail('id must be a non-empty string');
+  if (asset.kind !== 'character') fail(`kind must be "character", got ${JSON.stringify(asset.kind)}`);
+  if (typeof asset.asset !== 'string' || !/^[a-z0-9]+$/.test(asset.asset)) {
+    fail('asset must be a lowercase alphanumeric file prefix (e.g. "knight")');
+  }
+  if (!CHARACTER_SIZES.includes(asset.size)) fail(`size must be one of ${CHARACTER_SIZES}, got ${JSON.stringify(asset.size)}`);
+  if (typeof asset.palette !== 'string' || !/^palette_character@v[0-9]+$/.test(asset.palette)) {
+    fail(`palette must match palette_character@vN, got ${JSON.stringify(asset.palette)}`);
+  }
+  if (!sameSet(asset.perspectives ?? [], PERSPECTIVES)) fail(`perspectives must be exactly [td, sd]`);
+  if (!sameSet(asset.views ?? [], DIRS)) fail(`views must be exactly [fr, bk, lf, rt]`);
+  for (const p of PERSPECTIVES) {
+    if (!asset.masters?.[p] || typeof asset.masters[p] !== 'string') fail(`masters.${p} must be a path string`);
+  }
+
+  for (const [action, rule] of Object.entries(ACTION_RULES)) {
+    const a = asset.actions?.[action];
+    if (!a) {
+      for (const p of PERSPECTIVES) for (const d of DIRS) missClip(p, action, d, 'action absent');
+      continue;
+    }
+    if (!Number.isInteger(a.frames) || a.frames < rule.min || a.frames > rule.max) {
+      fail(`${action}.frames must be ${rule.min}..${rule.max}, got ${JSON.stringify(a.frames)}`);
+    }
+    if (typeof a.fps !== 'number' || a.fps <= 0) fail(`${action}.fps must be a positive number`);
+    if (a.loop !== rule.loop) fail(`${action}.loop must be ${rule.loop}`);
+    if (rule.next && a.next !== rule.next) fail(`${action}.next must be "${rule.next}"`);
+    for (const p of PERSPECTIVES) {
+      for (const d of DIRS) {
+        const list = a.clips?.[p]?.[d];
+        if (!Array.isArray(list)) {
+          missClip(p, action, d, 'clip absent');
+          continue;
+        }
+        if (Number.isInteger(a.frames) && list.length !== a.frames) {
+          missClip(p, action, d, `expected ${a.frames} frames, found ${list.length}`);
+          continue;
+        }
+        list.forEach((f, i) => {
+          const where = `${p}/${action}/${d}[${i}]`;
+          if (!f || typeof f.file !== 'string' || !FILE_RE.test(f.file)) {
+            fail(`${where}: bad file name ${JSON.stringify(f?.file)}`);
+            return;
+          }
+          const expectTag = `_${p}_${action}_${d}`;
+          if (!f.file.includes(expectTag) || !f.file.startsWith(`${asset.asset}_`)) {
+            fail(`${where}: file ${f.file} does not belong to ${asset.asset} ${p}/${action}/${d}`);
+          }
+          if (!Number.isInteger(f.seed)) fail(`${where}: seed must be an integer`);
+          if (typeof f.prompt_hash !== 'string' || f.prompt_hash.length < 6) {
+            fail(`${where}: prompt_hash must be a string of 6+ chars`);
+          }
+          if (opts.checkFiles) {
+            const base = opts.baseDir ?? dirname(opts.manifestPath ?? '.');
+            if (!existsSync(resolve(base, f.file))) fail(`${where}: file not on disk: ${f.file}`);
+          }
+        });
+      }
+    }
+  }
+
+  const pv = asset.preview;
+  if (!pv || !PERSPECTIVES.includes(pv.perspective) || !Object.keys(ACTION_RULES).includes(pv.action) || !DIRS.includes(pv.dir)) {
+    fail('preview must reference an existing perspective/action/dir');
+  }
+
+  return { ok: errors.length === 0, errors, missing };
+}
+
+function main() {
+  const [cmd, target, ...rest] = process.argv.slice(2);
+  if (cmd !== 'validate' || !target) {
+    console.error('usage: node tools/asset-manifest.mjs validate <asset.json> [--check-files]');
+    process.exit(2);
+  }
+  const manifestPath = resolve(target);
+  const asset = loadAsset(manifestPath);
+  const result = validateAsset(asset, {
+    checkFiles: rest.includes('--check-files'),
+    baseDir: dirname(manifestPath),
+    manifestPath,
+  });
+  if (result.ok) {
+    const clips = PERSPECTIVES.length * DIRS.length * Object.keys(ACTION_RULES).length;
+    console.log(`OK: ${asset.id} complete (${clips} clips, size ${asset.size}, ${asset.palette})`);
+  } else {
+    for (const e of result.errors) console.log(`FAIL: ${e}`);
+    console.log(`missing clips: ${result.missing.length}`);
+    process.exit(1);
+  }
+}
+
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).pop())) main();
