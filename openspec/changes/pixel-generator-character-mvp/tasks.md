@@ -2,7 +2,7 @@
 
 ## 1. Web 脚手架与资产地基
 
-- [ ] 1.1 创建 Web 应用骨架与 `knight_001/` 资产目录结构，验证双母版槽与 asset.json 空壳可加载
+- [x] 1.1 创建 Web 应用骨架与 `knight_001/` 资产目录结构，验证双母版槽与 asset.json 空壳可加载
 - [ ] 1.2 落地 5 套 palette JSON（character/weapon/building/prop/scenery v1 初稿），验证色值解析与透明占位排除
 
 ## 2. 像素量化管线
@@ -19,7 +19,7 @@
 
 ## 4. prompt 模板与派生位
 
-- [ ] 4.1 实现 10 字段表单拼英文 prompt（含 td/sd 基模板、方向/动作分句、固定 negative、denoise/seed 参数、v0.2 四约束：裸手/单人单帧/idle中立与walk stride分句/剑腿分离），验证示例骑士输出与模板一致
+- [x] 4.1 实现 10 字段表单拼英文 prompt（含 td/sd 基模板、方向/动作分句、固定 negative、denoise/seed 参数、v0.2 四约束：裸手/单人单帧/idle中立与walk stride分句/剑腿分离），验证示例骑士输出与模板一致
 - [ ] 4.2 预留外部 img2img 调用位（方向 0.5~0.6、帧继承 0.25~0.35、同角色 seed 锁定），验证无 key 时全流程仍可手动跑通
 
 ## 5. 动画矩阵与预览

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PixeCreator — authoring prompt shell (1.1 + 4.1)</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header>
+    <h1>PixeCreator · Authoring shell</h1>
+    <p class="sub">1.1 scaffold: dual-master slots + asset.json shell · 4.1: 10-field prompt form (v0.2). assets/ is read-only frozen contract.</p>
+  </header>
+
+  <main>
+    <section aria-label="asset shell">
+      <h2>1.1 Asset shell — knight_001</h2>
+      <p id="asset-meta">loading…</p>
+      <div class="masters">
+        <div class="slot"><h3>master_td.svg</h3><code id="master-td">…</code></div>
+        <div class="slot"><h3>master_side.svg</h3><code id="master-sd">…</code></div>
+      </div>
+      <p id="asset-status">loading…</p>
+      <p class="hint">Shell loads <code>../assets/knight_001/asset.json</code> via fetch. Serve repo root (e.g. <code>npx serve</code>) then open <code>/web/</code>. Missing view SVGs are expected: shell-only stage.</p>
+    </section>
+
+    <section aria-label="prompt form">
+      <h2>4.1 Prompt form — 10 fields → English prompt</h2>
+      <form id="prompt-form" onsubmit="return false">
+        <div class="grid">
+          <label>class* <input id="f-class" /></label>
+          <label>body* <input id="f-body" /></label>
+          <label>outfit* <input id="f-outfit" /></label>
+          <label>colors* <input id="f-colors" /></label>
+          <label>weapon* <input id="f-weapon" /></label>
+          <label>hair* <input id="f-hair" /></label>
+          <label>cape <input id="f-cape" /></label>
+          <label>vibe <input id="f-vibe" /></label>
+          <label>perspective
+            <select id="f-persp"><option value="td">td</option><option value="sd">sd</option></select>
+          </label>
+          <label>seed <input id="f-seed" type="number" step="1" /></label>
+          <label>dir
+            <select id="f-dir"><option value="fr">fr</option><option value="bk">bk</option><option value="lf">lf</option><option value="rt">rt</option></select>
+          </label>
+          <label>action
+            <select id="f-action"><option value="idle">idle</option><option value="walk">walk</option><option value="attack">attack</option></select>
+          </label>
+        </div>
+        <label class="neg">fixed negative (read-only in v1)
+          <textarea id="f-neg" rows="3" readonly></textarea>
+        </label>
+        <div class="row">
+          <button type="button" id="f-reset-knight">Reset to knight example</button>
+        </div>
+      </form>
+      <pre id="prompt-out"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

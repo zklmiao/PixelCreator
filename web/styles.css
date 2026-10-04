@@ -1,0 +1,16 @@
+:root { color-scheme: light dark; --bd: #8884; }
+* { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 880px; padding: 24px; line-height: 1.5; }
+header .sub { color: #666; }
+section { border: 1px solid var(--bd); border-radius: 12px; padding: 16px; margin: 16px 0; }
+.masters { display: flex; gap: 12px; }
+.slot { flex: 1; border: 1px dashed var(--bd); border-radius: 8px; padding: 8px 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+input, select, textarea { padding: 6px 8px; font: inherit; }
+.neg { margin-top: 8px; }
+.row { margin-top: 8px; display: flex; gap: 8px; }
+pre { white-space: pre-wrap; background: #8881; padding: 12px; border-radius: 8px; }
+.hint { color: #666; font-size: 13px; }
+#asset-status[data-ok="true"] { color: #0a7a2f; }
+#asset-status[data-ok="false"] { color: #b00020; }
