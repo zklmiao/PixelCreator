@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Maker 精灵图综合工具箱</title>
+    <style>
+        /* ================= 1. 全局与标签页样式 ================= */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background: #2c3e50;
+            padding: 10px 20px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .tab-btn {
+            background: transparent;
+            color: #bdc3c7;
+            border: none;
+            font-size: 15px;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 6px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .tab-btn:hover {
+            color: white;
+            background: #34495e;
+        }
+        .tab-btn.active {
+            color: white;
+            background: #3498db;
+        }
+        .tab-content {
+            display: none;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ================= 2. 通用基础组件样式 ================= */
+        h2 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 12px; margin-top: 0; }
+        h3 { margin-top: 0; color: #1a73e8; font-size: 1.2rem; border-bottom: 2px solid #e3f2fd; padding-bottom: 10px; }
+        .panel { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 6px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .control-group { margin-bottom: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 15px; }
+        label { font-weight: bold; font-size: 14px; }
+        input[type="number"], input[type="file"], select { padding: 7px 12px; border: 2px solid #ddd; border-radius: 6px; transition: 0.2s; }
+        input[type="number"]:focus, select:focus { border-color: #3498db; outline: none; }
+        input[type="number"] { width: 80px; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 14px; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        button:active { transform: translateY(0); }
+        
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #2ecc71; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .hidden { display: none !important; }
+
+        .canvas-bg {
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAACVJREFUKFNjZCASMDKhuJqRkZGRXQwZgE2E4QxZkO2EwwzE2EwAcZ8DB2u/H9sAAAAASUVORK5CYII=') repeat;
+            border: 2px dashed #bdc3c7;
+        }
+
+        /* ================= 工具 1 特定样式 ================= */
+        #t1-canvasContainer { overflow: auto; max-height: calc(100vh - 350px); text-align: center; display: none; }
+        #t1-canvas { display: block; margin: 0 auto; cursor: crosshair; outline: none; }
+        .t1-legend { display: flex; gap: 20px; font-size: 13px; align-items: center; margin-bottom: 15px; }
+        .t1-legend span { display: flex; align-items: center; gap: 5px; }
+        .t1-box-blue { width: 14px; height: 14px; border: 2px dashed #2980b9; }
+        .t1-box-red { width: 14px; height: 14px; border: 2px solid #c0392b; }
+        .t1-box-green { width: 14px; height: 14px; border: 2px solid #27ae60; background: rgba(39,174,96,0.2); }
+
+        /* ================= 工具 2 特定样式 ================= */
+        .t2-mode-selector { background: #f8f9fa; padding: 10px 15px; border-radius: 8px; border: 1px solid #dee2e6; margin-bottom: 15px; display: flex; gap: 20px; }
+        #t2-frames-container { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--preview-size, 120px), 1fr)); 
+            gap: 15px; padding: 20px; background: #fafafa; border-radius: 8px; border: 2px dashed #ccc; max-height: 55vh; overflow-y: auto;
+        }
+        .t2-frame-wrapper { 
+            position: relative; cursor: pointer; background: #fff; border-radius: 6px; padding: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: 0.1s; display: flex; align-items: center; justify-content: center;
+        }
+        .t2-frame-wrapper:hover { transform: scale(1.03); }
+        .t2-frame-wrapper canvas { max-width: 100%; height: auto; display: block; image-rendering: pixelated; }
+        .t2-frame-wrapper.selected-1 { outline: 4px solid #f44336; outline-offset: -2px; } 
+        .t2-frame-wrapper.selected-2 { outline: 4px solid #4caf50; outline-offset: -2px; } 
+        .t2-frame-label { position: absolute; top: 0; left: 0; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px 0 4px 0; pointer-events: none; }
+        #t2-result-container { margin-top: 15px; overflow: auto; border: 1px dashed #ccc; border-radius: 8px; display: none; padding: 10px; text-align: center; }
+
+        /* ================= 工具 3 特定样式 ================= */
+        #t3-canvas-container { margin-top: 20px; overflow-x: auto; padding: 10px; text-align: center; }
+        #t3-resultCanvas { image-rendering: pixelated; }
+
+        /* ================= 工具 4 特定样式 ================= */
+        #t4-source-container { position: relative; overflow: auto; max-height: 500px; }
+        #t4-source-canvas { cursor: crosshair; display: block; }
+        #t4-timeline { display: flex; gap: 10px; overflow-x: auto; padding: 15px 5px; min-height: 120px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ddd; }
+        .t4-frame-item { position: relative; border: 2px solid transparent; cursor: grab; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.1s; flex-shrink: 0;}
+        .t4-frame-item:active { cursor: grabbing; opacity: 0.8; transform: scale(0.95); }
+        .t4-frame-item.drag-over { border-color: #007bff; transform: scale(1.05); }
+        .t4-delete-btn { position: absolute; top: -8px; right: -8px; background: #e74c3c; color: white; border-radius: 50%; width: 20px; height: 20px; text-align: center; line-height: 18px; font-size: 14px; cursor: pointer; border: 1px solid white; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <button class="tab-btn active" onclick="switchTab('tab1', this)">1. 边界微调</button>
+        <button class="tab-btn" onclick="switchTab('tab2', this)">2. 全能编辑 & 合并</button>
+        <button class="tab-btn" onclick="switchTab('tab3', this)">3. 3x3 转 9x6 缩放</button>
+        <button class="tab-btn" onclick="switchTab('tab4', this)">4. 自由抓帧时间轴</button>
+    </div>
+
+    <div id="tab1" class="tab-content active">
+        <h2>自定义精灵图边界调整工具</h2>
+        <div class="panel">
+            <div class="control-group">
+                <input type="file" id="t1-imageLoader" accept="image/png, image/jpeg, image/webp">
+                <label>原图列数: <input type="number" id="t1-colInput" value="4" min="1"></label>
+                <label>原图行数: <input type="number" id="t1-rowInput" value="4" min="1"></label>
+            </div>
+            <div class="control-group" id="t1-controls" style="display: none; border-top: 1px solid #eee; padding-top: 15px;">
+                <label>新帧宽(px): <input type="number" id="t1-frameW" min="1"></label>
+                <label>新帧高(px): <input type="number" id="t1-frameH" min="1"></label>
+                <label>缩放对齐:
+                    <select id="t1-alignMode">
+                        <option value="bottom">贴近底边 (推荐角色)</option>
+                        <option value="center">向中心 (推荐特效)</option>
+                    </select>
+                </label>
+                <button class="btn-secondary" id="t1-resetFrameBtn">🔄 重置选中帧</button>
+                <button class="btn-warning" id="t1-resetAllBtn">💥 重置所有</button>
+                <button class="btn-primary" id="t1-exportBtn">⬇️ 导出新精灵图</button>
+            </div>
+        </div>
+        <div class="panel canvas-bg" id="t1-canvasContainer">
+            <div class="t1-legend">
+                <span><div class="t1-box-blue"></div> 原始网格</span>
+                <span><div class="t1-box-red"></div> 实际裁剪区</span>
+                <span><div class="t1-box-green"></div> 选中区 (支持键盘/拖拽)</span>
+                <span style="color:#7f8c8d; margin-left: auto;">(Shift+方向键大步移动)</span>
+            </div>
+            <canvas id="t1-canvas" tabindex="0"></canvas>
+        </div>
+    </div>
+
+    <div id="tab2" class="tab-content">
+        <h2>全能精灵图编辑器 (支持多图合并/重排)</h2>
+        <div class="panel">
+            <h3>📁 1. 数据源导入与切割</h3>
+            <div class="t2-mode-selector">
+                <label><input type="radio" name="t2-import-mode" value="single" checked> 🖼️ 常规单图切割</label>
+                <label><input type="radio" name="t2-import-mode" value="merge"> 🧩 11帧+5帧 合并</label>
+            </div>
+            <div id="t2-section-single" class="control-group">
+                <input type="file" id="t2-image-upload-single" accept="image/*">
+                <label>原图列数: <input type="number" id="t2-orig-cols" value="1" min="1"></label>
+                <label>原图行数: <input type="number" id="t2-orig-rows" value="1" min="1"></label>
+                <button class="btn-primary" id="t2-btn-load-single">✂️ 加载并切割</button>
+            </div>
+            <div id="t2-section-merge" class="control-group hidden" style="background:#fff3e0; padding:15px; border-radius:8px;">
+                <label>11帧图: <input type="file" id="t2-img11" accept="image/png, image/jpeg"></label>
+                <label>5帧图: <input type="file" id="t2-img5" accept="image/png, image/jpeg"></label>
+                <button class="btn-warning" id="t2-btn-load-merge">⚙️ 合并并抽取</button>
+            </div>
+            <div style="font-size: 0.9em; font-weight: bold; color: #e74c3c;" id="t2-total-frames-label">当前提取总帧数: 0</div>
+        </div>
+
+        <div class="panel">
+            <h3>🛠️ 2. 逐帧编辑区</h3>
+            <div class="control-group">
+                <button class="btn-secondary" id="t2-btn-flip">↔️ 水平翻转</button>
+                <button class="btn-secondary" id="t2-btn-replace">📋 A覆盖B</button>
+                <button class="btn-secondary" id="t2-btn-swap">🔄 交换AB</button>
+                <button class="btn-danger" id="t2-btn-deselect">❌ 取消选择</button>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    <label>🔍 缩放: </label>
+                    <input type="range" id="t2-zoom-slider" min="50" max="250" value="100">
+                    <span id="t2-zoom-value">100px</span>
+                </div>
+            </div>
+            <div id="t2-frames-container"></div>
+        </div>
+
+        <div class="panel">
+            <h3>💾 3. 重新排列与导出</h3>
+            <div class="control-group">
+                <label>目标列数: <input type="number" id="t2-target-cols" value="1" min="1"></label>
+                <label>目标行数: <input type="number" id="t2-target-rows" value="1" min="1"></label>
+                <button class="btn-primary" id="t2-btn-generate">✨ 预览</button>
+                <button class="btn-success hidden" id="t2-btn-download">⬇️ 下载</button>
+            </div>
+            <div id="t2-result-container" class="canvas-bg">
+                <canvas id="t2-result-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab3" class="tab-content">
+        <h2>3x3 战斗图合成工具 (转 9x6 布局)</h2>
+        <div class="panel">
+            <div class="control-group">
+                <label>新图单帧宽度: <input type="number" id="t3-frameWidth" value="32" min="1"></label>
+                <label>新图单帧高度: <input type="number" id="t3-frameHeight" value="32" min="1"></label>
+            </div>
+            <div class="control-group">
+                <label>图1 (3x3): <input type="file" id="t3-img1" accept="image/png, image/jpeg"></label>
+                <label>图2 (3x3): <input type="file" id="t3-img2" accept="image/png, image/jpeg"></label>
+                <label>图3 (3x3): <input type="file" id="t3-img3" accept="image/png, image/jpeg"></label>
+            </div>
+            <button class="btn-primary" id="t3-btn-generate">⚙️ 生成并缩放精灵图</button>
+            <button class="btn-success hidden" id="t3-downloadBtn">⬇️ 下载图片</button>
+        </div>
+        <div class="panel canvas-bg" id="t3-canvas-container">
+            <canvas id="t3-resultCanvas"></canvas>
+        </div>
+    </div>
+
+    <div id="tab4" class="tab-content">
+        <h2>精灵图自由抓帧提取器</h2>
+        <div class="panel">
+            <div class="control-group">
+                <label>上传原图: <input type="file" id="t4-image-upload" accept="image/*"></label>
+                <label>划分行数: <input type="number" id="t4-rows" value="1" min="1"></label>
+                <label>划分列数: <input type="number" id="t4-cols" value="1" min="1"></label>
+                <button class="btn-primary" id="t4-apply-grid">📏 应用辅助网格</button>
+            </div>
+        </div>
+        <div class="panel">
+            <h3>1. 从原图提取帧 (点击图片选取)</h3>
+            <div id="t4-source-container" class="canvas-bg">
+                <canvas id="t4-source-canvas"></canvas>
+            </div>
+        </div>
+        <div class="panel">
+            <h3>2. 已选帧序列 (拖拽排序，共 <span id="t4-frame-count">0</span> 帧)</h3>
+            <div id="t4-timeline">
+                <span style="color: #888; margin-top: 40px; margin-left: 10px;">暂未选取任何帧...</span>
+            </div>
+        </div>
+        <div class="panel">
+            <h3>3. 生成新排版</h3>
+            <div class="control-group">
+                <label>输出行数: <input type="number" id="t4-out-rows" value="1" min="1"></label>
+                <label>输出列数: <input type="number" id="t4-out-cols" value="1" min="1"></label>
+                <button class="btn-primary" id="t4-generate-btn">✨ 预览新精灵图</button>
+                <button class="btn-success hidden" id="t4-download-btn">⬇ 下载</button>
+            </div>
+            <div id="t4-result-container" class="canvas-bg" style="padding:10px; overflow:auto;">
+                <canvas id="t4-result-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= 全局切换逻辑 =================
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+        }
+
+        // ================= 工具 1 逻辑 =================
+        (() => {
+            const imageLoader = document.getElementById('t1-imageLoader');
+            const colInput = document.getElementById('t1-colInput');
+            const rowInput = document.getElementById('t1-rowInput');
+            const canvas = document.getElementById('t1-canvas');
+            const ctx = canvas.getContext('2d');
+            const frameWInput = document.getElementById('t1-frameW');
+            const frameHInput = document.getElementById('t1-frameH');
+            const alignMode = document.getElementById('t1-alignMode');
+            const controls = document.getElementById('t1-controls');
+            const canvasContainer = document.getElementById('t1-canvasContainer');
+            const exportBtn = document.getElementById('t1-exportBtn');
+            const resetFrameBtn = document.getElementById('t1-resetFrameBtn');
+            const resetAllBtn = document.getElementById('t1-resetAllBtn');
+
+            let img = new Image();
+            let cols = 4, rows = 4, origCellW = 0, origCellH = 0;
+            let frameOffsets = [], selectedFrameIndex = null;
+            let isDragging = false, dragStartX = 0, dragStartY = 0, initialManualX = 0, initialManualY = 0;
+
+            imageLoader.addEventListener('change', handleImage);
+            colInput.addEventListener('input', handleGridChange);
+            rowInput.addEventListener('input', handleGridChange);
+            frameWInput.addEventListener('input', updateAndDraw);
+            frameHInput.addEventListener('input', updateAndDraw);
+            alignMode.addEventListener('change', draw);
+            exportBtn.addEventListener('click', exportNewSpriteSheet);
+            resetFrameBtn.addEventListener('click', resetSelectedFrameOffset);
+            resetAllBtn.addEventListener('click', resetAllFrameOffsets);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            window.addEventListener('mousemove', handleMouseMove); 
+            window.addEventListener('mouseup', () => isDragging = false);
+            canvas.addEventListener('keydown', handleKeyDown);
+
+            function handleImage(e) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    img.onload = function() {
+                        canvas.width = img.width; canvas.height = img.height;
+                        updateGridDimensions();
+                        frameWInput.value = Math.floor(origCellW); frameHInput.value = Math.floor(origCellH);
+                        resetAllFrameOffsets(); selectedFrameIndex = null;
+                        controls.style.display = 'flex'; canvasContainer.style.display = 'block'; draw();
+                    }
+                    img.src = event.target.result;
+                }
+                if (e.target.files && e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+            }
+            function handleGridChange() {
+                cols = Math.max(1, parseInt(colInput.value) || 1); rows = Math.max(1, parseInt(rowInput.value) || 1);
+                if (img.src) { updateGridDimensions(); resetAllFrameOffsets(); selectedFrameIndex = null; draw(); }
+            }
+            function updateGridDimensions() { origCellW = img.width / cols; origCellH = img.height / rows; }
+            function updateAndDraw() { draw(); }
+            function draw() {
+                if (!img.src) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.globalAlpha = 0.6; ctx.drawImage(img, 0, 0); ctx.globalAlpha = 1.0;
+                const newW = parseInt(frameWInput.value) || origCellW, newH = parseInt(frameHInput.value) || origCellH;
+                const mode = alignMode.value;
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const originX = c * origCellW, originY = r * origCellH, index = r * cols + c;
+                        ctx.strokeStyle = '#2980b9'; ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.strokeRect(originX, originY, origCellW, origCellH);
+                        
+                        let baseOffsetX = (origCellW - newW) / 2;
+                        let baseOffsetY = mode === 'center' ? (origCellH - newH) / 2 : (origCellH - newH);
+                        const manualX = frameOffsets[index]?.x || 0, manualY = frameOffsets[index]?.y || 0;
+
+                        ctx.setLineDash([]);
+                        if (index === selectedFrameIndex) {
+                            ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 4; ctx.fillStyle = 'rgba(39, 174, 96, 0.2)';
+                            ctx.fillRect(originX + baseOffsetX + manualX, originY + baseOffsetY + manualY, newW, newH);
+                        } else { ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 3; }
+                        ctx.strokeRect(originX + baseOffsetX + manualX, originY + baseOffsetY + manualY, newW, newH);
+                    }
+                }
+            }
+            function exportNewSpriteSheet() {
+                const newW = parseInt(frameWInput.value), newH = parseInt(frameHInput.value), mode = alignMode.value;
+                const expCanvas = document.createElement('canvas');
+                expCanvas.width = newW * cols; expCanvas.height = newH * rows;
+                const expCtx = expCanvas.getContext('2d');
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const originX = c * origCellW, originY = r * origCellH, index = r * cols + c;
+                        let baseOffsetX = (origCellW - newW) / 2;
+                        let baseOffsetY = mode === 'center' ? (origCellH - newH) / 2 : (origCellH - newH);
+                        const srcX = originX + baseOffsetX + (frameOffsets[index]?.x || 0), srcY = originY + baseOffsetY + (frameOffsets[index]?.y || 0);
+
+                        const intersectX = Math.max(srcX, originX), intersectY = Math.max(srcY, originY);
+                        const intersectRight = Math.min(srcX + newW, originX + origCellW), intersectBottom = Math.min(srcY + newH, originY + origCellH);
+                        const drawW = intersectRight - intersectX, drawH = intersectBottom - intersectY;
+
+                        if (drawW > 0 && drawH > 0) {
+                            expCtx.drawImage(img, intersectX, intersectY, drawW, drawH, c * newW + (intersectX - srcX), r * newH + (intersectY - srcY), drawW, drawH);
+                        }
+                    }
+                }
+                const link = document.createElement('a'); link.download = `cropped_${newW}x${newH}.png`; link.href = expCanvas.toDataURL(); link.click();
+            }
+            function getMousePos(e) {
+                var rect = canvas.getBoundingClientRect();
+                return { x: (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width, y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height };
+            }
+            function handleMouseDown(e) {
+                if (!img.src) return;
+                const p = getMousePos(e), col = Math.floor(p.x / origCellW), row = Math.floor(p.y / origCellH);
+                if (col >= 0 && col < cols && row >= 0 && row < rows) {
+                    selectedFrameIndex = row * cols + col; isDragging = true; dragStartX = p.x; dragStartY = p.y;
+                    initialManualX = frameOffsets[selectedFrameIndex].x; initialManualY = frameOffsets[selectedFrameIndex].y;
+                    canvas.focus(); draw();
+                } else { selectedFrameIndex = null; draw(); }
+            }
+            function handleMouseMove(e) {
+                if (!isDragging || selectedFrameIndex === null) return;
+                const p = getMousePos(e);
+                frameOffsets[selectedFrameIndex].x = initialManualX + (p.x - dragStartX); frameOffsets[selectedFrameIndex].y = initialManualY + (p.y - dragStartY);
+                draw();
+            }
+            function handleKeyDown(e) {
+                if (selectedFrameIndex === null) return;
+                let step = e.shiftKey ? 10 : 1;
+                switch (e.key) {
+                    case 'ArrowLeft': case 'a': frameOffsets[selectedFrameIndex].x -= step; break;
+                    case 'ArrowRight': case 'd': frameOffsets[selectedFrameIndex].x += step; break;
+                    case 'ArrowUp': case 'w': frameOffsets[selectedFrameIndex].y -= step; break;
+                    case 'ArrowDown': case 's': frameOffsets[selectedFrameIndex].y += step; break;
+                    default: return;
+                }
+                e.preventDefault(); draw();
+            }
+            function resetSelectedFrameOffset() { if (selectedFrameIndex !== null) { frameOffsets[selectedFrameIndex] = {x:0, y:0}; draw(); } }
+            function resetAllFrameOffsets() { frameOffsets = Array.from({ length: cols * rows }, () => ({x:0, y:0})); if(img.src) draw(); }
+        })();
+
+        // ================= 工具 2 逻辑 =================
+        (() => {
+            const modeRadios = document.getElementsByName('t2-import-mode');
+            const sectionSingle = document.getElementById('t2-section-single');
+            const sectionMerge = document.getElementById('t2-section-merge');
+            const imageUploadSingle = document.getElementById('t2-image-upload-single');
+            const origCols = document.getElementById('t2-orig-cols'), origRows = document.getElementById('t2-orig-rows');
+            const btnLoadSingle = document.getElementById('t2-btn-load-single'), btnLoadMerge = document.getElementById('t2-btn-load-merge');
+            const framesContainer = document.getElementById('t2-frames-container');
+            const zoomSlider = document.getElementById('t2-zoom-slider'), zoomValue = document.getElementById('t2-zoom-value');
+            const totalFramesLabel = document.getElementById('t2-total-frames-label');
+            const targetCols = document.getElementById('t2-target-cols'), targetRows = document.getElementById('t2-target-rows');
+            const btnGenerate = document.getElementById('t2-btn-generate'), btnDownload = document.getElementById('t2-btn-download');
+            const resultCanvas = document.getElementById('t2-result-canvas'), resultContainer = document.getElementById('t2-result-container');
+
+            let sourceImageSingle = new Image(), frames = [], selectedIndices = [], frameW = 0, frameH = 0;
+
+            modeRadios.forEach(r => r.addEventListener('change', e => {
+                if(e.target.value === 'single') { sectionSingle.classList.remove('hidden'); sectionMerge.classList.add('hidden'); }
+                else { sectionSingle.classList.add('hidden'); sectionMerge.classList.remove('hidden'); }
+            }));
+
+            zoomSlider.addEventListener('input', e => { zoomValue.innerText = e.target.value + 'px'; framesContainer.style.setProperty('--preview-size', e.target.value + 'px'); });
+
+            function addCanvasToFrames(canvas) {
+                const wrapper = document.createElement('div'); wrapper.className = 't2-frame-wrapper'; wrapper.dataset.index = frames.length;
+                const label = document.createElement('div'); label.className = 't2-frame-label'; label.innerText = frames.length;
+                wrapper.appendChild(canvas); wrapper.appendChild(label); framesContainer.appendChild(wrapper); frames.push(canvas);
+                wrapper.addEventListener('click', () => toggleSelection(parseInt(wrapper.dataset.index)));
+            }
+
+            function resetEditor() { framesContainer.innerHTML = ''; frames = []; selectedIndices = []; resultContainer.style.display = 'none'; btnDownload.classList.add('hidden'); }
+
+            imageUploadSingle.addEventListener('change', e => {
+                if(e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = ev => { sourceImageSingle.onload = () => alert("加载成功!"); sourceImageSingle.src = ev.target.result; };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
+            btnLoadSingle.addEventListener('click', () => {
+                if(!sourceImageSingle.src) return alert('请先上传图片！');
+                const r = parseInt(origRows.value), c = parseInt(origCols.value); resetEditor();
+                totalFramesLabel.innerText = `当前提取总帧数: ${r * c}`;
+                targetCols.value = Math.ceil(Math.sqrt(r*c)); targetRows.value = Math.ceil((r*c)/targetCols.value);
+                frameW = sourceImageSingle.width / c; frameH = sourceImageSingle.height / r;
+                for(let i=0; i<r; i++) for(let j=0; j<c; j++) {
+                    const cvs = document.createElement('canvas'); cvs.width = frameW; cvs.height = frameH;
+                    cvs.getContext('2d').drawImage(sourceImageSingle, j*frameW, i*frameH, frameW, frameH, 0, 0, frameW, frameH); addCanvasToFrames(cvs);
+                }
+            });
+
+            function loadImagePromise(id) {
+                return new Promise((res, rej) => {
+                    const f = document.getElementById(id).files[0]; if(!f) return rej();
+                    const r = new FileReader(); r.onload = e => { const img = new Image(); img.onload = () => res(img); img.src = e.target.result; };
+                    r.readAsDataURL(f);
+                });
+            }
+
+            btnLoadMerge.addEventListener('click', async () => {
+                try {
+                    const [img1, img2] = await Promise.all([loadImagePromise('t2-img11'), loadImagePromise('t2-img5')]);
+                    resetEditor(); frameW = img1.width; frameH = img1.height / 11;
+                    targetCols.value = 4; targetRows.value = 4; totalFramesLabel.innerText = "当前提取总帧数: 16";
+                    for(let i=0; i<11; i++) { const c = document.createElement('canvas'); c.width=frameW; c.height=frameH; c.getContext('2d').drawImage(img1,0,i*frameH,frameW,frameH,0,0,frameW,frameH); addCanvasToFrames(c); }
+                    for(let i=0; i<5; i++) { const c = document.createElement('canvas'); c.width=frameW; c.height=frameH; c.getContext('2d').drawImage(img2,0,i*frameH,frameW,frameH,0,0,frameW,frameH); addCanvasToFrames(c); }
+                    alert("提取完成!");
+                } catch { alert("请先上传两张图片!"); }
+            });
+
+            function toggleSelection(idx) {
+                const pos = selectedIndices.indexOf(idx);
+                if (pos > -1) selectedIndices.splice(pos, 1);
+                else { if (selectedIndices.length >= 2) selectedIndices.shift(); selectedIndices.push(idx); }
+                updateUI();
+            }
+            function updateUI() {
+                const w = framesContainer.querySelectorAll('.t2-frame-wrapper');
+                w.forEach(el => el.classList.remove('selected-1', 'selected-2'));
+                if(selectedIndices[0]!==undefined) w[selectedIndices[0]].classList.add('selected-1');
+                if(selectedIndices[1]!==undefined) w[selectedIndices[1]].classList.add('selected-2');
+            }
+
+            document.getElementById('t2-btn-deselect').addEventListener('click', () => { selectedIndices = []; updateUI(); });
+            document.getElementById('t2-btn-flip').addEventListener('click', () => {
+                selectedIndices.forEach(idx => {
+                    const c = frames[idx], ctx = c.getContext('2d'), temp = document.createElement('canvas');
+                    temp.width = frameW; temp.height = frameH; temp.getContext('2d').drawImage(c,0,0);
+                    ctx.clearRect(0,0,frameW,frameH); ctx.save(); ctx.translate(frameW,0); ctx.scale(-1,1); ctx.drawImage(temp,0,0); ctx.restore();
+                });
+            });
+            document.getElementById('t2-btn-replace').addEventListener('click', () => {
+                if(selectedIndices.length !== 2) return alert("选红绿两帧");
+                frames[selectedIndices[1]].getContext('2d').clearRect(0,0,frameW,frameH);
+                frames[selectedIndices[1]].getContext('2d').drawImage(frames[selectedIndices[0]],0,0);
+                selectedIndices=[]; updateUI();
+            });
+            document.getElementById('t2-btn-swap').addEventListener('click', () => {
+                if(selectedIndices.length !== 2) return;
+                const ctx1 = frames[selectedIndices[0]].getContext('2d'), ctx2 = frames[selectedIndices[1]].getContext('2d');
+                const temp = document.createElement('canvas'); temp.width=frameW; temp.height=frameH; temp.getContext('2d').drawImage(frames[selectedIndices[0]],0,0);
+                ctx1.clearRect(0,0,frameW,frameH); ctx1.drawImage(frames[selectedIndices[1]],0,0);
+                ctx2.clearRect(0,0,frameW,frameH); ctx2.drawImage(temp,0,0);
+                selectedIndices=[]; updateUI();
+            });
+
+            btnGenerate.addEventListener('click', () => {
+                const tc = parseInt(targetCols.value), tr = parseInt(targetRows.value);
+                resultCanvas.width = tc * frameW; resultCanvas.height = tr * frameH;
+                const ctx = resultCanvas.getContext('2d'); ctx.clearRect(0,0,resultCanvas.width,resultCanvas.height);
+                for (let i = 0; i < Math.min(frames.length, tc*tr); i++) ctx.drawImage(frames[i], (i%tc)*frameW, Math.floor(i/tc)*frameH);
+                resultContainer.style.display = 'block'; btnDownload.classList.remove('hidden');
+            });
+            btnDownload.addEventListener('click', () => {
+                const a = document.createElement('a'); a.download = 'pro_sheet.png'; a.href = resultCanvas.toDataURL(); a.click();
+            });
+        })();
+
+        // ================= 工具 3 逻辑 =================
+        (() => {
+            const mappingLayout = [
+                [ [0,0], [0,0], [0,0], [0,7], [0,8], [0,8], [2,1], [2,1], [2,1] ],
+                [ [0,1], [0,1], [0,1], [1,0], [1,1], [1,1], [2,2], [2,3], [2,3] ],
+                [ [0,2], [0,3], [0,2], [1,2], [1,3], [1,3], [2,4], [2,4], [2,4] ],
+                [ [0,4], [0,4], [0,4], [1,4], [1,5], [1,5], [2,4], [2,4], [2,4] ],
+                [ [0,5], [0,5], [0,5], [1,6], [1,7], [1,7], [2,5], [2,5], [2,5] ],
+                [ [0,6], [0,6], [0,6], [1,8], [2,0], [2,0], [2,6], [2,6], [2,6] ]
+            ];
+            function loadImg(id) {
+                return new Promise(res => {
+                    const f = document.getElementById(id).files[0]; if(!f) return res(null);
+                    const r = new FileReader(); r.onload = e => { const i = new Image(); i.onload=()=>res(i); i.src=e.target.result; }; r.readAsDataURL(f);
+                });
+            }
+            document.getElementById('t3-btn-generate').addEventListener('click', async () => {
+                const tw = parseInt(document.getElementById('t3-frameWidth').value), th = parseInt(document.getElementById('t3-frameHeight').value);
+                const imgs = await Promise.all([loadImg('t3-img1'), loadImg('t3-img2'), loadImg('t3-img3')]);
+                if(imgs.includes(null)) return alert("请上传全部三张图片");
+                const canvas = document.getElementById('t3-resultCanvas'), ctx = canvas.getContext('2d');
+                canvas.width = tw * 9; canvas.height = th * 6; ctx.clearRect(0,0,canvas.width,canvas.height); ctx.imageSmoothingEnabled = false;
+                
+                for(let r=0; r<6; r++) {
+                    for(let c=0; c<9; c++) {
+                        const rule = mappingLayout[r][c], img = imgs[rule[0]], srcW = img.width/3, srcH = img.height/3;
+                        ctx.drawImage(img, (rule[1]%3)*srcW, Math.floor(rule[1]/3)*srcH, srcW, srcH, c*tw, r*th, tw, th);
+                    }
+                }
+                document.getElementById('t3-downloadBtn').classList.remove('hidden');
+            });
+            document.getElementById('t3-downloadBtn').addEventListener('click', () => {
+                const a = document.createElement('a'); a.download = 'merged_9x6.png'; a.href = document.getElementById('t3-resultCanvas').toDataURL(); a.click();
+            });
+        })();
+
+        // ================= 工具 4 逻辑 =================
+        (() => {
+            const up = document.getElementById('t4-image-upload'), btnGrid = document.getElementById('t4-apply-grid');
+            const sc = document.getElementById('t4-source-canvas'), sCtx = sc.getContext('2d');
+            const timeline = document.getElementById('t4-timeline'), countSpan = document.getElementById('t4-frame-count');
+            const inR = document.getElementById('t4-rows'), inC = document.getElementById('t4-cols');
+            const outR = document.getElementById('t4-out-rows'), outC = document.getElementById('t4-out-cols');
+            const btnGen = document.getElementById('t4-generate-btn'), btnDl = document.getElementById('t4-download-btn');
+            const rc = document.getElementById('t4-result-canvas'), rCtx = rc.getContext('2d');
+
+            let img = new Image(), loaded = false, frames = [], fw = 0, fh = 0, dragIdx = null;
+
+            up.addEventListener('change', e => {
+                if(!e.target.files[0]) return;
+                const r = new FileReader(); r.onload = ev => { img.onload = () => { loaded = true; drawGrid(); frames=[]; render(); }; img.src = ev.target.result; };
+                r.readAsDataURL(e.target.files[0]);
+            });
+
+            btnGrid.addEventListener('click', drawGrid);
+            function drawGrid() {
+                if(!loaded) return;
+                const r = parseInt(inR.value)||1, c = parseInt(inC.value)||1;
+                sc.width = img.width; sc.height = img.height; sCtx.drawImage(img,0,0);
+                fw = img.width/c; fh = img.height/r;
+                sCtx.strokeStyle = 'rgba(255,0,0,0.5)'; sCtx.beginPath();
+                for(let i=1; i<r; i++) { sCtx.moveTo(0, i*fh); sCtx.lineTo(sc.width, i*fh); }
+                for(let i=1; i<c; i++) { sCtx.moveTo(i*fw, 0); sCtx.lineTo(i*fw, sc.height); }
+                sCtx.stroke();
+            }
+
+            sc.addEventListener('click', e => {
+                if(!loaded || !fw) return;
+                const rect = sc.getBoundingClientRect(), x = (e.clientX-rect.left)*(sc.width/rect.width), y = (e.clientY-rect.top)*(sc.height/rect.height);
+                frames.push({ c: Math.floor(x/fw), r: Math.floor(y/fh) });
+                if(parseInt(outR.value)===1) outC.value = frames.length;
+                render();
+            });
+
+            function render() {
+                timeline.innerHTML = ''; countSpan.innerText = frames.length;
+                if(!frames.length) return timeline.innerHTML = '<span style="color:#888;margin-top:40px;margin-left:10px;">暂未选取任何帧...</span>';
+                frames.forEach((f, i) => {
+                    const w = document.createElement('div'); w.className = 't4-frame-item'; w.draggable = true;
+                    const c = document.createElement('canvas'); c.width = fw; c.height = fh; 
+                    c.style.height = '80px'; c.style.width = (fw/fh)*80 + 'px';
+                    c.getContext('2d').drawImage(img, f.c*fw, f.r*fh, fw, fh, 0, 0, fw, fh);
+                    
+                    const del = document.createElement('div'); del.className = 't4-delete-btn'; del.innerHTML = '×';
+                    del.onclick = () => { frames.splice(i, 1); if(parseInt(outR.value)===1) outC.value=Math.max(1,frames.length); render(); };
+                    
+                    w.addEventListener('dragstart', () => { dragIdx = i; setTimeout(()=>w.style.opacity='0.5',0); });
+                    w.addEventListener('dragend', () => { w.style.opacity='1'; document.querySelectorAll('.t4-frame-item').forEach(el=>el.classList.remove('drag-over')); });
+                    w.addEventListener('dragover', e => { e.preventDefault(); w.classList.add('drag-over'); });
+                    w.addEventListener('dragleave', () => w.classList.remove('drag-over'));
+                    w.addEventListener('drop', e => {
+                        e.preventDefault(); w.classList.remove('drag-over'); if(dragIdx===i) return;
+                        const itm = frames.splice(dragIdx, 1)[0]; frames.splice(i, 0, itm); render();
+                    });
+                    
+                    w.appendChild(c); w.appendChild(del); timeline.appendChild(w);
+                });
+            }
+
+            btnGen.addEventListener('click', () => {
+                if(!frames.length) return alert("请先选取帧");
+                const ro = parseInt(outR.value)||1, co = parseInt(outC.value)||1;
+                rc.width = fw*co; rc.height = fh*ro; rCtx.clearRect(0,0,rc.width,rc.height);
+                frames.forEach((f, i) => {
+                    const dr = Math.floor(i/co), dc = i%co;
+                    if(dr < ro) rCtx.drawImage(img, f.c*fw, f.r*fh, fw, fh, dc*fw, dr*fh, fw, fh);
+                });
+                btnDl.classList.remove('hidden');
+            });
+            btnDl.addEventListener('click', () => {
+                const a = document.createElement('a'); a.download = 'timeline_sheet.png'; a.href = rc.toDataURL(); a.click();
+            });
+        })();
+    </script>
+</body>
+</html>
