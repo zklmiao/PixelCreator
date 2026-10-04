@@ -1,0 +1,24 @@
+{
+  "id": "palette_weapon@v1",
+  "kind": "weapon",
+  "version": 1,
+  "description": "weapon v1 draft: blade steel ramp, brass guard, wood grip, gem accents. Transparent lives only in `transparent` and is never mappable.",
+  "transparent": "#00000000",
+  "dither": {
+    "default": "none",
+    "allowed": ["none"]
+  },
+  "colors": [
+    { "name": "edge-light", "hex": "#E8EEF4", "role": "blade-highlight" },
+    { "name": "steel", "hex": "#AAB4C0", "role": "blade-mid" },
+    { "name": "steel-shadow", "hex": "#5C656F", "role": "blade-shadow" },
+    { "name": "fuller-dark", "hex": "#3A4149", "role": "blade-fuller" },
+    { "name": "brass", "hex": "#C9973F", "role": "guard" },
+    { "name": "gold-highlight", "hex": "#F0D080", "role": "guard-highlight" },
+    { "name": "wood-grip", "hex": "#6B4423", "role": "grip" },
+    { "name": "wrap-dark", "hex": "#40260F", "role": "grip-shadow" },
+    { "name": "gem-red", "hex": "#C02030", "role": "gem" },
+    { "name": "gem-blue", "hex": "#2850C8", "role": "gem-alt" },
+    { "name": "outline", "hex": "#1A1C22", "role": "outline" }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "palette_scenery@v1",
+  "kind": "scenery",
+  "version": 1,
+  "description": "scenery v1 draft: broad grass/earth/water/rock ramps for up to 128px. Ordered-Bayer allowed here only (never error-diffusion).",
+  "transparent": "#00000000",
+  "dither": {
+    "default": "none",
+    "allowed": ["none", "ordered-bayer"]
+  },
+  "colors": [
+    { "name": "grass-light", "hex": "#7AC74F", "role": "grass-highlight" },
+    { "name": "grass-mid", "hex": "#4A9A35", "role": "grass-mid" },
+    { "name": "grass-dark", "hex": "#2E5E22", "role": "grass-shadow" },
+    { "name": "earth", "hex": "#8A5E3A", "role": "earth" },
+    { "name": "earth-dark", "hex": "#5A3A22", "role": "earth-shadow" },
+    { "name": "water-light", "hex": "#6AC8E8", "role": "water-highlight" },
+    { "name": "water-dark", "hex": "#2A6AA8", "role": "water-shadow" },
+    { "name": "foliage", "hex": "#3E7A34", "role": "foliage" },
+    { "name": "trunk", "hex": "#5E3A22", "role": "trunk" },
+    { "name": "rock-light", "hex": "#B8B4A8", "role": "rock-highlight" },
+    { "name": "rock-dark", "hex": "#6A665C", "role": "rock-shadow" },
+    { "name": "sand", "hex": "#E0C888", "role": "sand" },
+    { "name": "sky", "hex": "#88C8E8", "role": "sky" },
+    { "name": "outline", "hex": "#22241F", "role": "outline" }
+  ]
+}

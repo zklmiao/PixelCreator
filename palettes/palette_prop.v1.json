@@ -1,0 +1,23 @@
+{
+  "id": "palette_prop@v1",
+  "kind": "prop",
+  "version": 1,
+  "description": "prop v1 draft: wood/metal/cloth utility ramp for static four-view occupancy. Dither locked to none.",
+  "transparent": "#00000000",
+  "dither": {
+    "default": "none",
+    "allowed": ["none"]
+  },
+  "colors": [
+    { "name": "wood-light", "hex": "#B07A45", "role": "wood-highlight" },
+    { "name": "wood-mid", "hex": "#7A4E2A", "role": "wood-mid" },
+    { "name": "wood-dark", "hex": "#442A14", "role": "wood-shadow" },
+    { "name": "metal-light", "hex": "#C8CFD8", "role": "metal-highlight" },
+    { "name": "metal-dark", "hex": "#5A626E", "role": "metal-shadow" },
+    { "name": "cloth-red", "hex": "#B03028", "role": "cloth-red" },
+    { "name": "cloth-blue", "hex": "#2E5AA8", "role": "cloth-blue" },
+    { "name": "rope", "hex": "#C8A86A", "role": "rope" },
+    { "name": "leather", "hex": "#6B4423", "role": "leather" },
+    { "name": "outline", "hex": "#1C1C20", "role": "outline" }
+  ]
+}

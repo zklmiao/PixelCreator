@@ -1,0 +1,26 @@
+{
+  "id": "palette_building@v1",
+  "kind": "building",
+  "version": 1,
+  "description": "building v1 draft: stone/plaster/beam/roof ramps for static four-view occupancy. Ordered-Bayer allowed here only (never error-diffusion).",
+  "transparent": "#00000000",
+  "dither": {
+    "default": "none",
+    "allowed": ["none", "ordered-bayer"]
+  },
+  "colors": [
+    { "name": "stone-light", "hex": "#CFC8B8", "role": "stone-highlight" },
+    { "name": "stone-mid", "hex": "#9A9384", "role": "stone-mid" },
+    { "name": "stone-dark", "hex": "#5E584C", "role": "stone-shadow" },
+    { "name": "plaster", "hex": "#E8DCC4", "role": "wall" },
+    { "name": "beam", "hex": "#5A3A22", "role": "beam" },
+    { "name": "beam-dark", "hex": "#38220F", "role": "beam-shadow" },
+    { "name": "roof-red", "hex": "#A83A2E", "role": "roof-main" },
+    { "name": "roof-dark", "hex": "#6E211A", "role": "roof-shadow" },
+    { "name": "door", "hex": "#3A2A1C", "role": "door" },
+    { "name": "window-lit", "hex": "#F2C75C", "role": "window-lit" },
+    { "name": "window-dark", "hex": "#2A3440", "role": "window-dark" },
+    { "name": "moss", "hex": "#5A7A3A", "role": "moss" },
+    { "name": "outline", "hex": "#1E1F1C", "role": "outline" }
+  ]
+}

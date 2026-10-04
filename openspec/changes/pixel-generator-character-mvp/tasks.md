@@ -3,11 +3,11 @@
 ## 1. Web 脚手架与资产地基
 
 - [ ] 1.1 创建 Web 应用骨架与 `knight_001/` 资产目录结构，验证双母版槽与 asset.json 空壳可加载
-- [ ] 1.2 落地 5 套 palette JSON（character/weapon/building/prop/scenery v1 初稿），验证色值解析与透明占位排除
+- [x] 1.2 落地 5 套 palette JSON（character/weapon/building/prop/scenery v1 初稿），验证色值解析与透明占位排除
 
 ## 2. 像素量化管线
 
-- [ ] 2.1 实现下采样到 32/48/64/128 档 + 强制正方形 pad + alpha<128 丢弃，验证非正方形原型输出等大正方形
+- [x] 2.1 实现下采样到 32/48/64/128 档 + 强制正方形 pad + alpha<128 丢弃，验证非正方形原型输出等大正方形
 - [ ] 2.2 实现欧氏最近色映射到类色板（含 OKLCH 替换钩子），验证前后视图同色收敛到同一色板项
 - [ ] 2.3 实现关平滑放大展示与 dither 开关（人物锁 none），验证 walk 连播无抖动并附量化前后对比文档
 

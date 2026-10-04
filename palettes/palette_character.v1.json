@@ -1,0 +1,30 @@
+{
+  "id": "palette_character@v1",
+  "kind": "character",
+  "version": 1,
+  "description": "character v1 draft: knight-centric ramp with dense 4-step skin, cloak reds, steel/leather. Transparent lives only in `transparent` and is never mappable.",
+  "transparent": "#00000000",
+  "dither": {
+    "default": "none",
+    "allowed": ["none"]
+  },
+  "colors": [
+    { "name": "skin-1", "hex": "#FFD9B3", "role": "skin-highlight" },
+    { "name": "skin-2", "hex": "#E8A87C", "role": "skin-mid" },
+    { "name": "skin-3", "hex": "#C07A4E", "role": "skin-shadow" },
+    { "name": "skin-4", "hex": "#7A4A2E", "role": "skin-deep" },
+    { "name": "hair", "hex": "#3A2A1A", "role": "hair" },
+    { "name": "tunic-red", "hex": "#C03028", "role": "cloth-main" },
+    { "name": "tunic-dark", "hex": "#7E1B16", "role": "cloth-shadow" },
+    { "name": "steel-light", "hex": "#DDE3EA", "role": "armor-highlight" },
+    { "name": "steel-mid", "hex": "#9AA4B2", "role": "armor-mid" },
+    { "name": "steel-dark", "hex": "#565E6C", "role": "armor-shadow" },
+    { "name": "leather", "hex": "#7B4B2A", "role": "leather-mid" },
+    { "name": "leather-dark", "hex": "#4A2E1A", "role": "leather-shadow" },
+    { "name": "gold", "hex": "#D9A441", "role": "trim" },
+    { "name": "boot-dark", "hex": "#33261B", "role": "boots" },
+    { "name": "eye", "hex": "#23232B", "role": "eye" },
+    { "name": "white", "hex": "#F2F2EC", "role": "eye-white" },
+    { "name": "outline", "hex": "#191B20", "role": "outline" }
+  ]
+}
