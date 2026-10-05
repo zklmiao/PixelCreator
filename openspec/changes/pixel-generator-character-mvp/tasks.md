@@ -24,7 +24,7 @@
 
 ## 5. 动画矩阵与预览
 
-- [ ] 5.1 实现 idle/walk/attack clip 存储与 fps/loop/next 语义（含 attack 播完回 idle），验证 attack 单次后落回同向 idle
+- [x] 5.1 实现 idle/walk/attack clip 存储与 fps/loop/next 语义（含 attack 播完回 idle），验证 attack 单次后落回同向 idle
 - [ ] 5.2 实现 12 格 GIF 轮播矩阵 + td/sd 切换 + 缺格占位，验证 24 格全齐时矩阵满格播放、缺格时导出置灰
 
 ## 6. 拼表导出
