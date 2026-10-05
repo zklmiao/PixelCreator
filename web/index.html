@@ -56,6 +56,22 @@
       </form>
       <pre id="prompt-out"></pre>
     </section>
+
+    <section aria-label="preview matrix">
+      <h2>5.2 Preview matrix — 12 cells + td/sd toggle</h2>
+      <div class="row">
+        <label>perspective
+          <select id="m-persp"><option value="td">td</option><option value="sd">sd</option></select>
+        </label>
+        <span id="matrix-meta" class="hint">loading…</span>
+      </div>
+      <div id="matrix-grid" class="matrix-grid"></div>
+      <div class="row">
+        <button type="button" id="export-btn" disabled>Export sheets</button>
+        <span id="export-hint" class="hint"></span>
+      </div>
+      <p class="hint">Matrix reuses tools/clips.mjs timing; missing cells are preview-only placeholders (never exported).</p>
+    </section>
   </main>
 
   <script type="module" src="./app.js"></script>

@@ -14,3 +14,8 @@ pre { white-space: pre-wrap; background: #8881; padding: 12px; border-radius: 8p
 .hint { color: #666; font-size: 13px; }
 #asset-status[data-ok="true"] { color: #0a7a2f; }
 #asset-status[data-ok="false"] { color: #b00020; }
+.matrix-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 8px; }
+.cell { border: 1px solid var(--bd); border-radius: 8px; padding: 8px 10px; }
+.cell h4 { margin: 0 0 4px; font-size: 14px; }
+.cell.missing { border-style: dashed; }
+.cell .ph { color: #b00020; font-size: 13px; }

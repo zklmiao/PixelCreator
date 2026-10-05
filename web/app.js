@@ -1,6 +1,7 @@
 // app.js — 1.1 shell + 4.1 form wiring (zero dependencies).
 import { loadShell } from './lib/asset-shell.js';
 import { buildPrompt, validateFields, FIXED_NEGATIVE, KNIGHT_EXAMPLE } from './lib/prompt.js';
+import { buildMatrix, createPlayer, tickPlayer, canExport } from './lib/matrix.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -85,3 +86,89 @@ function initForm() {
 
 initAsset();
 initForm();
+initMatrix();
+
+// 5.2 matrix wiring (additive; 1.1/4.1 above untouched).
+let matrixAsset = null;
+let matrixTimers = [];
+
+function clearMatrixTimers() {
+  for (const t of matrixTimers) clearInterval(t);
+  matrixTimers = [];
+}
+
+function renderMatrix(persp) {
+  const grid = $('matrix-grid');
+  const meta = $('matrix-meta');
+  const btn = $('export-btn');
+  const hint = $('export-hint');
+  if (!grid || !matrixAsset) return;
+  clearMatrixTimers();
+  grid.innerHTML = '';
+  const { cells } = buildMatrix(matrixAsset, persp);
+  const missing = cells.filter((c) => c.missing);
+  meta.textContent = `${persp}: 12 cells, ${missing.length} missing`;
+  for (const cell of cells) {
+    const el = document.createElement('div');
+    el.className = `cell${cell.missing ? ' missing' : ''}`;
+    el.dataset.action = cell.action;
+    el.dataset.dir = cell.dir;
+    const head = document.createElement('h4');
+    head.textContent = `${cell.action} · ${cell.dir}`;
+    el.appendChild(head);
+    if (cell.missing) {
+      const ph = document.createElement('p');
+      ph.className = 'ph';
+      ph.textContent = `missing ${cell.clipId}`;
+      el.appendChild(ph);
+      const gen = document.createElement('button');
+      gen.type = 'button';
+      gen.textContent = 'Generate';
+      gen.title = `generate ${cell.clipId} (manual flow, 4.2 reserved slot)`;
+      gen.dataset.clip = cell.clipId;
+      el.appendChild(gen);
+    } else {
+      const cur = document.createElement('code');
+      cur.textContent = cell.files[0];
+      el.appendChild(cur);
+      const sub = document.createElement('p');
+      sub.className = 'hint';
+      sub.textContent = `${cell.files.length}f × ${cell.durationMs.toFixed(2)}ms`;
+      el.appendChild(sub);
+      let player = createPlayer(matrixAsset, persp, cell.action, cell.dir, 0);
+      const timer = setInterval(() => {
+        try {
+          player = tickPlayer(player);
+          cur.textContent = player.file;
+        } catch {
+          // Strict cell vanished mid-play (should not happen on full asset).
+          clearInterval(timer);
+        }
+      }, player.durationMs);
+      matrixTimers.push(timer);
+    }
+    grid.appendChild(el);
+  }
+  const ex = canExport(matrixAsset);
+  btn.disabled = !ex.ok;
+  btn.title = ex.ok ? 'all 24 clips present' : `missing: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
+  hint.textContent = ex.ok ? 'ready: 24 clips full' : `export disabled — missing ${ex.missing.length}: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
+}
+
+async function initMatrix() {
+  if (!$('matrix-grid')) return;
+  try {
+    const { asset } = await loadShell();
+    matrixAsset = asset;
+    const sel = $('m-persp');
+    const start = asset.preview?.perspective ?? 'td';
+    if (sel) {
+      sel.value = start;
+      sel.addEventListener('change', () => renderMatrix(sel.value));
+    }
+    renderMatrix(start);
+  } catch (e) {
+    const meta = $('matrix-meta');
+    if (meta) meta.textContent = `FAIL: ${e.message}`;
+  }
+}
