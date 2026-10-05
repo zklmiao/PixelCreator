@@ -14,6 +14,8 @@ import {
   SEMANTIC_GROUPS,
   pixelsToSvg,
   parseSvgGroups,
+  svgToPixels,
+  knightRelabel,
 } from './vectorize.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -445,5 +447,75 @@ describe('3.1 view svg layers (pixelsToSvg)', () => {
       }
     }
     assert.equal(n, 64, 'idle8+walk24+attack32 = 64 views');
+  });
+});
+
+describe('3.1 semantic split (knightRelabel)', () => {
+  const assetDir = resolve(root, 'assets/knight_001');
+  const readView = (f) => readFileSync(resolve(assetDir, f), 'utf8');
+  const partMap = (svg) => new Map(parseSvgGroups(svg).map((g) => [g.part, g]));
+
+  it('knightRelabel routes legs/sword/outfit/body by rule', () => {
+    assert.equal(knightRelabel(26, 42, 'leather', { size: 64, action: 'walk' }), 'limb-l');
+    assert.equal(knightRelabel(36, 53, 'boot-dark', { size: 64, action: 'walk' }), 'limb-r');
+    assert.equal(
+      knightRelabel(42, 20, 'steel-light', { size: 64, action: 'attack', perspective: 'td' }),
+      'weapon-slot',
+    );
+    assert.equal(knightRelabel(30, 30, 'tunic-red', { size: 64, action: 'idle' }), 'outfit');
+    assert.equal(knightRelabel(30, 30, 'steel-mid', { size: 64, action: 'idle' }), 'outfit');
+    assert.equal(knightRelabel(30, 12, 'skin-1', { size: 64, action: 'idle' }), 'body');
+    assert.equal(knightRelabel(30, 12, 'hair', { size: 64, action: 'idle' }), 'body');
+    assert.equal(knightRelabel(0, 0, 'mystery-color', { size: 64, action: 'idle' }), 'body');
+    assert.equal(knightRelabel(0, 0, 'skin-1'), 'body', 'defaults work without opts');
+  });
+
+  it('attack view has all five layers non-empty (sword lands in weapon-slot)', () => {
+    const groups = partMap(readView('knight_td_attack_fr1.svg'));
+    for (const part of SEMANTIC_GROUPS) {
+      assert.ok((groups.get(part)?.rectCount ?? 0) > 0, `attack ${part} must be non-empty`);
+    }
+    // NOTE: the 2-wide blade is fully covered by its outline border (see
+    // synthKnightPixels borderRect), so the sword survives as outline border +
+    // gold hilt + leather grip — no steel-light pixels remain. Gold hilt is
+    // the unambiguous sword marker.
+    assert.ok(groups.get('weapon-slot').colors.includes('gold'));
+  });
+
+  it('idle view keeps weapon-slot empty while body/limbs/outfit stay non-empty', () => {
+    const groups = partMap(readView('knight_td_idle_fr0.svg'));
+    assert.equal(groups.get('weapon-slot').rectCount, 0, 'idle weapon-slot stays reserved-empty');
+    for (const part of ['body', 'limb-l', 'limb-r', 'outfit']) {
+      assert.ok((groups.get(part)?.rectCount ?? 0) > 0, `idle ${part} must be non-empty`);
+    }
+  });
+
+  it('walk limbs non-empty and total rects unchanged across in-memory roundtrip', () => {
+    const file = 'knight_td_walk_fr1.svg';
+    const original = readView(file);
+    const groups = partMap(original);
+    assert.ok(groups.get('limb-l').rectCount > 0, 'walk limb-l non-empty');
+    assert.ok(groups.get('limb-r').rectCount > 0, 'walk limb-r non-empty');
+    const total = (original.match(/<rect\b/g) ?? []).length;
+    const parsed = svgToPixels(original, file);
+    const remade = pixelsToSvg(parsed.data, parsed.w, parsed.h, {
+      asset: parsed.meta.asset,
+      perspective: parsed.meta.perspective,
+      action: parsed.meta.action,
+      dir: parsed.meta.dir,
+      frame: parsed.meta.frame,
+      size: Number(parsed.meta.size) || parsed.w,
+      palette: character,
+      seed: parsed.meta.seed,
+      prompt_hash: parsed.meta.prompt_hash,
+      denoise: parsed.meta.denoise,
+      source: parsed.meta.source,
+      names: parsed.names,
+      master: parsed.meta.master,
+      relabel: (x, y, n) =>
+        knightRelabel(x, y, n, { size: parsed.w, action: parsed.meta.action, perspective: parsed.meta.perspective }),
+    });
+    assert.equal(remade, original, 'same-relabel roundtrip must be byte-identical (totals unchanged)');
+    assert.equal((remade.match(/<rect\b/g) ?? []).length, total);
   });
 });

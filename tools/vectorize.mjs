@@ -408,6 +408,232 @@ export function parseSvgGroups(svg) {
   return result;
 }
 
+// --- View SVG decode + asset roundtrip (spec svg-engineering Round trip) ---
+//
+// svgToPixels(svg, file?) -> { data, w, h, names, meta, parts }.
+// Inverse of pixelsToSvg for view SVGs: parses data-part/data-color/rect
+// layers, takes dims from viewBox, defaults missing pixels to transparent.
+// `names`/`parts` are per-pixel arrays (length w*h, null when transparent);
+// `meta` carries the data-* attrs + <metadata> block (entities unescaped).
+// Throws naming `file` when the input is not our pipeline format
+// (no data-part layers), has a bad viewBox, misses part layers, or holds
+// no decodable rects (empty color group / zero rects / overlapping rects).
+// Pure (no fs) so the Web app can import it.
+function unescapeXml(s) {
+  return String(s)
+    .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, '>')
+    .replace(/&lt;/g, '<')
+    .replace(/&amp;/g, '&');
+}
+
+function parseFillHex(fill, label, what) {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(fill ?? '');
+  if (!m) throw new Error(`${label}: bad fill ${JSON.stringify(fill)} on ${what} (want #RRGGBB)`);
+  return {
+    r: parseInt(m[1].slice(0, 2), 16),
+    g: parseInt(m[1].slice(2, 4), 16),
+    b: parseInt(m[1].slice(4, 6), 16),
+  };
+}
+
+export function svgToPixels(svg, file = 'svg') {
+  const label = String(file);
+  if (typeof svg !== 'string' || !svg) throw new Error(`${label}: svg must be a non-empty string`);
+  const openMatch = svg.match(/<svg\b[^>]*>/);
+  if (!openMatch) throw new Error(`${label}: missing <svg> opening tag`);
+  if (!svg.includes('</svg>')) throw new Error(`${label}: missing </svg> closing tag`);
+  const openTag = openMatch[0];
+  const vb = openTag.match(/viewBox="0 0 (\d+) (\d+)"/);
+  if (!vb) {
+    const seen = openTag.match(/viewBox="[^"]*"/)?.[0] ?? '(missing)';
+    throw new Error(`${label}: bad viewBox ${seen} (want viewBox="0 0 <w> <h>")`);
+  }
+  const w = Number(vb[1]);
+  const h = Number(vb[2]);
+  if (!Number.isInteger(w) || w <= 0 || !Number.isInteger(h) || h <= 0) {
+    throw new Error(`${label}: bad viewBox dims "0 0 ${vb[1]} ${vb[2]}"`);
+  }
+  if (!/data-part="/.test(svg)) {
+    throw new Error(`${label}: not a view SVG (no data-part layers); flat id-based SVGs are not reversible here`);
+  }
+  const attr = (name) => {
+    const m = openTag.match(new RegExp(`${name}="([^"]*)"`));
+    return m ? unescapeXml(m[1]) : '';
+  };
+  const metaBody = (svg.match(/<metadata>([\s\S]*?)<\/metadata>/) ?? [])[1] ?? '';
+  const elem = (name) => {
+    const m = metaBody.match(new RegExp(`<${name}>([\\s\\S]*?)<\\/${name}>`));
+    return m ? unescapeXml(m[1]) : undefined;
+  };
+  const pick = (a, t) => (t !== undefined ? t : a);
+  const meta = {
+    asset: pick(attr('data-asset'), elem('asset')),
+    perspective: pick(attr('data-perspective'), elem('perspective')),
+    action: pick(attr('data-action'), elem('action')),
+    dir: pick(attr('data-dir'), elem('dir')),
+    frame: pick(attr('data-frame'), elem('frame')),
+    size: pick(attr('data-size'), elem('size')),
+    palette: pick(attr('data-palette'), elem('palette')),
+    seed: pick(attr('data-seed'), elem('seed')),
+    prompt_hash: pick(attr('data-prompt-hash'), elem('prompt_hash')),
+    denoise: pick(attr('data-denoise'), elem('denoise')),
+    source: elem('source') ?? '',
+    master: /data-master="true"/.test(openTag),
+  };
+  // Outer part layers (nesting-aware, mirrors parseSvgGroups).
+  const outerRe = /<g\b[^>]*\bdata-part="([^"]+)"[^>]*>/g;
+  const layers = [];
+  let om;
+  while ((om = outerRe.exec(svg)) !== null) {
+    let depth = 1;
+    const tagRe = /<\/?g\b[^>]*>/g;
+    tagRe.lastIndex = om.index + om[0].length;
+    let t;
+    let inner = null;
+    while ((t = tagRe.exec(svg)) !== null) {
+      if (t[0].startsWith('</')) depth--;
+      else depth++;
+      if (depth === 0) {
+        inner = svg.slice(om.index + om[0].length, t.index);
+        break;
+      }
+    }
+    if (inner === null) throw new Error(`${label}: unclosed data-part group ${JSON.stringify(om[1])}`);
+    layers.push({ part: om[1], inner });
+  }
+  const have = new Set(layers.map((l) => l.part));
+  const missing = SEMANTIC_GROUPS.filter((p) => !have.has(p));
+  if (missing.length > 0) {
+    throw new Error(`${label}: missing part layers ${missing.join(',')} (want ${SEMANTIC_GROUPS.join(',')})`);
+  }
+  const unknown = layers.map((l) => l.part).filter((p) => !SEMANTIC_GROUPS.includes(p));
+  if (unknown.length > 0) throw new Error(`${label}: unknown part layers ${unknown.join(',')}`);
+  const data = new Uint8ClampedArray(w * h * 4); // transparent default
+  const names = new Array(w * h).fill(null);
+  const parts = new Array(w * h).fill(null);
+  let total = 0;
+  for (const { part, inner } of layers) {
+    // Color groups hold rects only (no nested g), so non-greedy capture is exact.
+    const colorRe = /<g\b[^>]*\bdata-color="([^"]+)"[^>]*>([\s\S]*?)<\/g>/g;
+    let cm;
+    while ((cm = colorRe.exec(inner)) !== null) {
+      const colorName = unescapeXml(cm[1]);
+      const rects = cm[2].match(/<rect\b[^>]*?(?:\/>|<\/rect\s*>)/g) ?? [];
+      if (rects.length === 0) {
+        throw new Error(
+          `${label}: empty color group ${JSON.stringify(colorName)} in part ${JSON.stringify(part)} (no rects)`,
+        );
+      }
+      for (const r of rects) {
+        const xm = r.match(/\bx="(\d+)"/);
+        const ym = r.match(/\by="(\d+)"/);
+        const fm = r.match(/\bfill="([^"]+)"/);
+        if (!xm || !ym || !fm) {
+          throw new Error(
+            `${label}: rect missing x/y/fill in part ${JSON.stringify(part)} color ${JSON.stringify(colorName)}`,
+          );
+        }
+        const x = Number(xm[1]);
+        const y = Number(ym[1]);
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+          throw new Error(`${label}: rect out of bounds (${x},${y}) for ${w}x${h}`);
+        }
+        const c = parseFillHex(fm[1], label, `rect (${x},${y})`);
+        const idx = y * w + x;
+        if (names[idx] !== null) {
+          throw new Error(`${label}: duplicate pixel (${x},${y}) (overlapping rects)`);
+        }
+        const o = idx * 4;
+        data[o] = c.r;
+        data[o + 1] = c.g;
+        data[o + 2] = c.b;
+        data[o + 3] = 255;
+        names[idx] = colorName;
+        parts[idx] = part;
+        total++;
+      }
+    }
+  }
+  if (total === 0) throw new Error(`${label}: no rects to decode (empty view SVG)`);
+  return { data, w, h, names, meta, parts };
+}
+
+// roundTripAsset(assetDir) -> { views, masters, ok, failures }.
+// Reads asset.json, decodes every clip + master SVG via svgToPixels, re-emits
+// via pixelsToSvg reusing the decoded meta (parts-derived relabel), and
+// byte-compares against the file on disk. Read-only: never writes.
+// fs comes from dynamic import (writeViewSvg pattern); still zero npm deps.
+export async function roundTripAsset(assetDir) {
+  const { readFileSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const dir = String(assetDir);
+  const asset = JSON.parse(readFileSync(resolve(dir, 'asset.json'), 'utf8'));
+  const root = resolve(dir, '..', '..');
+  const pm = String(asset.palette ?? '').match(/^palette_(\w+)@v(\d+)$/);
+  if (!pm) throw new Error(`asset palette ref malformed: ${JSON.stringify(asset.palette)}`);
+  const palette = JSON.parse(
+    readFileSync(resolve(root, 'palettes', `palette_${pm[1]}.v${pm[2]}.json`), 'utf8'),
+  );
+  const viewFiles = [];
+  for (const act of Object.keys(asset.actions ?? {})) {
+    for (const p of asset.perspectives ?? []) {
+      for (const d of asset.views ?? []) {
+        for (const clip of asset.actions[act].clips?.[p]?.[d] ?? []) viewFiles.push(clip.file);
+      }
+    }
+  }
+  const masterFiles = Object.values(asset.masters ?? {});
+  const failures = [];
+  const check = (file) => {
+    const fp = resolve(dir, file);
+    let original;
+    try {
+      original = readFileSync(fp, 'utf8');
+    } catch (e) {
+      failures.push({ file, reason: `unreadable: ${e.message}` });
+      return;
+    }
+    let parsed;
+    try {
+      parsed = svgToPixels(original, file);
+    } catch (e) {
+      failures.push({ file, reason: e.message });
+      return;
+    }
+    const { data, w, h, names, meta } = parsed;
+    let remade;
+    try {
+      remade = pixelsToSvg(data, w, h, {
+        asset: meta.asset,
+        perspective: meta.perspective,
+        action: meta.action,
+        dir: meta.dir,
+        frame: meta.frame,
+        size: Number(meta.size) || w,
+        palette,
+        seed: meta.seed,
+        prompt_hash: meta.prompt_hash,
+        denoise: meta.denoise,
+        source: meta.source,
+        names,
+        master: meta.master,
+        relabel: (x, y, n) =>
+          knightRelabel(x, y, n, { size: w, action: meta.action, perspective: meta.perspective }),
+      });
+    } catch (e) {
+      failures.push({ file, reason: `re-emit: ${e.message}` });
+      return;
+    }
+    if (remade !== original) {
+      failures.push({ file, reason: `byte mismatch (disk ${original.length} vs remade ${remade.length})` });
+    }
+  };
+  for (const f of viewFiles) check(f);
+  for (const f of masterFiles) check(f);
+  return { views: viewFiles.length, masters: masterFiles.length, ok: failures.length === 0, failures };
+}
+
 // Node-only thin wrapper: library core never statically imports fs.
 export async function writeViewSvg(filePath, svg) {
   const { mkdirSync, writeFileSync } = await import('node:fs');
@@ -415,6 +641,46 @@ export async function writeViewSvg(filePath, svg) {
   mkdirSync(dirname(filePath), { recursive: true });
   writeFileSync(filePath, svg, 'utf8');
   return filePath;
+}
+
+// knightRelabel(x, y, colorName, opts?) -> part (pure, deterministic).
+// v1 semantic split for the synthetic knight (mirrors synthKnightPixels geometry):
+// - Leg/boot band y>=42: leather/leather-dark/boot-dark split left/right by
+//   x<size/2 (limb-l / limb-r). size defaults to 64.
+// - Sword band (attack only): at/right of the torso's right edge
+//   (torsoRight = bx+16, bx = 24 + (perspective==='sd' ? 2 : 0)) in
+//   steel-light/outline/gold/leather goes to weapon-slot. `perspective` is an
+//   optional extension of the {size,action} contract (defaults 'td') so side
+//   views keep their torso edge out of the sword band.
+// - Outfit (outside the sword band): tunic-red/tunic-dark/steel-mid/gold.
+// - Body: everything else (skin-1..4, hair, eye, white, outline) and any
+//   unknown color name (safe default, keeps weapon-slot reserved-empty for idle).
+// - Only SEMANTIC_GROUPS members are ever returned (guarded below).
+export function knightRelabel(x, y, colorName, opts = {}) {
+  const size = Number.isInteger(opts.size) && opts.size > 0 ? opts.size : 64;
+  const action = opts.action ?? '';
+  const perspective = opts.perspective ?? 'td';
+  const name = String(colorName ?? '');
+  const bx = 24 + (perspective === 'sd' ? 2 : 0);
+  const torsoRight = bx + 16; // exclusive: torso columns are bx..bx+15
+  let part = 'body';
+  if (y >= 42 && (name === 'leather' || name === 'leather-dark' || name === 'boot-dark')) {
+    part = x < size / 2 ? 'limb-l' : 'limb-r';
+  } else if (
+    action === 'attack' &&
+    x >= torsoRight &&
+    (name === 'steel-light' || name === 'outline' || name === 'gold' || name === 'leather')
+  ) {
+    part = 'weapon-slot';
+  } else if (name === 'tunic-red' || name === 'tunic-dark' || name === 'steel-mid' || name === 'gold') {
+    part = 'outfit';
+  } else {
+    part = 'body';
+  }
+  if (!SEMANTIC_GROUPS.includes(part)) {
+    throw new Error(`knightRelabel(${x},${y},${JSON.stringify(name)}) produced illegal part ${JSON.stringify(part)}`);
+  }
+  return part;
 }
 
 // --- Deterministic synthetic knight pixels (batch generate only) ---
@@ -532,6 +798,7 @@ async function generateKnightSvgs(assetId = 'knight_001') {
       source: meta.source,
       names: mapped.names,
       master: meta.master ?? false,
+      relabel: (x, y, n) => knightRelabel(x, y, n, { size, action: act, perspective }),
     });
   };
   mkdirSync(assetDir, { recursive: true });
@@ -589,7 +856,26 @@ async function main() {
     await generateKnightSvgs(assetId);
     return;
   }
-  console.error('usage: node tools/vectorize.mjs selfcheck | node tools/vectorize.mjs generate --asset knight_001');
+  if (cmd === 'roundtrip') {
+    let assetId = 'knight_001';
+    for (let i = 0; i < rest.length; i++) {
+      if (rest[i] === '--asset' && rest[i + 1]) assetId = rest[i + 1];
+      else if (rest[i].startsWith('--asset=')) assetId = rest[i].slice('--asset='.length);
+    }
+    const { dirname, resolve } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const assetDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'assets', assetId);
+    const r = await roundTripAsset(assetDir);
+    console.log(`OK: roundtrip ${r.views} views + ${r.masters} masters for ${assetId} (ok=${r.ok})`);
+    if (!r.ok) {
+      for (const f of r.failures) console.log(`FAIL: ${f.file}: ${f.reason}`);
+      process.exit(1);
+    }
+    return;
+  }
+  console.error(
+    'usage: node tools/vectorize.mjs selfcheck | node tools/vectorize.mjs generate --asset knight_001 | node tools/vectorize.mjs roundtrip --asset knight_001',
+  );
   process.exit(2);
 }
 
