@@ -29,8 +29,8 @@
 
 ## 6. 拼表导出
 
-- [ ] 6.1 实现一动作一表拼合（行序 fr/bk/lf/rt、无间距 1x、cell=asset.size）+ map.json，验证 64px walk 表几何为 192x256
-- [ ] 6.2 实现 Maker/完整双模式（含 3 列截断补齐映射公示与 `$`命名），验证 4 帧 attack 在 Maker 模式下的映射说明正确
+- [x] 6.1 实现一动作一表拼合（行序 fr/bk/lf/rt、无间距 1x、cell=asset.size）+ map.json，验证 64px walk 表几何为 192x256
+- [x] 6.2 实现 Maker/完整双模式（含 3 列截断补齐映射公示与 `$`命名），验证 4 帧 attack 在 Maker 模式下的映射说明正确
 
 ## 7. 首人物贯通验收
 
