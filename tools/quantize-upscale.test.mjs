@@ -164,7 +164,7 @@ describe('2.3 walk no-shimmer proof', () => {
     const run = () => {
       const g = quantizeGeometry(src, 16, 12, 32, { kind: 'character' });
       const m = mapFrameToPalette(g.data, g.width, g.height, palettes.character);
-      return upscaleNearest(m.data, m.data.length ? 32 : 32, 32, 2);
+      return upscaleNearest(m.data, g.width, g.height, 2);
     };
     assert.deepEqual(run().data, run().data);
   });

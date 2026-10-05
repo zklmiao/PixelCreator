@@ -117,3 +117,53 @@ describe('5.1 missing cells throw strictly naming the clip', () => {
     assert.throws(() => clipFrames(broken, 'td', 'attack', 'fr'), /missing clip: td\/attack\/fr/);
   });
 });
+
+describe('5.1 full-matrix sweep + spec action flags', () => {
+  // Spec animation-keyframes: idle 1f/2fps/loop, walk 2-5f/6fps/loop,
+  // attack 2-5f/8fps/once+next:idle. Sampling a few clips (above) can pass
+  // while other cells rot, so resolve every cell here.
+  it('action flags match spec (fps/loop/next/frames)', () => {
+    assert.deepEqual(
+      { frames: asset.actions.idle.frames, fps: asset.actions.idle.fps, loop: asset.actions.idle.loop },
+      { frames: 1, fps: 2, loop: true },
+    );
+    assert.deepEqual(
+      { frames: asset.actions.walk.frames, fps: asset.actions.walk.fps, loop: asset.actions.walk.loop },
+      { frames: 3, fps: 6, loop: true },
+    );
+    assert.deepEqual(
+      {
+        frames: asset.actions.attack.frames,
+        fps: asset.actions.attack.fps,
+        loop: asset.actions.attack.loop,
+        next: asset.actions.attack.next,
+      },
+      { frames: 4, fps: 8, loop: false, next: 'idle' },
+    );
+  });
+
+  it('all 24 clips (2 persp x 4 dirs x 3 actions) resolve with spec durations', () => {
+    const persps = ['td', 'sd'];
+    const dirs = ['fr', 'bk', 'lf', 'rt'];
+    const actions = ['idle', 'walk', 'attack'];
+    let files = 0;
+    for (const p of persps) {
+      for (const d of dirs) {
+        for (const a of actions) {
+          const def = asset.actions[a];
+          const frames = clipFrames(asset, p, a, d);
+          assert.equal(frames.length, def.frames, `${p}/${a}/${d}: frame count`);
+          for (const f of frames) {
+            assert.ok(f.file.endsWith('.svg'), `${p}/${a}/${d}: ${f.file} must be an svg`);
+            assert.equal(f.durationMs, 1000 / def.fps, `${p}/${a}/${d}: duration`);
+          }
+          files += frames.length;
+          // Every clip must be steppable end-to-end without throwing.
+          let st = { asset, persp: p, action: a, dir: d, index: 0 };
+          for (let s = 0; s < frames.length; s++) st = nextFrame(st);
+        }
+      }
+    }
+    assert.equal(files, 8 + 24 + 32, 'idle8 + walk24 + attack32 = 64 files');
+  });
+});

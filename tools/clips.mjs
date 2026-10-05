@@ -59,17 +59,21 @@ export function nextFrame(state) {
   }
   if (index + 1 < frames.length) {
     const n = index + 1;
-    return { persp, action, dir, index: n, file: frames[n].file, durationMs: frames[n].durationMs };
+    // Thread asset through so the returned state feeds straight back into
+    // nextFrame (the preview-matrix tick loop); without it the second tick
+    // throws `missing clip ... action absent`.
+    return { asset, persp, action, dir, index: n, file: frames[n].file, durationMs: frames[n].durationMs };
   }
   // Last frame reached.
   if (def.loop === true) {
-    return { persp, action, dir, index: 0, file: frames[0].file, durationMs: frames[0].durationMs };
+    return { asset, persp, action, dir, index: 0, file: frames[0].file, durationMs: frames[0].durationMs };
   }
   // Once (attack): fall back to the same persp+dir idle frame 0.
   // Honors def.next when present, defaults to idle per 3.2/5.1 contract.
   const fallbackAction = typeof def.next === 'string' ? def.next : 'idle';
   const fallbackFrames = clipFrames(asset, persp, fallbackAction, dir);
   return {
+    asset,
     persp,
     action: fallbackAction,
     dir,

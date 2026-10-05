@@ -11,7 +11,7 @@ import {
   getMappableColors,
   euclideanDistance,
   nearestColor,
-  ALPHA_THRESHOLD,
+  mapFrameToPalette,
 } from './palette.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -59,11 +59,14 @@ describe('transparent placeholder exclusion', () => {
       mappable.find((c) => c.r === tp.r && c.g === tp.g && c.b === tp.b && c.a === tp.a),
       undefined,
     );
-    // Feathered-edge rule: alpha < 128 is discarded BEFORE mapping.
-    const soft = { r: 192, g: 48, b: 40, a: 100 };
-    assert.ok(soft.a < ALPHA_THRESHOLD);
-    const mapped = soft.a < ALPHA_THRESHOLD ? null : nearestColor(soft.r, soft.g, soft.b, mappable);
-    assert.equal(mapped, null);
+    // Feathered-edge rule via the real pipeline: alpha < 128 is discarded
+    // BEFORE mapping (same code path as production, not a re-implementation).
+    const frame = new Uint8ClampedArray([192, 48, 40, 100, 192, 48, 40, 255]);
+    const { data, names } = mapFrameToPalette(frame, 2, 1, p);
+    assert.equal(names[0], null);
+    assert.deepEqual([...data.slice(0, 4)], [0, 0, 0, 0]);
+    assert.equal(names[1], 'tunic-red');
+    assert.deepEqual([...data.slice(4, 8)], [192, 48, 40, 255]);
     const opaque = { r: 200, g: 50, b: 42, a: 255 };
     const hit = nearestColor(opaque.r, opaque.g, opaque.b, mappable, euclideanDistance);
     assert.equal(hit.name, 'tunic-red');

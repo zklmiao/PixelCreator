@@ -168,7 +168,6 @@ describe('3.1 per-pixel rect vectorizer', () => {
     const a = run();
     const b = run();
     assert.equal(a, b);
-    assert.deepEqual(Buffer.from(a), Buffer.from(b));
     assertWellFormedXml(a, 32, 32);
     assert.ok(countRects(a) > 0);
   });
@@ -319,6 +318,10 @@ describe('3.1 view svg layers (pixelsToSvg)', () => {
       const re = new RegExp(`<g\\b[^>]*\\bdata-part="${part}"[^>]*>`);
       assert.ok(re.test(svg), `${part} layer must be selectable via data-part`);
     }
+    // NOTE: default (no relabel hook) routes everything to body by design
+    // (v1 semi-manual: relabel stays caller-provided). Empty limb/outfit/
+    // weapon-slot layers below assert the DEFAULT, not real anatomy
+    // separation — shipped batch SVGs are body-only until a relabel map lands.
     // Default routes everything to body; reserved weapon-slot stays empty but present.
     const body = groups.find((g) => g.part === 'body');
     assert.ok(body.colors.length > 0);
@@ -403,6 +406,11 @@ describe('3.1 view svg layers (pixelsToSvg)', () => {
     }
   });
 
+  // NOTE: generate reuses the idle-fr-0 synthesis for masters (see
+  // vectorize.mjs generateKnightSvgs), so this asserts grid-equality by
+  // construction, NOT infinite-precision mastery. Spec svg-engineering
+  // "master retains infinite precision" remains open; this test only guards
+  // against master/front drift at 64px.
   it('master vs front: master_td grid pixels equal td idle fr0', () => {
     const dir = resolve(root, 'assets/knight_001');
     const masterPath = resolve(dir, 'master_td.svg');

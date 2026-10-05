@@ -24,9 +24,19 @@ else ok('masters.td slot = master_td.svg');
 if (asset.masters?.sd !== 'master_side.svg') fail('masters.sd slot mismatch');
 else ok('masters.sd slot = master_side.svg');
 
-const r = validateAsset(asset); // no checkFiles: shell-only stage, view SVGs not yet on disk.
+const r = validateAsset(asset); // shell-only: manifest shape, no disk touch.
 if (!r.ok) {
   for (const e of r.errors) console.log(`FAIL: ${e}`);
   process.exit(1);
 }
 ok(`${asset.id} shell loadable (2 perspectives x 4 dirs x 3 actions, size ${asset.size}, ${asset.palette})`);
+
+// Post-3.1: view SVGs + masters must actually be on disk. This stage fails
+// on a shell-only checkout (0 SVGs), closing the hole where verify-1.1
+// passed without any files present.
+const rf = validateAsset(asset, { checkFiles: true, baseDir: dirname(manifestPath), manifestPath });
+if (!rf.ok) {
+  for (const e of rf.errors) console.log(`FAIL: ${e}`);
+  process.exit(1);
+}
+ok(`${asset.id} files on disk (view SVGs + masters present, --check-files)`);
