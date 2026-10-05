@@ -111,6 +111,43 @@ export function quantizeGeometry(src, srcW, srcH, size, opts = {}) {
   return { data, width: size, height: size };
 }
 
+// 2.3 display stage: integer-factor nearest-neighbor upscale.
+// Mirrors the frontend `imageSmoothingEnabled = false` presentation path:
+// every source pixel becomes a crisp factor×factor block, no blending.
+// factor must be a positive integer; anything else throws.
+export function upscaleNearest(src, w, h, factor) {
+  if (!Number.isInteger(w) || w <= 0 || !Number.isInteger(h) || h <= 0) {
+    throw new Error(`source dims must be positive ints, got ${w}x${h}`);
+  }
+  if (!Number.isInteger(factor) || factor <= 0) {
+    throw new Error(`factor must be a positive integer, got ${JSON.stringify(factor)}`);
+  }
+  if (!(src instanceof Uint8ClampedArray)) throw new Error('src must be Uint8ClampedArray RGBA');
+  if (src.length !== w * h * 4) throw new Error('src buffer length mismatch');
+  const outW = w * factor;
+  const outH = h * factor;
+  const out = new Uint8ClampedArray(outW * outH * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const si = (y * w + x) * 4;
+      const r = src[si];
+      const g = src[si + 1];
+      const b = src[si + 2];
+      const a = src[si + 3];
+      for (let dy = 0; dy < factor; dy++) {
+        for (let dx = 0; dx < factor; dx++) {
+          const di = ((y * factor + dy) * outW + (x * factor + dx)) * 4;
+          out[di] = r;
+          out[di + 1] = g;
+          out[di + 2] = b;
+          out[di + 3] = a;
+        }
+      }
+    }
+  }
+  return { data: out, width: outW, height: outH };
+}
+
 function solidRgba(w, h, r, g, b, a) {
   const buf = new Uint8ClampedArray(w * h * 4);
   for (let i = 0; i < buf.length; i += 4) {
