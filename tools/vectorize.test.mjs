@@ -3,11 +3,18 @@
 // zero new dependencies.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPalette, getMappableColors, mapFrameToPalette } from './palette.mjs';
 import { quantizeGeometry } from './quantize.mjs';
-import { vectorizeFrame, relabelLayers, SEMANTIC_GROUPS } from './vectorize.mjs';
+import {
+  vectorizeFrame,
+  relabelLayers,
+  SEMANTIC_GROUPS,
+  pixelsToSvg,
+  parseSvgGroups,
+} from './vectorize.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const character = loadPalette(resolve(root, 'palettes/palette_character.v1.json'));
@@ -255,5 +262,180 @@ describe('3.1 semantic relabel', () => {
       return relabelLayers(svg, regionMap);
     };
     assert.equal(run(), run());
+  });
+});
+
+describe('3.1 view svg layers (pixelsToSvg)', () => {
+  const byName = new Map(mappable.map((c) => [c.name, c]));
+
+  // 4x4 view: two tunic-red pixels share one color group, one skin-1 differs.
+  function smallView(extra = {}) {
+    const w = 4;
+    const h = 4;
+    const buf = new Uint8ClampedArray(w * h * 4);
+    const put = (x, y, name) => {
+      const c = byName.get(name);
+      const i = (y * w + x) * 4;
+      buf[i] = c.r;
+      buf[i + 1] = c.g;
+      buf[i + 2] = c.b;
+      buf[i + 3] = 255;
+    };
+    put(0, 0, 'tunic-red');
+    put(1, 0, 'tunic-red');
+    put(2, 0, 'skin-1');
+    return pixelsToSvg(buf, w, h, {
+      asset: 'knight_001',
+      perspective: 'td',
+      action: 'idle',
+      dir: 'fr',
+      frame: 0,
+      size: 4,
+      palette: character,
+      seed: 1234,
+      prompt_hash: 'td-idle-fr',
+      denoise: 0.55,
+      source: 'synthetic:knight_001:td/idle/fr/0',
+      ...extra,
+    });
+  }
+
+  function rectSet(svg) {
+    const out = [];
+    for (const tag of svg.match(/<rect\b[^>]*>/g) ?? []) {
+      const x = tag.match(/x="(\d+)"/)?.[1];
+      const y = tag.match(/y="(\d+)"/)?.[1];
+      const fill = tag.match(/fill="([^"]+)"/)?.[1];
+      out.push(`${x},${y},${(fill ?? '').toLowerCase()}`);
+    }
+    return out.sort();
+  }
+
+  it('parts addressable: five part layers separately selectable (empty kept)', () => {
+    const svg = smallView();
+    const groups = parseSvgGroups(svg);
+    assert.deepEqual(groups.map((g) => g.part), SEMANTIC_GROUPS);
+    for (const part of SEMANTIC_GROUPS) {
+      const re = new RegExp(`<g\\b[^>]*\\bdata-part="${part}"[^>]*>`);
+      assert.ok(re.test(svg), `${part} layer must be selectable via data-part`);
+    }
+    // Default routes everything to body; reserved weapon-slot stays empty but present.
+    const body = groups.find((g) => g.part === 'body');
+    assert.ok(body.colors.length > 0);
+    for (const part of ['limb-l', 'limb-r', 'outfit', 'weapon-slot']) {
+      assert.deepEqual(groups.find((g) => g.part === part).colors, [], `${part} empty but present`);
+    }
+  });
+
+  it('same color shares one group, different colors split groups', () => {
+    const svg = smallView();
+    const groups = parseSvgGroups(svg);
+    const body = groups.find((g) => g.part === 'body');
+    assert.deepEqual([...body.colors].sort(), ['skin-1', 'tunic-red']);
+    const redRe = /<g\b[^>]*\bdata-color="tunic-red"[^>]*>([\s\S]*?)<\/g>/;
+    const redInner = svg.match(redRe)?.[1] ?? '';
+    assert.equal((redInner.match(/<rect\b/g) ?? []).length, 2);
+    const skinRe = /<g\b[^>]*\bdata-color="skin-1"[^>]*>([\s\S]*?)<\/g>/;
+    const skinInner = svg.match(skinRe)?.[1] ?? '';
+    assert.equal((skinInner.match(/<rect\b/g) ?? []).length, 1);
+  });
+
+  it('metadata recovers source prototype, seed and palette ref', () => {
+    const svg = smallView();
+    for (const attr of [
+      'data-asset="knight_001"',
+      'data-perspective="td"',
+      'data-action="idle"',
+      'data-dir="fr"',
+      'data-frame="0"',
+      'data-size="4"',
+      'data-palette="palette_character@v1"',
+      'data-seed="1234"',
+      'data-prompt-hash="td-idle-fr"',
+      'data-denoise="0.55"',
+      'viewBox="0 0 4 4"',
+    ]) {
+      assert.ok(svg.includes(attr), `svg must carry ${attr}`);
+    }
+    for (const tag of [
+      '<source>synthetic:knight_001:td/idle/fr/0</source>',
+      '<seed>1234</seed>',
+      '<palette>palette_character@v1</palette>',
+      '<prompt_hash>td-idle-fr</prompt_hash>',
+    ]) {
+      assert.ok(svg.includes(tag), `metadata must carry ${tag}`);
+    }
+  });
+
+  it('deterministic and palette-exact only (no intermediate colors)', () => {
+    const src = new Uint8ClampedArray(16 * 12 * 4);
+    for (let i = 0; i < src.length; i += 4) {
+      src[i] = 200;
+      src[i + 1] = 48;
+      src[i + 2] = 40;
+      src[i + 3] = 255;
+    }
+    const run = () => {
+      const g = quantizeGeometry(src, 16, 12, 32, { kind: 'character' });
+      const mapped = mapFrameToPalette(g.data, g.width, g.height, character);
+      return pixelsToSvg(mapped.data, g.width, g.height, {
+        asset: 'knight_001',
+        perspective: 'td',
+        action: 'walk',
+        dir: 'fr',
+        frame: 1,
+        size: 32,
+        palette: character,
+        seed: 1234,
+        prompt_hash: 'td-walk-fr',
+        denoise: 0.3,
+        source: 'synthetic:knight_001:td/walk/fr/1',
+        names: mapped.names,
+      });
+    };
+    const a = run();
+    const b = run();
+    assert.equal(a, b);
+    const allowed = new Set(mappable.map((c) => `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`));
+    for (const tag of a.match(/<rect\b[^>]*>/g) ?? []) {
+      const fill = tag.match(/fill="([^"]+)"/)[1].toLowerCase();
+      assert.ok(allowed.has(fill), `fill must be palette-exact, got ${fill}`);
+    }
+  });
+
+  it('master vs front: master_td grid pixels equal td idle fr0', () => {
+    const dir = resolve(root, 'assets/knight_001');
+    const masterPath = resolve(dir, 'master_td.svg');
+    const frontPath = resolve(dir, 'knight_td_idle_fr0.svg');
+    assert.ok(existsSync(masterPath), 'master_td.svg must exist (run generate)');
+    assert.ok(existsSync(frontPath), 'knight_td_idle_fr0.svg must exist (run generate)');
+    const master = readFileSync(masterPath, 'utf8');
+    const front = readFileSync(frontPath, 'utf8');
+    assert.ok(master.includes('data-master="true"'), 'master must be marked data-master');
+    assert.deepEqual(rectSet(master), rectSet(front), 'master and front pixel sets must match at 64px');
+  });
+
+  it('all 64 view svgs exist on disk with valid layers', () => {
+    const dir = resolve(root, 'assets/knight_001');
+    const asset = JSON.parse(readFileSync(resolve(dir, 'asset.json'), 'utf8'));
+    let n = 0;
+    for (const act of Object.keys(asset.actions)) {
+      for (const p of asset.perspectives) {
+        for (const d of asset.views) {
+          for (const clip of asset.actions[act].clips[p][d]) {
+            const fp = resolve(dir, clip.file);
+            assert.ok(existsSync(fp), `${clip.file} must exist (run generate)`);
+            const svg = readFileSync(fp, 'utf8');
+            assert.deepEqual(
+              parseSvgGroups(svg).map((g) => g.part),
+              SEMANTIC_GROUPS,
+              `${clip.file} must carry five layers`,
+            );
+            n++;
+          }
+        }
+      }
+    }
+    assert.equal(n, 64, 'idle8+walk24+attack32 = 64 views');
   });
 });
