@@ -19,16 +19,16 @@
       "loop": true,
       "clips": {
         "td": {
-          "fr": [{ "file": "knight_td_idle_fr0.svg", "seed": 1234, "prompt_hash": "td-idle-fr", "denoise": 0.55 }],
-          "bk": [{ "file": "knight_td_idle_bk0.svg", "seed": 1234, "prompt_hash": "td-idle-bk", "denoise": 0.55 }],
-          "lf": [{ "file": "knight_td_idle_lf0.svg", "seed": 1234, "prompt_hash": "td-idle-lf", "denoise": 0.55 }],
-          "rt": [{ "file": "knight_td_idle_rt0.svg", "seed": 1234, "prompt_hash": "td-idle-rt", "denoise": 0.55 }]
+          "fr": [{ "file": "knight_td_idle_fr0.svg", "seed": 1234, "prompt_hash": "5b5d89d9", "denoise": 0.55 }],
+          "bk": [{ "file": "knight_td_idle_bk0.svg", "seed": 1234, "prompt_hash": "43164eed", "denoise": 0.55 }],
+          "lf": [{ "file": "knight_td_idle_lf0.svg", "seed": 1234, "prompt_hash": "f520e3a0", "denoise": 0.55 }],
+          "rt": [{ "file": "knight_td_idle_rt0.svg", "seed": 1234, "prompt_hash": "24c1adc6", "denoise": 0.55 }]
         },
         "sd": {
-          "fr": [{ "file": "knight_sd_idle_fr0.svg", "seed": 1234, "prompt_hash": "sd-idle-fr", "denoise": 0.55 }],
-          "bk": [{ "file": "knight_sd_idle_bk0.svg", "seed": 1234, "prompt_hash": "sd-idle-bk", "denoise": 0.55 }],
-          "lf": [{ "file": "knight_sd_idle_lf0.svg", "seed": 1234, "prompt_hash": "sd-idle-lf", "denoise": 0.55 }],
-          "rt": [{ "file": "knight_sd_idle_rt0.svg", "seed": 1234, "prompt_hash": "sd-idle-rt", "denoise": 0.55 }]
+          "fr": [{ "file": "knight_sd_idle_fr0.svg", "seed": 1234, "prompt_hash": "ed9e1c4e", "denoise": 0.55 }],
+          "bk": [{ "file": "knight_sd_idle_bk0.svg", "seed": 1234, "prompt_hash": "16475842", "denoise": 0.55 }],
+          "lf": [{ "file": "knight_sd_idle_lf0.svg", "seed": 1234, "prompt_hash": "bb627fb5", "denoise": 0.55 }],
+          "rt": [{ "file": "knight_sd_idle_rt0.svg", "seed": 1234, "prompt_hash": "81daa31b", "denoise": 0.55 }]
         }
       }
     },
@@ -39,46 +39,46 @@
       "clips": {
         "td": {
           "fr": [
-            { "file": "knight_td_walk_fr1.svg", "seed": 1234, "prompt_hash": "td-walk-fr", "denoise": 0.3 },
-            { "file": "knight_td_walk_fr2.svg", "seed": 1234, "prompt_hash": "td-walk-fr", "denoise": 0.3 },
-            { "file": "knight_td_walk_fr3.svg", "seed": 1234, "prompt_hash": "td-walk-fr", "denoise": 0.3 }
+            { "file": "knight_td_walk_fr1.svg", "seed": 1234, "prompt_hash": "c9bb7f33", "denoise": 0.3 },
+            { "file": "knight_td_walk_fr2.svg", "seed": 1234, "prompt_hash": "c9bb7f33", "denoise": 0.3 },
+            { "file": "knight_td_walk_fr3.svg", "seed": 1234, "prompt_hash": "c9bb7f33", "denoise": 0.3 }
           ],
           "bk": [
-            { "file": "knight_td_walk_bk1.svg", "seed": 1234, "prompt_hash": "td-walk-bk", "denoise": 0.3 },
-            { "file": "knight_td_walk_bk2.svg", "seed": 1234, "prompt_hash": "td-walk-bk", "denoise": 0.3 },
-            { "file": "knight_td_walk_bk3.svg", "seed": 1234, "prompt_hash": "td-walk-bk", "denoise": 0.3 }
+            { "file": "knight_td_walk_bk1.svg", "seed": 1234, "prompt_hash": "95951fc7", "denoise": 0.3 },
+            { "file": "knight_td_walk_bk2.svg", "seed": 1234, "prompt_hash": "95951fc7", "denoise": 0.3 },
+            { "file": "knight_td_walk_bk3.svg", "seed": 1234, "prompt_hash": "95951fc7", "denoise": 0.3 }
           ],
           "lf": [
-            { "file": "knight_td_walk_lf1.svg", "seed": 1234, "prompt_hash": "td-walk-lf", "denoise": 0.3 },
-            { "file": "knight_td_walk_lf2.svg", "seed": 1234, "prompt_hash": "td-walk-lf", "denoise": 0.3 },
-            { "file": "knight_td_walk_lf3.svg", "seed": 1234, "prompt_hash": "td-walk-lf", "denoise": 0.3 }
+            { "file": "knight_td_walk_lf1.svg", "seed": 1234, "prompt_hash": "25c6f29a", "denoise": 0.3 },
+            { "file": "knight_td_walk_lf2.svg", "seed": 1234, "prompt_hash": "25c6f29a", "denoise": 0.3 },
+            { "file": "knight_td_walk_lf3.svg", "seed": 1234, "prompt_hash": "25c6f29a", "denoise": 0.3 }
           ],
           "rt": [
-            { "file": "knight_td_walk_rt1.svg", "seed": 1234, "prompt_hash": "td-walk-rt", "denoise": 0.3 },
-            { "file": "knight_td_walk_rt2.svg", "seed": 1234, "prompt_hash": "td-walk-rt", "denoise": 0.3 },
-            { "file": "knight_td_walk_rt3.svg", "seed": 1234, "prompt_hash": "td-walk-rt", "denoise": 0.3 }
+            { "file": "knight_td_walk_rt1.svg", "seed": 1234, "prompt_hash": "4b454100", "denoise": 0.3 },
+            { "file": "knight_td_walk_rt2.svg", "seed": 1234, "prompt_hash": "4b454100", "denoise": 0.3 },
+            { "file": "knight_td_walk_rt3.svg", "seed": 1234, "prompt_hash": "4b454100", "denoise": 0.3 }
           ]
         },
         "sd": {
           "fr": [
-            { "file": "knight_sd_walk_fr1.svg", "seed": 1234, "prompt_hash": "sd-walk-fr", "denoise": 0.3 },
-            { "file": "knight_sd_walk_fr2.svg", "seed": 1234, "prompt_hash": "sd-walk-fr", "denoise": 0.3 },
-            { "file": "knight_sd_walk_fr3.svg", "seed": 1234, "prompt_hash": "sd-walk-fr", "denoise": 0.3 }
+            { "file": "knight_sd_walk_fr1.svg", "seed": 1234, "prompt_hash": "0e066a88", "denoise": 0.3 },
+            { "file": "knight_sd_walk_fr2.svg", "seed": 1234, "prompt_hash": "0e066a88", "denoise": 0.3 },
+            { "file": "knight_sd_walk_fr3.svg", "seed": 1234, "prompt_hash": "0e066a88", "denoise": 0.3 }
           ],
           "bk": [
-            { "file": "knight_sd_walk_bk1.svg", "seed": 1234, "prompt_hash": "sd-walk-bk", "denoise": 0.3 },
-            { "file": "knight_sd_walk_bk2.svg", "seed": 1234, "prompt_hash": "sd-walk-bk", "denoise": 0.3 },
-            { "file": "knight_sd_walk_bk3.svg", "seed": 1234, "prompt_hash": "sd-walk-bk", "denoise": 0.3 }
+            { "file": "knight_sd_walk_bk1.svg", "seed": 1234, "prompt_hash": "bcd8f5fc", "denoise": 0.3 },
+            { "file": "knight_sd_walk_bk2.svg", "seed": 1234, "prompt_hash": "bcd8f5fc", "denoise": 0.3 },
+            { "file": "knight_sd_walk_bk3.svg", "seed": 1234, "prompt_hash": "bcd8f5fc", "denoise": 0.3 }
           ],
           "lf": [
-            { "file": "knight_sd_walk_lf1.svg", "seed": 1234, "prompt_hash": "sd-walk-lf", "denoise": 0.3 },
-            { "file": "knight_sd_walk_lf2.svg", "seed": 1234, "prompt_hash": "sd-walk-lf", "denoise": 0.3 },
-            { "file": "knight_sd_walk_lf3.svg", "seed": 1234, "prompt_hash": "sd-walk-lf", "denoise": 0.3 }
+            { "file": "knight_sd_walk_lf1.svg", "seed": 1234, "prompt_hash": "c327238f", "denoise": 0.3 },
+            { "file": "knight_sd_walk_lf2.svg", "seed": 1234, "prompt_hash": "c327238f", "denoise": 0.3 },
+            { "file": "knight_sd_walk_lf3.svg", "seed": 1234, "prompt_hash": "c327238f", "denoise": 0.3 }
           ],
           "rt": [
-            { "file": "knight_sd_walk_rt1.svg", "seed": 1234, "prompt_hash": "sd-walk-rt", "denoise": 0.3 },
-            { "file": "knight_sd_walk_rt2.svg", "seed": 1234, "prompt_hash": "sd-walk-rt", "denoise": 0.3 },
-            { "file": "knight_sd_walk_rt3.svg", "seed": 1234, "prompt_hash": "sd-walk-rt", "denoise": 0.3 }
+            { "file": "knight_sd_walk_rt1.svg", "seed": 1234, "prompt_hash": "c1758335", "denoise": 0.3 },
+            { "file": "knight_sd_walk_rt2.svg", "seed": 1234, "prompt_hash": "c1758335", "denoise": 0.3 },
+            { "file": "knight_sd_walk_rt3.svg", "seed": 1234, "prompt_hash": "c1758335", "denoise": 0.3 }
           ]
         }
       }
@@ -91,54 +91,54 @@
       "clips": {
         "td": {
           "fr": [
-            { "file": "knight_td_attack_fr1.svg", "seed": 1234, "prompt_hash": "td-attack-fr", "denoise": 0.3 },
-            { "file": "knight_td_attack_fr2.svg", "seed": 1234, "prompt_hash": "td-attack-fr", "denoise": 0.3 },
-            { "file": "knight_td_attack_fr3.svg", "seed": 1234, "prompt_hash": "td-attack-fr", "denoise": 0.3 },
-            { "file": "knight_td_attack_fr4.svg", "seed": 1234, "prompt_hash": "td-attack-fr", "denoise": 0.3 }
+            { "file": "knight_td_attack_fr1.svg", "seed": 1234, "prompt_hash": "298350a6", "denoise": 0.3 },
+            { "file": "knight_td_attack_fr2.svg", "seed": 1234, "prompt_hash": "298350a6", "denoise": 0.3 },
+            { "file": "knight_td_attack_fr3.svg", "seed": 1234, "prompt_hash": "298350a6", "denoise": 0.3 },
+            { "file": "knight_td_attack_fr4.svg", "seed": 1234, "prompt_hash": "298350a6", "denoise": 0.3 }
           ],
           "bk": [
-            { "file": "knight_td_attack_bk1.svg", "seed": 1234, "prompt_hash": "td-attack-bk", "denoise": 0.3 },
-            { "file": "knight_td_attack_bk2.svg", "seed": 1234, "prompt_hash": "td-attack-bk", "denoise": 0.3 },
-            { "file": "knight_td_attack_bk3.svg", "seed": 1234, "prompt_hash": "td-attack-bk", "denoise": 0.3 },
-            { "file": "knight_td_attack_bk4.svg", "seed": 1234, "prompt_hash": "td-attack-bk", "denoise": 0.3 }
+            { "file": "knight_td_attack_bk1.svg", "seed": 1234, "prompt_hash": "6aca18ba", "denoise": 0.3 },
+            { "file": "knight_td_attack_bk2.svg", "seed": 1234, "prompt_hash": "6aca18ba", "denoise": 0.3 },
+            { "file": "knight_td_attack_bk3.svg", "seed": 1234, "prompt_hash": "6aca18ba", "denoise": 0.3 },
+            { "file": "knight_td_attack_bk4.svg", "seed": 1234, "prompt_hash": "6aca18ba", "denoise": 0.3 }
           ],
           "lf": [
-            { "file": "knight_td_attack_lf1.svg", "seed": 1234, "prompt_hash": "td-attack-lf", "denoise": 0.3 },
-            { "file": "knight_td_attack_lf2.svg", "seed": 1234, "prompt_hash": "td-attack-lf", "denoise": 0.3 },
-            { "file": "knight_td_attack_lf3.svg", "seed": 1234, "prompt_hash": "td-attack-lf", "denoise": 0.3 },
-            { "file": "knight_td_attack_lf4.svg", "seed": 1234, "prompt_hash": "td-attack-lf", "denoise": 0.3 }
+            { "file": "knight_td_attack_lf1.svg", "seed": 1234, "prompt_hash": "4cf65ead", "denoise": 0.3 },
+            { "file": "knight_td_attack_lf2.svg", "seed": 1234, "prompt_hash": "4cf65ead", "denoise": 0.3 },
+            { "file": "knight_td_attack_lf3.svg", "seed": 1234, "prompt_hash": "4cf65ead", "denoise": 0.3 },
+            { "file": "knight_td_attack_lf4.svg", "seed": 1234, "prompt_hash": "4cf65ead", "denoise": 0.3 }
           ],
           "rt": [
-            { "file": "knight_td_attack_rt1.svg", "seed": 1234, "prompt_hash": "td-attack-rt", "denoise": 0.3 },
-            { "file": "knight_td_attack_rt2.svg", "seed": 1234, "prompt_hash": "td-attack-rt", "denoise": 0.3 },
-            { "file": "knight_td_attack_rt3.svg", "seed": 1234, "prompt_hash": "td-attack-rt", "denoise": 0.3 },
-            { "file": "knight_td_attack_rt4.svg", "seed": 1234, "prompt_hash": "td-attack-rt", "denoise": 0.3 }
+            { "file": "knight_td_attack_rt1.svg", "seed": 1234, "prompt_hash": "94b1db53", "denoise": 0.3 },
+            { "file": "knight_td_attack_rt2.svg", "seed": 1234, "prompt_hash": "94b1db53", "denoise": 0.3 },
+            { "file": "knight_td_attack_rt3.svg", "seed": 1234, "prompt_hash": "94b1db53", "denoise": 0.3 },
+            { "file": "knight_td_attack_rt4.svg", "seed": 1234, "prompt_hash": "94b1db53", "denoise": 0.3 }
           ]
         },
         "sd": {
           "fr": [
-            { "file": "knight_sd_attack_fr1.svg", "seed": 1234, "prompt_hash": "sd-attack-fr", "denoise": 0.3 },
-            { "file": "knight_sd_attack_fr2.svg", "seed": 1234, "prompt_hash": "sd-attack-fr", "denoise": 0.3 },
-            { "file": "knight_sd_attack_fr3.svg", "seed": 1234, "prompt_hash": "sd-attack-fr", "denoise": 0.3 },
-            { "file": "knight_sd_attack_fr4.svg", "seed": 1234, "prompt_hash": "sd-attack-fr", "denoise": 0.3 }
+            { "file": "knight_sd_attack_fr1.svg", "seed": 1234, "prompt_hash": "0298f7db", "denoise": 0.3 },
+            { "file": "knight_sd_attack_fr2.svg", "seed": 1234, "prompt_hash": "0298f7db", "denoise": 0.3 },
+            { "file": "knight_sd_attack_fr3.svg", "seed": 1234, "prompt_hash": "0298f7db", "denoise": 0.3 },
+            { "file": "knight_sd_attack_fr4.svg", "seed": 1234, "prompt_hash": "0298f7db", "denoise": 0.3 }
           ],
           "bk": [
-            { "file": "knight_sd_attack_bk1.svg", "seed": 1234, "prompt_hash": "sd-attack-bk", "denoise": 0.3 },
-            { "file": "knight_sd_attack_bk2.svg", "seed": 1234, "prompt_hash": "sd-attack-bk", "denoise": 0.3 },
-            { "file": "knight_sd_attack_bk3.svg", "seed": 1234, "prompt_hash": "sd-attack-bk", "denoise": 0.3 },
-            { "file": "knight_sd_attack_bk4.svg", "seed": 1234, "prompt_hash": "sd-attack-bk", "denoise": 0.3 }
+            { "file": "knight_sd_attack_bk1.svg", "seed": 1234, "prompt_hash": "64a33ecf", "denoise": 0.3 },
+            { "file": "knight_sd_attack_bk2.svg", "seed": 1234, "prompt_hash": "64a33ecf", "denoise": 0.3 },
+            { "file": "knight_sd_attack_bk3.svg", "seed": 1234, "prompt_hash": "64a33ecf", "denoise": 0.3 },
+            { "file": "knight_sd_attack_bk4.svg", "seed": 1234, "prompt_hash": "64a33ecf", "denoise": 0.3 }
           ],
           "lf": [
-            { "file": "knight_sd_attack_lf1.svg", "seed": 1234, "prompt_hash": "sd-attack-lf", "denoise": 0.3 },
-            { "file": "knight_sd_attack_lf2.svg", "seed": 1234, "prompt_hash": "sd-attack-lf", "denoise": 0.3 },
-            { "file": "knight_sd_attack_lf3.svg", "seed": 1234, "prompt_hash": "sd-attack-lf", "denoise": 0.3 },
-            { "file": "knight_sd_attack_lf4.svg", "seed": 1234, "prompt_hash": "sd-attack-lf", "denoise": 0.3 }
+            { "file": "knight_sd_attack_lf1.svg", "seed": 1234, "prompt_hash": "892ee782", "denoise": 0.3 },
+            { "file": "knight_sd_attack_lf2.svg", "seed": 1234, "prompt_hash": "892ee782", "denoise": 0.3 },
+            { "file": "knight_sd_attack_lf3.svg", "seed": 1234, "prompt_hash": "892ee782", "denoise": 0.3 },
+            { "file": "knight_sd_attack_lf4.svg", "seed": 1234, "prompt_hash": "892ee782", "denoise": 0.3 }
           ],
           "rt": [
-            { "file": "knight_sd_attack_rt1.svg", "seed": 1234, "prompt_hash": "sd-attack-rt", "denoise": 0.3 },
-            { "file": "knight_sd_attack_rt2.svg", "seed": 1234, "prompt_hash": "sd-attack-rt", "denoise": 0.3 },
-            { "file": "knight_sd_attack_rt3.svg", "seed": 1234, "prompt_hash": "sd-attack-rt", "denoise": 0.3 },
-            { "file": "knight_sd_attack_rt4.svg", "seed": 1234, "prompt_hash": "sd-attack-rt", "denoise": 0.3 }
+            { "file": "knight_sd_attack_rt1.svg", "seed": 1234, "prompt_hash": "c12fed68", "denoise": 0.3 },
+            { "file": "knight_sd_attack_rt2.svg", "seed": 1234, "prompt_hash": "c12fed68", "denoise": 0.3 },
+            { "file": "knight_sd_attack_rt3.svg", "seed": 1234, "prompt_hash": "c12fed68", "denoise": 0.3 },
+            { "file": "knight_sd_attack_rt4.svg", "seed": 1234, "prompt_hash": "c12fed68", "denoise": 0.3 }
           ]
         }
       }
