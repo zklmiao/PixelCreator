@@ -6,6 +6,10 @@ import { dirname, resolve } from 'node:path';
 export const PERSPECTIVES = ['td', 'sd'];
 export const DIRS = ['fr', 'bk', 'lf', 'rt'];
 export const CHARACTER_SIZES = [32, 48, 64];
+export const KINDS = ['character', 'weapon', 'building', 'prop', 'scenery'];
+export const STATIC_KINDS = ['weapon', 'building', 'prop', 'scenery'];
+export const SMALL_KIND_SIZES = [32, 48, 64];
+export const LARGE_KIND_SIZES = [32, 48, 64, 128];
 
 const FILE_RE = /^[a-z0-9_]+_(td|sd)_(idle|walk|attack)_(fr|bk|lf|rt)[0-9]+\.svg$/;
 
@@ -38,13 +42,19 @@ export function validateAsset(asset, opts = {}) {
 
   if (!asset || typeof asset !== 'object') return { ok: false, errors: ['manifest is not an object'], missing };
   if (typeof asset.id !== 'string' || !asset.id) fail('id must be a non-empty string');
-  if (asset.kind !== 'character') fail(`kind must be "character", got ${JSON.stringify(asset.kind)}`);
+  if (!KINDS.includes(asset.kind)) fail(`kind must be one of ${KINDS.join(',')}, got ${JSON.stringify(asset.kind)}`);
+  const kind = KINDS.includes(asset.kind) ? asset.kind : 'character';
+  const isStatic = STATIC_KINDS.includes(kind);
   if (typeof asset.asset !== 'string' || !/^[a-z0-9]+$/.test(asset.asset)) {
     fail('asset must be a lowercase alphanumeric file prefix (e.g. "knight")');
   }
-  if (!CHARACTER_SIZES.includes(asset.size)) fail(`size must be one of ${CHARACTER_SIZES}, got ${JSON.stringify(asset.size)}`);
-  if (typeof asset.palette !== 'string' || !/^palette_character@v[0-9]+$/.test(asset.palette)) {
-    fail(`palette must match palette_character@vN, got ${JSON.stringify(asset.palette)}`);
+  const allowedSizes = kind === 'building' || kind === 'scenery' ? LARGE_KIND_SIZES : SMALL_KIND_SIZES;
+  if (!allowedSizes.includes(asset.size)) {
+    fail(`size must be one of ${allowedSizes} for kind ${JSON.stringify(kind)}, got ${JSON.stringify(asset.size)}`);
+  }
+  const paletteRe = new RegExp(`^palette_${kind}@v[0-9]+$`);
+  if (typeof asset.palette !== 'string' || !paletteRe.test(asset.palette)) {
+    fail(`palette must match palette_${kind}@vN for kind ${JSON.stringify(kind)}, got ${JSON.stringify(asset.palette)}`);
   }
   if (!sameSet(asset.perspectives ?? [], PERSPECTIVES)) fail(`perspectives must be exactly [td, sd]`);
   if (!sameSet(asset.views ?? [], DIRS)) fail(`views must be exactly [fr, bk, lf, rt]`);
@@ -53,6 +63,12 @@ export function validateAsset(asset, opts = {}) {
   }
 
   for (const [action, rule] of Object.entries(ACTION_RULES)) {
+    if (isStatic && action !== 'idle') {
+      if (asset.actions?.[action] !== undefined) {
+        fail(`static kind ${JSON.stringify(kind)} must not define action "${action}" (idle only)`);
+      }
+      continue;
+    }
     const a = asset.actions?.[action];
     if (!a) {
       for (const p of PERSPECTIVES) for (const d of DIRS) missClip(p, action, d, 'action absent');
@@ -99,7 +115,8 @@ export function validateAsset(asset, opts = {}) {
   }
 
   const pv = asset.preview;
-  if (!pv || !PERSPECTIVES.includes(pv.perspective) || !Object.keys(ACTION_RULES).includes(pv.action) || !DIRS.includes(pv.dir)) {
+  const allowedPreviewActions = isStatic ? ['idle'] : Object.keys(ACTION_RULES);
+  if (!pv || !PERSPECTIVES.includes(pv.perspective) || !allowedPreviewActions.includes(pv.action) || !DIRS.includes(pv.dir)) {
     fail('preview must reference an existing perspective/action/dir');
   }
 
@@ -120,7 +137,8 @@ function main() {
     manifestPath,
   });
   if (result.ok) {
-    const clips = PERSPECTIVES.length * DIRS.length * Object.keys(ACTION_RULES).length;
+    const actionCount = Object.keys(asset.actions ?? {}).length || Object.keys(ACTION_RULES).length;
+    const clips = PERSPECTIVES.length * DIRS.length * actionCount;
     console.log(`OK: ${asset.id} complete (${clips} clips, size ${asset.size}, ${asset.palette})`);
   } else {
     for (const e of result.errors) console.log(`FAIL: ${e}`);

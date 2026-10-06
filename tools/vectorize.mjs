@@ -569,6 +569,7 @@ export async function roundTripAsset(assetDir) {
   const { resolve } = await import('node:path');
   const dir = String(assetDir);
   const asset = JSON.parse(readFileSync(resolve(dir, 'asset.json'), 'utf8'));
+  const staticOnly = ['weapon', 'building', 'prop', 'scenery'].includes(asset.kind);
   const root = resolve(dir, '..', '..');
   const pm = String(asset.palette ?? '').match(/^palette_(\w+)@v(\d+)$/);
   if (!pm) throw new Error(`asset palette ref malformed: ${JSON.stringify(asset.palette)}`);
@@ -618,8 +619,10 @@ export async function roundTripAsset(assetDir) {
         source: meta.source,
         names,
         master: meta.master,
-        relabel: (x, y, n) =>
-          knightRelabel(x, y, n, { size: w, action: meta.action, perspective: meta.perspective }),
+        relabel: staticOnly
+          ? staticRelabel
+          : (x, y, n) =>
+              knightRelabel(x, y, n, { size: w, action: meta.action, perspective: meta.perspective }),
       });
     } catch (e) {
       failures.push({ file, reason: `re-emit: ${e.message}` });
@@ -764,6 +767,273 @@ export function synthKnightPixels({ perspective, action, dir, frameNum, mappable
   return { data: buf, width: size, height: size };
 }
 
+// --- Deterministic synthetic static pixels (static-kinds batch generate only) ---
+//
+// Per-kind motif builders on the same rect-grid + outline + orientation-cue
+// idiom as synthKnightPixels: fillRect/borderRect over a transparent canvas,
+// side-view stance shift (+2 dx), per-dir cues so the 8 cells of one asset
+// (2 perspectives x 4 dirs, idle frame 0) are pairwise distinct. Only palette
+// entries of the asset kind are ever touched (verified by pixelsToSvg which
+// throws on off-palette bytes). No PNG parsing anywhere; pure arithmetic.
+// Size-relative layout so every allowed tier (32/48/64, plus 128 for
+// building/scenery) renders; skeletons stay 64 this round.
+function makeStaticPainter(mappable, size) {
+  const byName = new Map(mappable.map((c) => [c.name, c]));
+  const C = (n) => {
+    const c = byName.get(n);
+    if (!c) throw new Error(`palette missing entry ${JSON.stringify(n)}`);
+    return c;
+  };
+  const buf = new Uint8ClampedArray(size * size * 4); // transparent fill
+  const set = (x, y, c) => {
+    if (x < 0 || y < 0 || x >= size || y >= size) return;
+    const i = (y * size + x) * 4;
+    buf[i] = c.r;
+    buf[i + 1] = c.g;
+    buf[i + 2] = c.b;
+    buf[i + 3] = 255;
+  };
+  const clear = (x, y) => {
+    if (x < 0 || y < 0 || x >= size || y >= size) return;
+    const i = (y * size + x) * 4;
+    buf[i] = 0;
+    buf[i + 1] = 0;
+    buf[i + 2] = 0;
+    buf[i + 3] = 0;
+  };
+  const fillRect = (x0, y0, w, h, c) => {
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) set(x, y, c);
+  };
+  const borderRect = (x0, y0, w, h, c) => {
+    for (let x = x0; x < x0 + w; x++) {
+      set(x, y0, c);
+      set(x, y0 + h - 1, c);
+    }
+    for (let y = y0; y < y0 + h; y++) {
+      set(x0, y, c);
+      set(x0 + w - 1, y, c);
+    }
+  };
+  return { buf, C, set, clear, fillRect, borderRect };
+}
+
+function staticDirIndex(dir) {
+  return { fr: 0, bk: 1, lf: 2, rt: 3 }[dir] ?? 0;
+}
+
+// Blade + guard + grip + pommel gem. Cues: sd shifts +2 dx; tip carve, guard
+// end caps and pommel gem color vary per dir.
+export function synthSwordPixels({ perspective, dir, frameNum = 0, mappable, size }) {
+  void frameNum;
+  const { buf, C, fillRect, borderRect, clear } = makeStaticPainter(mappable, size);
+  const dirIdx = staticDirIndex(dir);
+  const px = perspective === 'sd' ? 1 : 0;
+  const dx = px ? 2 : 0;
+  const cx = Math.floor(size / 2) + dx;
+  const bw = Math.max(3, Math.round(size / 16));
+  const bx = cx - Math.floor(bw / 2);
+  const tipY = Math.max(2, Math.round(size * 0.12));
+  const botY = Math.round(size * 0.55);
+  fillRect(bx, tipY, bw, botY - tipY, C('steel'));
+  fillRect(bx, tipY, 1, botY - tipY, C('edge-light'));
+  fillRect(bx + bw - 1, tipY, 1, botY - tipY, C('steel-shadow'));
+  if (dir !== 'bk') {
+    const fx = bx + Math.floor(bw / 2) + (dir === 'lf' ? -1 : dir === 'rt' ? 1 : 0);
+    fillRect(fx, tipY + 2, 1, Math.max(1, botY - tipY - 4), C('fuller-dark'));
+  }
+  borderRect(bx, tipY, bw, botY - tipY, C('outline'));
+  if (dir === 'fr') {
+    clear(bx, tipY);
+    clear(bx + bw - 1, tipY);
+  } else if (dir === 'lf') {
+    clear(bx + bw - 1, tipY);
+    clear(bx + bw - 1, tipY + 1);
+  } else if (dir === 'rt') {
+    clear(bx, tipY);
+    clear(bx, tipY + 1);
+  }
+  const gw = Math.max(7, Math.round(size * 0.25));
+  const gx = cx - Math.floor(gw / 2);
+  const gy = botY;
+  fillRect(gx, gy, gw, 2, C('brass'));
+  fillRect(gx, gy, gw, 1, C('gold-highlight'));
+  borderRect(gx, gy, gw, 2, C('outline'));
+  if (dir === 'fr' || dir === 'lf') fillRect(gx, gy, 1, 2, C('gold-highlight'));
+  if (dir === 'fr' || dir === 'rt') fillRect(gx + gw - 1, gy, 1, 2, C('gold-highlight'));
+  const gxx = cx - 1;
+  const gl = Math.max(4, Math.round(size * 0.1));
+  fillRect(gxx, gy + 2, 3, gl, C('wood-grip'));
+  for (let k = 1; k < gl; k += 3) fillRect(gxx, gy + 2 + k, 3, 1, C('wrap-dark'));
+  const gem = (dirIdx + px) % 2 === 0 ? C('gem-red') : C('gem-blue');
+  fillRect(gxx, gy + 2 + gl, 3, 2, gem);
+  return { data: buf, width: size, height: size };
+}
+
+// Plaster walls + stone foundation + stepped gable + door/window/moss cues.
+// Cues: sd shifts +2 dx and flips moss side; door slot, window light and moss
+// height vary per dir.
+export function synthHousePixels({ perspective, dir, frameNum = 0, mappable, size }) {
+  void frameNum;
+  const { buf, C, fillRect, borderRect } = makeStaticPainter(mappable, size);
+  const dirIdx = staticDirIndex(dir);
+  const px = perspective === 'sd' ? 1 : 0;
+  const dx = px ? 2 : 0;
+  const cx = Math.floor(size / 2) + dx;
+  const wallW = Math.max(10, Math.round(size * 0.3));
+  const wallH = Math.max(10, Math.round(size * 0.3));
+  const wx = cx - Math.floor(wallW / 2);
+  const wy = Math.round(size * 0.38);
+  fillRect(wx, wy, wallW, wallH, C('plaster'));
+  fillRect(wx + 2, wy, 2, wallH - 3, C('beam'));
+  fillRect(wx + wallW - 4, wy, 2, wallH - 3, C('beam'));
+  fillRect(wx + 3, wy, 1, wallH - 3, C('beam-dark'));
+  fillRect(wx, wy + wallH - 3, wallW, 3, C('stone-mid'));
+  fillRect(wx, wy + wallH - 1, wallW, 1, C('stone-dark'));
+  fillRect(wx, wy, wallW, 1, C('stone-light'));
+  for (let r = 0; r < 5; r++) {
+    const rw = Math.max(4, wallW + 6 - r * 4);
+    const rx = cx - Math.floor(rw / 2);
+    const ry = wy - 2 - r * 2;
+    if (ry < 1) break;
+    fillRect(rx, ry, rw, 2, C('roof-red'));
+    fillRect(rx + rw - 2, ry, 2, 2, C('roof-dark'));
+    borderRect(rx, ry, rw, 2, C('outline'));
+  }
+  const dw = Math.max(3, Math.round(size / 16));
+  const dh = Math.max(6, Math.round(size * 0.13));
+  const leftX = wx + 2;
+  const rightX = wx + wallW - 2 - dw;
+  const midL = wx + Math.floor(wallW / 2) - dw - 1;
+  const midR = wx + Math.floor(wallW / 2) + 1;
+  const doorX = dir === 'fr' ? leftX : dir === 'bk' ? rightX : dir === 'lf' ? midL : midR;
+  const doorY = wy + wallH - 3 - dh;
+  fillRect(doorX, doorY, dw, dh, C('door'));
+  borderRect(doorX, doorY, dw, dh, C('outline'));
+  const winW = Math.max(3, Math.round(size / 16));
+  const winX = doorX <= cx ? wx + wallW - 2 - winW : wx + 2;
+  fillRect(winX, wy + 2, winW, winW, dir === 'fr' || dir === 'lf' ? C('window-lit') : C('window-dark'));
+  borderRect(winX, wy + 2, winW, winW, C('outline'));
+  const mossX = px ? wx + wallW - 2 : wx;
+  fillRect(mossX, wy + wallH - 5 - (dirIdx % 3), 2, 2, C('moss'));
+  borderRect(wx, wy, wallW, wallH, C('outline'));
+  return { data: buf, width: size, height: size };
+}
+
+// Plank box + corner brackets + rope + cloth patch + strap cues. Cues: sd
+// shifts +2 dx and flips strap side; rope height, cloth color/slot vary per dir.
+export function synthCratePixels({ perspective, dir, frameNum = 0, mappable, size }) {
+  void frameNum;
+  const { buf, C, set, fillRect, borderRect } = makeStaticPainter(mappable, size);
+  const dirIdx = staticDirIndex(dir);
+  const px = perspective === 'sd' ? 1 : 0;
+  const dx = px ? 2 : 0;
+  const box = Math.max(12, Math.round(size * 0.45));
+  const bx0 = Math.floor(size / 2) - Math.floor(box / 2) + dx;
+  const by0 = Math.floor(size / 2) - Math.floor(box / 2);
+  fillRect(bx0, by0, box, box, C('wood-mid'));
+  fillRect(bx0 + 1, by0 + 1, box - 2, 1, C('wood-light'));
+  fillRect(bx0 + 1, by0 + box - 2, box - 2, 1, C('wood-dark'));
+  const midX = bx0 + Math.floor(box / 2) - 1;
+  const midY = by0 + Math.floor(box / 2) - 1;
+  fillRect(midX, by0 + 1, 2, box - 2, C('wood-dark'));
+  fillRect(bx0 + 1, midY, box - 2, 2, C('wood-dark'));
+  for (const [qx, qy] of [
+    [bx0, by0],
+    [bx0 + box - 2, by0],
+    [bx0, by0 + box - 2],
+    [bx0 + box - 2, by0 + box - 2],
+  ]) {
+    fillRect(qx, qy, 2, 2, C('metal-light'));
+    set(qx + 1, qy + 1, C('metal-dark'));
+  }
+  const ropeY = midY + (dirIdx - 1) * 2;
+  fillRect(bx0 + 1, Math.min(by0 + box - 2, Math.max(by0 + 1, ropeY)), box - 2, 1, C('rope'));
+  const cloth = dir === 'fr' || dir === 'lf' ? C('cloth-red') : C('cloth-blue');
+  const inset = 3;
+  const slot = { fr: [bx0 + inset, by0 + inset], bk: [bx0 + box - inset - 3, by0 + box - inset - 3], lf: [bx0 + box - inset - 3, by0 + inset], rt: [bx0 + inset, by0 + box - inset - 3] }[dir];
+  fillRect(slot[0], slot[1], 3, 3, cloth);
+  borderRect(slot[0], slot[1], 3, 3, C('outline'));
+  fillRect(px ? bx0 + box - 3 : bx0 + 2, by0 + 2, 1, box - 4, C('leather'));
+  borderRect(bx0, by0, box, box, C('outline'));
+  return { data: buf, width: size, height: size };
+}
+
+// Trunk + canopy + ground + cloud/rock/sand cues. Cues: sd shifts +2 dx;
+// canopy lean, cloud slot and rock side vary per dir.
+export function synthTreePixels({ perspective, dir, frameNum = 0, mappable, size }) {
+  void frameNum;
+  const painter = makeStaticPainter(mappable, size);
+  const { buf, C, set, fillRect, borderRect } = painter;
+  const dirIdx = staticDirIndex(dir);
+  const px = perspective === 'sd' ? 1 : 0;
+  const dx = px ? 2 : 0;
+  const cx = Math.floor(size / 2) + dx;
+  const groundY = size - Math.max(3, Math.round(size * 0.07));
+  fillRect(0, groundY, size, size - groundY, C('grass-mid'));
+  for (let x = 0; x < size; x++) {
+    if ((x + dirIdx) % 7 === 0) set(x, groundY, C('grass-dark'));
+    if ((x + dirIdx + 3) % 11 === 0) set(x, groundY + 1, C('grass-light'));
+  }
+  const tw = Math.max(3, Math.round(size / 16));
+  const th = Math.max(8, Math.round(size * 0.28));
+  const tx = cx - Math.floor(tw / 2);
+  const ty = groundY - th;
+  fillRect(tx, ty, tw, th, C('trunk'));
+  fillRect(tx, ty, 1, th, C('earth-dark'));
+  fillRect(tx - 2, groundY - 2, 2, 2, C('earth'));
+  fillRect(tx + tw, groundY - 2, 2, 2, C('earth'));
+  const lean = (dirIdx - 1) * 2;
+  const bands = [
+    { w: Math.max(8, Math.round(size * 0.34)), h: Math.max(4, Math.round(size * 0.09)) },
+    { w: Math.max(10, Math.round(size * 0.46)), h: Math.max(4, Math.round(size * 0.1)) },
+    { w: Math.max(7, Math.round(size * 0.3)), h: Math.max(4, Math.round(size * 0.09)) },
+  ];
+  let bandY = ty - bands[0].h + 2;
+  bands.forEach((band, bi) => {
+    const bx = cx + (bi === 1 ? lean : bi === 2 ? -lean : 0) - Math.floor(band.w / 2);
+    fillRect(bx, bandY, band.w, band.h, bi === 1 ? C('foliage') : C('grass-mid'));
+    fillRect(bx, bandY, band.w, 1, C('grass-light'));
+    fillRect(bx + band.w - 2, bandY, 2, band.h, C('grass-dark'));
+    borderRect(bx, bandY, band.w, band.h, C('outline'));
+    bandY -= band.h - 1;
+  });
+  const cloudW = Math.max(4, Math.round(size * 0.09));
+  const cloudX = (6 + dirIdx * 5 + px * 4) % Math.max(1, size - cloudW - 1);
+  fillRect(cloudX, 2, cloudW, 2, C('sky'));
+  const rockSide = dir === 'fr' || dir === 'lf' ? -1 : 1;
+  const rockX = cx + rockSide * (Math.floor(tw / 2) + 4);
+  fillRect(rockX, groundY - 3, 2, 2, C('rock-light'));
+  set(rockX, groundY - 1, C('rock-dark'));
+  fillRect(cx - rockSide * (Math.floor(tw / 2) + 5), groundY - 2, 3, 1, C('sand'));
+  return { data: buf, width: size, height: size };
+}
+
+// staticRelabel(x, y, colorName) -> 'body' (pure, deterministic).
+// Static kinds carry no anatomical split: every pixel routes to `body` and the
+// other four layers stay present-but-empty. Used by generateStaticSvgs and by
+// roundTripAsset for static kinds so re-emit matches generation byte-for-byte
+// (knightRelabel must NOT run on static palettes: e.g. crate `leather` would
+// otherwise split at y>=42 into limb layers).
+export function staticRelabel() {
+  return 'body';
+}
+
+// Dispatcher for tests and batch generate.
+export function synthStaticPixels({ kind, perspective, dir, frameNum = 0, mappable, size }) {
+  switch (kind) {
+    case 'weapon':
+      return synthSwordPixels({ perspective, dir, frameNum, mappable, size });
+    case 'building':
+      return synthHousePixels({ perspective, dir, frameNum, mappable, size });
+    case 'prop':
+      return synthCratePixels({ perspective, dir, frameNum, mappable, size });
+    case 'scenery':
+      return synthTreePixels({ perspective, dir, frameNum, mappable, size });
+    default:
+      throw new Error(`unknown static kind ${JSON.stringify(kind)} (want weapon|building|prop|scenery)`);
+  }
+}
+
 function frameNumFromFile(file) {
   const m = String(file).match(/(\d+)\.svg$/);
   return m ? Number(m[1]) : 0;
@@ -846,6 +1116,85 @@ async function generateKnightSvgs(assetId = 'knight_001') {
   return { views, masters, assetDir };
 }
 
+async function generateStaticSvgs(assetId) {
+  const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
+  const { dirname, resolve } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const { mapFrameToPalette, getMappableColors: getMap } = await import('./palette.mjs');
+  const moduleDir = dirname(fileURLToPath(import.meta.url));
+  const assetDir = resolve(moduleDir, '..', 'assets', assetId);
+  const asset = JSON.parse(readFileSync(resolve(assetDir, 'asset.json'), 'utf8'));
+  const kind = asset.kind;
+  if (!['weapon', 'building', 'prop', 'scenery'].includes(kind)) {
+    throw new Error(`generateStaticSvgs: ${assetId} kind must be weapon|building|prop|scenery, got ${JSON.stringify(kind)}`);
+  }
+  const pm = String(asset.palette ?? '').match(/^palette_(\w+)@v(\d+)$/);
+  if (!pm || pm[1] !== kind) {
+    throw new Error(`generateStaticSvgs: ${assetId} palette ${JSON.stringify(asset.palette)} must match palette_${kind}@vN`);
+  }
+  const palette = JSON.parse(readFileSync(resolve(moduleDir, '..', 'palettes', `palette_${pm[1]}.v${pm[2]}.json`), 'utf8'));
+  const mappable = getMap(palette);
+  const size = asset.size;
+  const build = (perspective, d, frameNum, meta) => {
+    const synth = synthStaticPixels({ kind, perspective, dir: d, frameNum, mappable, size });
+    const geo = quantizeGeometry(synth.data, synth.width, synth.height, size, { kind });
+    const mapped = mapFrameToPalette(geo.data, geo.width, geo.height, palette);
+    return pixelsToSvg(mapped.data, geo.width, geo.height, {
+      asset: asset.id,
+      perspective,
+      action: 'idle',
+      dir: d,
+      frame: frameNum,
+      size,
+      palette,
+      seed: meta.seed,
+      prompt_hash: meta.prompt_hash,
+      denoise: meta.denoise,
+      source: meta.source,
+      names: mapped.names,
+      master: meta.master ?? false,
+      relabel: staticRelabel,
+    });
+  };
+  mkdirSync(assetDir, { recursive: true });
+  let views = 0;
+  for (const act of Object.keys(asset.actions)) {
+    const clips = asset.actions[act].clips;
+    for (const persp of asset.perspectives) {
+      for (const d of asset.views) {
+        const list = clips?.[persp]?.[d] ?? [];
+        for (const clip of list) {
+          const frameNum = frameNumFromFile(clip.file);
+          const svg = build(persp, d, frameNum, {
+            seed: clip.seed,
+            prompt_hash: clip.prompt_hash,
+            denoise: clip.denoise,
+            source: `synthetic:${asset.id}:${persp}/${act}/${d}/${frameNum}`,
+          });
+          writeFileSync(resolve(assetDir, clip.file), svg, 'utf8');
+          views++;
+        }
+      }
+    }
+  }
+  let masters = 0;
+  for (const persp of asset.perspectives) {
+    const ref = asset.actions.idle.clips[persp].fr[0];
+    const frameNum = frameNumFromFile(ref.file);
+    const svg = build(persp, 'fr', frameNum, {
+      seed: ref.seed,
+      prompt_hash: ref.prompt_hash,
+      denoise: ref.denoise,
+      source: `master:${persp}`,
+      master: true,
+    });
+    writeFileSync(resolve(assetDir, asset.masters[persp]), svg, 'utf8');
+    masters++;
+  }
+  console.log(`OK: generated ${views} views + ${masters} masters for ${assetId} -> ${assetDir}`);
+  return { views, masters, assetDir };
+}
+
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   if (cmd === 'selfcheck') {
@@ -858,7 +1207,18 @@ async function main() {
       if (rest[i] === '--asset' && rest[i + 1]) assetId = rest[i + 1];
       else if (rest[i].startsWith('--asset=')) assetId = rest[i].slice('--asset='.length);
     }
-    await generateKnightSvgs(assetId);
+    const { readFileSync } = await import('node:fs');
+    const { dirname, resolve } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const moduleDir = dirname(fileURLToPath(import.meta.url));
+    let kind = 'character';
+    try {
+      kind = JSON.parse(readFileSync(resolve(moduleDir, '..', 'assets', assetId, 'asset.json'), 'utf8')).kind ?? 'character';
+    } catch {
+      kind = 'character';
+    }
+    if (kind === 'character') await generateKnightSvgs(assetId);
+    else await generateStaticSvgs(assetId);
     return;
   }
   if (cmd === 'roundtrip') {
