@@ -80,3 +80,27 @@ fr4 截断）；`mapping.dropped` = 截断具名（如 `knight_td_attack_fr4.svg
    `map.next`（`idle`）切同向 idle（与 `tools/clips.mjs nextFrame` 一致）。
 4. 放大展示一律最近邻（`texture_filter = nearest`，
    对应 `imageSmoothingEnabled=false`）；线性过滤即算破坏。
+
+## 5. 静态资产直读扩展（static kinds，本轮 SVG-only）
+
+静态四资产（`sword_001`/weapon、`house_001`/building、`crate_001`/prop、
+`tree_001`/scenery）本轮无表（静态拼表已延期：
+`static-kinds-godot-adapter/design.md` Open Questions 明示 statics ship
+SVG-only；`node tools/sheet.mjs export` 只导 knight），沿用本直读契约的
+退化形态——单格直读，无 map.json：
+
+1. 选资产：读 `assets/<id>/asset.json`。实测四静态均为 `idle` 单动作、
+   `frames: 1`、`fps: 2`、`loop: true`、`size: 64`，色板按 kind
+   （`palette_weapon@v1` / `palette_building@v1` / `palette_prop@v1` /
+   `palette_scenery@v1`）。
+2. 单格直读：region 缺省全格（`x = y = 0`，`w = h = size`）；
+   `perspective`/`dir` 照 asset.json 的 `perspectives`（td/sd）与 `views`
+   （fr/bk/lf/rt，8 格）取对应 `file` SVG；`loop = true` 直接循环，
+   无 `next` 链。
+3. 防呆同 §2 口径：`size` 按 kind 枚举（character/weapon/prop 32/48/64，
+   building/scenery 另许 128；本轮四静态实测 64），色板
+   `palette_{kind}@vN` 门控（见冻结 `assets/asset.schema.json`）。
+4. 将来静态表落地后：一动作一表、行序 `fr/bk/lf/rt`、map.json 字段契约
+   直接套用；`generic/` 新增文件必须同提交更新
+   `tools/placeholder.test.mjs` 精确文件集断言（现钉 17 文件：
+   8 PNG + 8 map.json + 本文件）。本轮 `generic/` 零新增文件，只加本章节。

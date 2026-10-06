@@ -135,13 +135,17 @@ gap 合计：**11 项缺**（#13–#20、#22–#24；#21 为 Maker 专属、不�
   td/sd 无合表；Maker 表含 `maker_mapping` 公示与 `$`命名。
 - [x] **占位项目**：`engine-placeholder/generic/`（B）文件齐
   （8 PNG + 8 map.json + `PLACEHOLDER.md`，`sheets/` 全集逐字节复制，不改名）；
-  `engine-placeholder/godot-atlas/`（A）仅配方、无 `.godot/.tres`。
+   `engine-placeholder/godot-atlas/`（A）仅配方（`IMPORT-RECIPE.md`：
+   region/fps/loop/next 映射 + gap #13–#20 逐项映射或缺省声明 + #22–#24
+   追溯取处 + `knight_td_walk` worked example）+ 配方自检脚本
+   （`verify-recipe.mjs`，纯只读重导 region）、无 `.godot/.tres`。
 
 自检命令（占位与回归，全部只读、不写资产）：
 
 ```
 node tools/asset-manifest.mjs validate assets/knight_001/asset.json --check-files
 node --test tools/*.test.mjs
+node engine-placeholder/godot-atlas/verify-recipe.mjs
 node web/verify-1.1.mjs
 node web/verify-4.1.mjs
 node web/verify-4.2.mjs
