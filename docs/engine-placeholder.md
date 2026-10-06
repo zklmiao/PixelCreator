@@ -128,12 +128,13 @@ gap 合计：**11 项缺**（#13–#20、#22–#24；#21 为 Maker 专属、不�
   另满足 proposal 区间 40~88（64 落在区间内）。
 - [ ] **矩阵可播项**：td/sd 各 12 cells、`missing=0`、逐格 `tickPlayer` 不抛、
   attack 末帧回同向 idle（`verify-5.2` 全 OK）。
-- [ ] **双表**：walk+attack × td/sd 共 **4 PNG + 2 map.json**
-  （Full 1 份＋Maker 1 份）；walk 表几何抽查 `192x256`（64px×3f）；
-  attack 表几何抽查 `256x256`（64px×4f）；行序 `fr/bk/lf/rt`；td/sd 无合表；
-  Maker 表含 `maker_mapping` 公示与 `$`命名。
+- [ ] **双表**：walk+attack × td/sd × Full+Maker 共 **8 PNG + 8 map.json**
+  （`sheets/` 全集：walk Full/Maker 192x256、attack Full 256x256、attack Maker
+  192x256，每表 1 PNG + 1 `*.map.json`）；walk 表几何抽查 `192x256`（64px×3f）；
+  attack 表几何抽查 Full `256x256`（64px×4f）/ Maker `192x256`；行序 `fr/bk/lf/rt`；
+  td/sd 无合表；Maker 表含 `maker_mapping` 公示与 `$`命名。
 - [ ] **占位项目**：`engine-placeholder/generic/`（B）文件齐
-  （§1 清单），`IMPORT-RECIPE`/`PLACEHOLDER` 人读可执行；
+  （8 PNG + 8 map.json + `PLACEHOLDER.md`，`sheets/` 全集逐字节复制，不改名）；
   `engine-placeholder/godot-atlas/`（A）仅配方、无 `.godot/.tres`。
 
 自检命令（占位与回归，全部只读、不写资产）：
@@ -147,10 +148,10 @@ node web/verify-4.2.mjs
 node web/verify-5.2.mjs
 ```
 
-占位结构自检（7.1 落地后补跑；当前占位目录尚不存在，跑了必红——属预期）：
+占位结构自检（7.1 落地后应全 OK；逐个解析 `generic/` 下全部 per-sheet map.json）：
 
 ```
-node -e "for (const f of ['engine-placeholder/generic/knight_full.map.json','engine-placeholder/generic/knight_maker.map.json']) { JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('OK: '+f) }"
+node -e "const fs=require('fs');const dir='engine-placeholder/generic';for(const f of fs.readdirSync(dir).filter(x=>x.endsWith('.map.json')).sort()){JSON.parse(fs.readFileSync(dir+'/'+f,'utf8'));console.log('OK: '+dir+'/'+f)}"
 ```
 
 ## 5. 明确非目标
