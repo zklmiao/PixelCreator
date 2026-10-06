@@ -1,0 +1,97 @@
+{
+  "actions": {
+    "idle": {
+      "clips": {
+        "sd": {
+          "bk": [
+            {
+              "file": "sword_sd_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ],
+          "fr": [
+            {
+              "file": "sword_sd_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ],
+          "lf": [
+            {
+              "file": "sword_sd_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ],
+          "rt": [
+            {
+              "file": "sword_sd_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ]
+        },
+        "td": {
+          "bk": [
+            {
+              "file": "sword_td_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ],
+          "fr": [
+            {
+              "file": "sword_td_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ],
+          "lf": [
+            {
+              "file": "sword_td_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ],
+          "rt": [
+            {
+              "file": "sword_td_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2001
+            }
+          ]
+        }
+      },
+      "fps": 2,
+      "frames": 1,
+      "loop": true
+    }
+  },
+  "asset": "sword",
+  "id": "sword_001",
+  "kind": "weapon",
+  "masters": {
+    "sd": "master_side.svg",
+    "td": "master_td.svg"
+  },
+  "palette": "palette_weapon@v1",
+  "perspectives": [
+    "td",
+    "sd"
+  ],
+  "preview": {
+    "action": "idle",
+    "dir": "fr",
+    "perspective": "td"
+  },
+  "seed": 2001,
+  "size": 64,
+  "use": "2d-rpg",
+  "views": [
+    "fr",
+    "bk",
+    "lf",
+    "rt"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "actions": {
+    "idle": {
+      "clips": {
+        "sd": {
+          "bk": [
+            {
+              "file": "crate_sd_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ],
+          "fr": [
+            {
+              "file": "crate_sd_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ],
+          "lf": [
+            {
+              "file": "crate_sd_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ],
+          "rt": [
+            {
+              "file": "crate_sd_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ]
+        },
+        "td": {
+          "bk": [
+            {
+              "file": "crate_td_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ],
+          "fr": [
+            {
+              "file": "crate_td_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ],
+          "lf": [
+            {
+              "file": "crate_td_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ],
+          "rt": [
+            {
+              "file": "crate_td_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2003
+            }
+          ]
+        }
+      },
+      "fps": 2,
+      "frames": 1,
+      "loop": true
+    }
+  },
+  "asset": "crate",
+  "id": "crate_001",
+  "kind": "prop",
+  "masters": {
+    "sd": "master_side.svg",
+    "td": "master_td.svg"
+  },
+  "palette": "palette_prop@v1",
+  "perspectives": [
+    "td",
+    "sd"
+  ],
+  "preview": {
+    "action": "idle",
+    "dir": "fr",
+    "perspective": "td"
+  },
+  "seed": 2003,
+  "size": 64,
+  "use": "2d-rpg",
+  "views": [
+    "fr",
+    "bk",
+    "lf",
+    "rt"
+  ]
+}

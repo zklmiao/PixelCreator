@@ -1,0 +1,97 @@
+{
+  "actions": {
+    "idle": {
+      "clips": {
+        "sd": {
+          "bk": [
+            {
+              "file": "tree_sd_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ],
+          "fr": [
+            {
+              "file": "tree_sd_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ],
+          "lf": [
+            {
+              "file": "tree_sd_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ],
+          "rt": [
+            {
+              "file": "tree_sd_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ]
+        },
+        "td": {
+          "bk": [
+            {
+              "file": "tree_td_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ],
+          "fr": [
+            {
+              "file": "tree_td_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ],
+          "lf": [
+            {
+              "file": "tree_td_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ],
+          "rt": [
+            {
+              "file": "tree_td_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2004
+            }
+          ]
+        }
+      },
+      "fps": 2,
+      "frames": 1,
+      "loop": true
+    }
+  },
+  "asset": "tree",
+  "id": "tree_001",
+  "kind": "scenery",
+  "masters": {
+    "sd": "master_side.svg",
+    "td": "master_td.svg"
+  },
+  "palette": "palette_scenery@v1",
+  "perspectives": [
+    "td",
+    "sd"
+  ],
+  "preview": {
+    "action": "idle",
+    "dir": "fr",
+    "perspective": "td"
+  },
+  "seed": 2004,
+  "size": 64,
+  "use": "2d-rpg",
+  "views": [
+    "fr",
+    "bk",
+    "lf",
+    "rt"
+  ]
+}

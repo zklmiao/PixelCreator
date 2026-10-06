@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://pixecreator.local/schemas/asset.schema.json",
-  "title": "Pixel asset manifest (frozen v1, task 3.2)",
+  "title": "Pixel asset manifest (kind-aware v2, static-kinds-godot-adapter prep; character gate unchanged)",
   "type": "object",
   "required": ["id", "asset", "kind", "use", "size", "palette", "seed", "perspectives", "views", "masters", "actions", "preview"],
   "properties": {
     "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
     "asset": { "type": "string", "pattern": "^[a-z0-9]+$", "description": "Short file-name prefix; clip files are {asset}_{td|sd}_{action}_{dir}{N}.svg" },
-    "kind": { "const": "character" },
+    "kind": { "enum": ["character", "weapon", "building", "prop", "scenery"] },
     "use": { "const": "2d-rpg" },
-    "size": { "enum": [32, 48, 64] },
-    "palette": { "type": "string", "pattern": "^palette_character@v[0-9]+$" },
+    "size": { "enum": [32, 48, 64, 128] },
+    "palette": { "type": "string", "pattern": "^palette_[a-z]+@v[0-9]+$", "description": "Shape only; kind-match (palette_{kind}@vN) enforced per kind below and in tools/asset-manifest.mjs" },
     "seed": { "type": "integer" },
     "perspectives": {
       "type": "array", "minItems": 2, "maxItems": 2,
@@ -31,7 +31,6 @@
     },
     "actions": {
       "type": "object",
-      "required": ["idle", "walk", "attack"],
       "additionalProperties": false,
       "properties": {
         "idle": { "$ref": "#/$defs/action" },
@@ -50,6 +49,38 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "character" } } },
+      "then": {
+        "properties": {
+          "size": { "enum": [32, 48, 64] },
+          "palette": { "pattern": "^palette_character@v[0-9]+$" },
+          "actions": { "required": ["idle", "walk", "attack"] }
+        }
+      },
+      "else": {
+        "properties": {
+          "palette": { "pattern": "^palette_(weapon|building|prop|scenery)@v[0-9]+$" },
+          "actions": {
+            "required": ["idle"],
+            "allOf": [
+              { "not": { "required": ["walk"] } },
+              { "not": { "required": ["attack"] } }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "enum": ["weapon", "prop"] } } },
+      "then": { "properties": { "size": { "enum": [32, 48, 64] } } }
+    },
+    {
+      "if": { "properties": { "kind": { "enum": ["building", "scenery"] } } },
+      "then": { "properties": { "size": { "enum": [32, 48, 64, 128] } } }
+    }
+  ],
   "$defs": {
     "action": {
       "type": "object",

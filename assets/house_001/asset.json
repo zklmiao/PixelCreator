@@ -1,0 +1,97 @@
+{
+  "actions": {
+    "idle": {
+      "clips": {
+        "sd": {
+          "bk": [
+            {
+              "file": "house_sd_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ],
+          "fr": [
+            {
+              "file": "house_sd_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ],
+          "lf": [
+            {
+              "file": "house_sd_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ],
+          "rt": [
+            {
+              "file": "house_sd_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ]
+        },
+        "td": {
+          "bk": [
+            {
+              "file": "house_td_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ],
+          "fr": [
+            {
+              "file": "house_td_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ],
+          "lf": [
+            {
+              "file": "house_td_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ],
+          "rt": [
+            {
+              "file": "house_td_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2002
+            }
+          ]
+        }
+      },
+      "fps": 2,
+      "frames": 1,
+      "loop": true
+    }
+  },
+  "asset": "house",
+  "id": "house_001",
+  "kind": "building",
+  "masters": {
+    "sd": "master_side.svg",
+    "td": "master_td.svg"
+  },
+  "palette": "palette_building@v1",
+  "perspectives": [
+    "td",
+    "sd"
+  ],
+  "preview": {
+    "action": "idle",
+    "dir": "fr",
+    "perspective": "td"
+  },
+  "seed": 2002,
+  "size": 64,
+  "use": "2d-rpg",
+  "views": [
+    "fr",
+    "bk",
+    "lf",
+    "rt"
+  ]
+}
