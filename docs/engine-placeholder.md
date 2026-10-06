@@ -123,17 +123,17 @@ gap 合计：**11 项缺**（#13–#20、#22–#24；#21 为 Maker 专属、不�
 
 前置（6.x 未合不跑本节；跑之前先 `git merge --ff-only main` 并确认干净）：
 
-- [ ] **SVG 落盘数**：`assets/knight_001/` 内 view SVG **64 个**
+- [x] **SVG 落盘数**：`assets/knight_001/` 内 view SVG **64 个**
   （idle 1f×8 clip=8 ＋ walk 3f×8=24 ＋ attack 4f×8=32；另 2 母版不计入 64）。
   另满足 proposal 区间 40~88（64 落在区间内）。
-- [ ] **矩阵可播项**：td/sd 各 12 cells、`missing=0`、逐格 `tickPlayer` 不抛、
+- [x] **矩阵可播项**：td/sd 各 12 cells、`missing=0`、逐格 `tickPlayer` 不抛、
   attack 末帧回同向 idle（`verify-5.2` 全 OK）。
-- [ ] **双表**：walk+attack × td/sd × Full+Maker 共 **8 PNG + 8 map.json**
+- [x] **双表**：walk+attack × td/sd × Full+Maker 共 **8 PNG + 8 map.json**
   （`sheets/` 全集：walk Full/Maker 192x256、attack Full 256x256、attack Maker
   192x256，每表 1 PNG + 1 `*.map.json`）；walk 表几何抽查 `192x256`（64px×3f）；
   attack 表几何抽查 Full `256x256`（64px×4f）/ Maker `192x256`；行序 `fr/bk/lf/rt`；
   td/sd 无合表；Maker 表含 `maker_mapping` 公示与 `$`命名。
-- [ ] **占位项目**：`engine-placeholder/generic/`（B）文件齐
+- [x] **占位项目**：`engine-placeholder/generic/`（B）文件齐
   （8 PNG + 8 map.json + `PLACEHOLDER.md`，`sheets/` 全集逐字节复制，不改名）；
   `engine-placeholder/godot-atlas/`（A）仅配方、无 `.godot/.tres`。
 
