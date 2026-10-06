@@ -16,6 +16,7 @@ import {
   parseSvgGroups,
   svgToPixels,
   knightRelabel,
+  synthKnightPixels,
 } from './vectorize.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -517,5 +518,44 @@ describe('3.1 semantic split (knightRelabel)', () => {
     });
     assert.equal(remade, original, 'same-relabel roundtrip must be byte-identical (totals unchanged)');
     assert.equal((remade.match(/<rect\b/g) ?? []).length, total);
+  });
+});
+
+// Regression: the stride cycle used modulo 3, which collapsed rt onto fr
+// (dirIdx 3 ≡ 0) for every clip and wrapped attack f4 onto f1. All poses of a
+// perspective must stay pairwise distinct or the 12-cell matrix shows clones.
+describe('3.1 synthetic knight pose distinctness (regression: %3 collapse)', () => {
+  const FRAMES = { idle: [0], walk: [1, 2, 3], attack: [1, 2, 3, 4] };
+  const DIRS = ['fr', 'bk', 'lf', 'rt'];
+  const pose = (persp, act, dir, f) =>
+    Buffer.from(
+      synthKnightPixels({ perspective: persp, action: act, dir, frameNum: f, mappable, size: 64 }).data,
+    );
+
+  it('all 32 poses per perspective are pairwise distinct', () => {
+    for (const persp of ['td', 'sd']) {
+      const seen = new Map();
+      for (const [act, frames] of Object.entries(FRAMES)) {
+        for (const dir of DIRS) {
+          for (const f of frames) {
+            const key = `${persp}/${act}/${dir}${f}`;
+            const buf = pose(persp, act, dir, f);
+            for (const [other, otherBuf] of seen) {
+              assert.ok(!buf.equals(otherBuf), `${key} renders identical to ${other}`);
+            }
+            seen.set(key, buf);
+          }
+        }
+      }
+      assert.equal(seen.size, 32, `${persp}: expected 32 distinct poses`);
+    }
+  });
+
+  it('explicit collapsed pairs are gone: attack fr4!=fr1, walk rt1!=fr1, idle rt!=fr', () => {
+    for (const persp of ['td', 'sd']) {
+      assert.ok(!pose(persp, 'attack', 'fr', 4).equals(pose(persp, 'attack', 'fr', 1)), `${persp}: attack fr4==fr1`);
+      assert.ok(!pose(persp, 'walk', 'rt', 1).equals(pose(persp, 'walk', 'fr', 1)), `${persp}: walk rt1==fr1`);
+      assert.ok(!pose(persp, 'idle', 'rt', 0).equals(pose(persp, 'idle', 'fr', 0)), `${persp}: idle rt==fr`);
+    }
   });
 });

@@ -684,7 +684,7 @@ export function knightRelabel(x, y, colorName, opts = {}) {
 }
 
 // --- Deterministic synthetic knight pixels (batch generate only) ---
-function synthKnightPixels({ perspective, action, dir, frameNum, mappable, size }) {
+export function synthKnightPixels({ perspective, action, dir, frameNum, mappable, size }) {
   const byName = new Map(mappable.map((c) => [c.name, c]));
   const C = (n) => {
     const c = byName.get(n);
@@ -728,18 +728,23 @@ function synthKnightPixels({ perspective, action, dir, frameNum, mappable, size 
   if (dir === 'bk') {
     fillRect(hx, hy, hw, hh, C('hair')); // back of head: no face
   } else {
+    // Gaze leads the facing dir by 1px (stays inside the outline ring) so
+    // fr/lf/rt heads never render identical — dir must stay visible per cell.
+    const eyesDx = dir === 'lf' ? -1 : dir === 'rt' ? 1 : 0;
     fillRect(hx, hy, hw, hh, C('skin-1'));
-    set(hx + 2, hy + 4, C('eye'));
-    set(hx + 7, hy + 4, C('eye'));
-    set(hx + 2, hy + 5, C('white'));
-    set(hx + 7, hy + 5, C('white'));
+    set(hx + 2 + eyesDx, hy + 4, C('eye'));
+    set(hx + 7 + eyesDx, hy + 4, C('eye'));
+    set(hx + 2 + eyesDx, hy + 5, C('white'));
+    set(hx + 7 + eyesDx, hy + 5, C('white'));
   }
   fillRect(hx + 4, hy + hh, 2, 2, C('skin-2')); // neck
   borderRect(bx, torsoY, torsoW, torsoH, C('outline'));
   borderRect(hx, hy, hw, hh, C('outline'));
   fillRect(bx + 1, torsoY + 1, 3, 2, C('steel-mid')); // pauldrons
   fillRect(bx + torsoW - 4, torsoY + 1, 3, 2, C('steel-mid'));
-  const shift = (frameNum + dirIdx) % 3; // walk/attack stride, idle varies by dir
+  // Modulo 4, not the frame count: with 4 dirs the shared cycle must be >= 4
+  // or rt collapses onto fr (dirIdx 3 ≡ 0 mod 3) and attack f4 wraps onto f1.
+  const shift = (frameNum + dirIdx) % 4; // walk/attack stride, idle varies by dir
   const legY = 42;
   const legH = 11;
   const legW = 4;
