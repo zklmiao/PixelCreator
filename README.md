@@ -18,7 +18,7 @@
 | `sheets/` | 生成物：一动作一 PNG + `*.map.json`（Full/Maker 双模式） |
 | `engine-placeholder/` | 引擎占位：`generic/`（map.json 直读）+ `godot-atlas/`（导入配方） |
 | `openspec/` | specs（冻结）/ changes（进行中）/ changes/archive（已归档） |
-| `docs/` | `agent-log.md`（开发轮次记录）、管线说明 |
+| `docs/` | `agent-log.md`（开发轮次记录）、`milestones.md`（产品里程碑 M0–M4）、管线说明 |
 
 ## 自检命令（只读）
 

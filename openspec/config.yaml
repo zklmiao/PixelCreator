@@ -8,6 +8,12 @@ schema: spec-driven
 #     Tech stack: TypeScript, React, Node.js
 #     We use conventional commits
 #     Domain: e-commerce platform
+context: |
+  产品里程碑见 docs/milestones.md（主控随轮次收官刷新）。
+  已达成：M0 人物管线首闭环、M1 多类资产 + 感知色距 + web 多资产（轮次细节见 docs/agent-log.md）。
+  当前目标：M2 = change real-import-mvp（真实素材导入 MVP，静态类演示；character 24 格满门控不变）。
+  后续：M3 = Godot .tres 生成器 + 128 档 + 真实角色 24 格；M4 = img2img 实调（最后，需联网）。
+  铁律：assets/*/asset.json 唯一事实源；生成物只许工具再生成且字节级确定；离线可跑无 key。
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
