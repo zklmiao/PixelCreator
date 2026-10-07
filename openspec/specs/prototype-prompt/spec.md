@@ -60,3 +60,14 @@ The system SHALL include `sword held forward, clearly separated from legs, no ov
 #### Scenario: Weapon separation
 - **WHEN** generating front or side views with a sword
 - **THEN** the blade never overlaps the legs in the returned prototype
+
+### Requirement: Kind-aware static prompt sentences
+The system SHALL compose static-asset prompts from kind-keyed object sentences (no human-figure wording) while the character path stays byte-identical; static prompts SHALL NOT contain bare-hands, sword-leg-separation, or single-character person constraints.
+
+#### Scenario: Static prompt has no figure constraints
+- **WHEN** composing a prompt for `house_001` (building) or `sword_001` (weapon)
+- **THEN** output names the kind object with its palette-constrained colors and contains none of the character-only constraint strings
+
+#### Scenario: Character prompt frozen
+- **WHEN** composing the knight example through the character path
+- **THEN** positive/negative/denoise/seed/hash output is byte-identical to the v0.2 baseline

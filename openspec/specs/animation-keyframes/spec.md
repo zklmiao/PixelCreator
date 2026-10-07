@@ -32,3 +32,10 @@ The system SHALL render missing export-blocking clips as placeholders in preview
 #### Scenario: Placeholder preview
 - **WHEN** `walk_bk_f2` is missing
 - **THEN** its cell shows a placeholder with a generate affordance while other cells play
+
+### Requirement: Static idle-only matrix
+The system SHALL render a static preview matrix of idle-only cells (4 dirs per perspective, 8 total across the td/sd toggle) with the same per-cell player and missing-placeholder semantics as the character matrix; static cells SHALL reference only idle clips.
+
+#### Scenario: Static toggle shows 8 idle cells
+- **WHEN** loading `crate_001` and flipping the td/sd toggle
+- **THEN** 4 idle cells show per side (8 total), timing preserved, and any missing idle clip parks as a named non-exporting placeholder

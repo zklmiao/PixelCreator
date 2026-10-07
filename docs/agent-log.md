@@ -16,3 +16,12 @@
 - wt-B 呈现轴 `feat/godot-adapter @ 29cacbc`：单 commit，4 文件（IMPORT-RECIPE 原地重写 + verify-recipe.mjs 新 82 行纯只读 + generic §5 + docs 指针）；map.json 零改动；generic 17→17 故 placeholder 断言免同步。评审：wt 内 91/91 + web 全绿；recipe 自检 8 maps/104 frames 全绿；实际脚本临时目录复跑通过、篡改 fps/x 后 2 处 FAIL 变红；gap #13–#24 逐项有映射或缺省。结论：通过。
 - 合并：`40b345e` merge(static)（合后主干 109/109 + web/manifests 全绿）；`19fc654` merge(recipe)（零冲突，4 文件；合后 109/109 + recipe 自检 104 帧全绿）。已勾本 change tasks A1–A3/B1–B2/M1。
 - 遗留风险：四静态 `prompt_hash:"pending"`（手工导入或轮 2 回填真值）；building/scenery 128 仅 schema+validator 允许、生成器未实测；`.tres` 生成器留轮 2 管线轴；下一轮 ②OKLCH → ③Bayer → ⑤img2img。
+
+## 轮 2 — perceptual-color-plus-static-web（②OKLCH 默认 + Bayer 无害证明 + web 静态支持）
+
+- Prep（main）：`9112455` chore(openspec): add perceptual-color-plus-static-web proposal (r2-prep)；`68ecf16` 两卡入库；`569b402` docs(readme): add project README（轮中用户直派，与测试零交集）。分支 `feat/oklch-bayer`、`feat/static-web` 自 prep 新建，旧 `feat/*` 存档不动。
+- wt-A 管线轴 `feat/oklch-bayer @ e1aca66`：单 commit，2 文件（`tools/palette.mjs` +212/-8：`nearestColor`/`mapFrameToPalette` 默认换 `oklchDistance` + 在板 fast path O(1) Set 跳 ±6；`tools/oklch-bayer.test.mjs` 新 197 行：判别蓝独立依据断言 + 在板 none-vs-bayer 字节一致 + 负路径）。评审：wt 内 117/117；diff 零越界；突变（删 fast path 条件）8 项中 byte-identity 项变红；确定性由评审方独立复现（generate×2 + export → status 0）采信。结论：通过。
+- wt-B 呈现轴 `feat/static-web @ f4a0e94`：单 commit，7 文件（`web/lib/asset-shell|matrix|prompt.js` kind-aware + `app.js`/`index.html` 切换器 + `docs/static-web.md` + `web/verify-static.mjs` 新 243 行）。评审：rebase 后 wt 内 117/117 + 6 verify（含 verify-static：5 shells/8 格/禁人物约束词/kind 缺省 byte-identical）+ recipe 104 帧；`generic/` vs `sheets/` 16/16 字节一致（重拷 no-op，无 tail commit）；`verify-1.1` 仅 validateAsset 侧已标注。结论：通过。
+- 合并：`037c463` merge(palette)（合后 117/117 + 5× manifest + 4 verify 全绿，即 oklch gate）；`18c8167` merge(present)（7 文件；合后 117/117 + 6 verify + recipe 全绿）。
+- 集成回填（主控）：`4040567` chore(asset): backfill 32 static prompt_hash via kind-aware prompt——文本级替换（格式不动，每文件 8 行）；锚点 td/fr 全中（weapon 0f435899 / building 5e48f491 / prop 9a611e61 / scenery 10d99667）；回填后 5× manifest + 117/117 全绿。已勾本 change tasks A1–A4/B1–B3/M1。
+- 遗留风险：building/scenery 128 档仅 schema/validator 允许、生成器未实测；Godot `.tres` 生成器轮 3（管线轴优先）；静态 32 帧真实 prompt_hash 已落，外部 img2img 实调（积压⑤）前置数据就绪。
