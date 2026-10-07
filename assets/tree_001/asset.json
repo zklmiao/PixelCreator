@@ -86,7 +86,7 @@
     "perspective": "td"
   },
   "seed": 2004,
-  "size": 64,
+  "size": 128,
   "use": "2d-rpg",
   "views": [
     "fr",

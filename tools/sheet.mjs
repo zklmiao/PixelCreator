@@ -301,7 +301,8 @@ export function buildStaticSheet(asset, { perspective, frames } = {}) {
 }
 
 // exportSheets(assetId?, outDir?) -> [{ sheet, map, w, h, mode, perspective, action, bytes }].
-// 批量:walk+attack × td/sd × maker/full = 8 表 + 8 map.json,落盘到 sheets/。
+// 人物:walk+attack × td/sd × maker/full = 8 表 + idle × td/sd × full = 2 表,
+// 共 10 表 + 10 map.json 落盘到 sheets/（idle 仅 Full：单帧无 Maker 形态）。
 // 静态 idle-only 资产走单帧分支:td/sd 各 1 表 + 1 map(full-only,无 maker)。
 export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
@@ -339,6 +340,18 @@ export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
         console.log(`OK: ${map.sheet} ${w}x${h} (${mode}, ${perspective}/${action}) + ${mapFile}`);
         results.push({ sheet: map.sheet, map: mapFile, w, h, mode, perspective, action, bytes: png.length });
       }
+    }
+  }
+  if (asset.actions?.idle) {
+    for (const perspective of asset.perspectives) {
+      const frames = await loadActionFrames(assetDir, asset, perspective, 'idle', 'full');
+      const { rgba, w, h, map } = buildSheet(asset, { perspective, action: 'idle', mode: 'full', frames });
+      const png = encodePng(rgba, w, h);
+      writeFileSync(resolve(out, map.sheet), png);
+      const mapFile = `${map.sheet}.map.json`;
+      writeFileSync(resolve(out, mapFile), JSON.stringify(map, null, 2) + '\n');
+      console.log(`OK: ${map.sheet} ${w}x${h} (full, ${perspective}/idle) + ${mapFile}`);
+      results.push({ sheet: map.sheet, map: mapFile, w, h, mode: 'full', perspective, action: 'idle', bytes: png.length });
     }
   }
   return results;

@@ -1,0 +1,126 @@
+{
+  "mode": "full",
+  "asset": "guardian_001",
+  "perspective": "sd",
+  "action": "attack",
+  "size": 64,
+  "cell": 64,
+  "cols": 2,
+  "rows": 4,
+  "sheet": "guardian_sd_attack.png",
+  "fps": 8,
+  "loop": false,
+  "next": "idle",
+  "frames": [
+    {
+      "file": "guardian_sd_attack_fr1.svg",
+      "dir": "fr",
+      "frame": 1,
+      "col": 0,
+      "row": 0,
+      "x": 0,
+      "y": 0,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_attack_fr2.svg",
+      "dir": "fr",
+      "frame": 2,
+      "col": 1,
+      "row": 0,
+      "x": 64,
+      "y": 0,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_attack_bk1.svg",
+      "dir": "bk",
+      "frame": 1,
+      "col": 0,
+      "row": 1,
+      "x": 0,
+      "y": 64,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_attack_bk2.svg",
+      "dir": "bk",
+      "frame": 2,
+      "col": 1,
+      "row": 1,
+      "x": 64,
+      "y": 64,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_attack_lf1.svg",
+      "dir": "lf",
+      "frame": 1,
+      "col": 0,
+      "row": 2,
+      "x": 0,
+      "y": 128,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_attack_lf2.svg",
+      "dir": "lf",
+      "frame": 2,
+      "col": 1,
+      "row": 2,
+      "x": 64,
+      "y": 128,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_attack_rt1.svg",
+      "dir": "rt",
+      "frame": 1,
+      "col": 0,
+      "row": 3,
+      "x": 0,
+      "y": 192,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_attack_rt2.svg",
+      "dir": "rt",
+      "frame": 2,
+      "col": 1,
+      "row": 3,
+      "x": 64,
+      "y": 192,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    }
+  ],
+  "mapping": {
+    "kept": [
+      "guardian_sd_attack_fr1.svg",
+      "guardian_sd_attack_fr2.svg",
+      "guardian_sd_attack_bk1.svg",
+      "guardian_sd_attack_bk2.svg",
+      "guardian_sd_attack_lf1.svg",
+      "guardian_sd_attack_lf2.svg",
+      "guardian_sd_attack_rt1.svg",
+      "guardian_sd_attack_rt2.svg"
+    ],
+    "dropped": [],
+    "padded": []
+  }
+}
