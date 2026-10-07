@@ -1,19 +1,24 @@
 // app.js — 1.1 shell + 4.1 form wiring (zero dependencies).
-import { loadShell } from './lib/asset-shell.js';
+import { loadShell, ASSET_IDS, ASSET_URLS, assetUrlFor } from './lib/asset-shell.js';
 import { buildPrompt, validateFields, FIXED_NEGATIVE, KNIGHT_EXAMPLE } from './lib/prompt.js';
 import { buildMatrix, createPlayer, tickPlayer, canExport } from './lib/matrix.js';
 
 const $ = (id) => document.getElementById(id);
 
-async function initAsset() {
+let currentAssetId = 'knight_001';
+
+async function initAsset(assetId = currentAssetId) {
+  currentAssetId = assetId;
   const box = $('asset-status');
   try {
-    const { asset, shell, slots } = await loadShell();
+    const { asset, shell, slots } = await loadShell(assetUrlFor(currentAssetId));
     $('master-td').textContent = slots.find((s) => s.perspective === 'td').file;
     $('master-sd').textContent = slots.find((s) => s.perspective === 'sd').file;
-    $('asset-meta').textContent = `${asset.id} · size ${asset.size} · ${asset.palette} · seed ${asset.seed}`;
+    $('asset-meta').textContent = `${asset.id} · ${asset.kind ?? 'character'} · size ${asset.size} · ${asset.palette} · seed ${asset.seed}`;
     box.textContent = shell.ok ? 'OK: dual-master shell loadable' : `FAIL: ${shell.errors.join('; ')}`;
     box.dataset.ok = String(shell.ok);
+    const kindEl = $('asset-kind');
+    if (kindEl) kindEl.textContent = `kind=${asset.kind ?? 'character'} (idle-only=${['weapon', 'building', 'prop', 'scenery'].includes(asset.kind ?? '')})`;
   } catch (e) {
     box.textContent = `FAIL: ${e.message} (serve repo root, e.g. npx serve, then open /web/)`;
     box.dataset.ok = 'false';
@@ -87,6 +92,22 @@ function initForm() {
 initAsset();
 initForm();
 initMatrix();
+initAssetSwitcher();
+
+// Static-web asset switcher (5 assets, default knight_001).
+// Shell + matrix reload together; prompt form stays on the knight example
+// (character path) so the frozen 4.1 template is untouched.
+function initAssetSwitcher() {
+  const sel = $('asset-select');
+  if (!sel) return;
+  sel.value = currentAssetId;
+  sel.addEventListener('change', async () => {
+    const id = sel.value;
+    if (!ASSET_IDS.includes(id)) return;
+    await initAsset(id);
+    await reloadMatrixFor(id);
+  });
+}
 
 // 5.2 matrix wiring (additive; 1.1/4.1 above untouched).
 let matrixAsset = null;
@@ -107,7 +128,7 @@ function renderMatrix(persp) {
   grid.innerHTML = '';
   const { cells } = buildMatrix(matrixAsset, persp);
   const missing = cells.filter((c) => c.missing);
-  meta.textContent = `${persp}: 12 cells, ${missing.length} missing`;
+  meta.textContent = `${persp}: ${cells.length} cells, ${missing.length} missing`;
   for (const cell of cells) {
     const el = document.createElement('div');
     el.className = `cell${cell.missing ? ' missing' : ''}`;
@@ -150,15 +171,16 @@ function renderMatrix(persp) {
     grid.appendChild(el);
   }
   const ex = canExport(matrixAsset);
+  const total = cells.length * 2;
   btn.disabled = !ex.ok;
-  btn.title = ex.ok ? 'all 24 clips present' : `missing: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
-  hint.textContent = ex.ok ? 'ready: 24 clips full' : `export disabled — missing ${ex.missing.length}: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
+  btn.title = ex.ok ? `all ${total} clips present` : `missing: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
+  hint.textContent = ex.ok ? `ready: ${total} clips full` : `export disabled — missing ${ex.missing.length}: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
 }
 
 async function initMatrix() {
   if (!$('matrix-grid')) return;
   try {
-    const { asset } = await loadShell();
+    const { asset } = await loadShell(assetUrlFor(currentAssetId));
     matrixAsset = asset;
     const sel = $('m-persp');
     const start = asset.preview?.perspective ?? 'td';
@@ -167,6 +189,21 @@ async function initMatrix() {
       sel.addEventListener('change', () => renderMatrix(sel.value));
     }
     renderMatrix(start);
+  } catch (e) {
+    const meta = $('matrix-meta');
+    if (meta) meta.textContent = `FAIL: ${e.message}`;
+  }
+}
+
+async function reloadMatrixFor(assetId) {
+  currentAssetId = assetId;
+  try {
+    const { asset } = await loadShell(assetUrlFor(currentAssetId));
+    matrixAsset = asset;
+    const sel = $('m-persp');
+    const persp = sel?.value ?? asset.preview?.perspective ?? 'td';
+    if (sel) sel.value = persp;
+    renderMatrix(persp);
   } catch (e) {
     const meta = $('matrix-meta');
     if (meta) meta.textContent = `FAIL: ${e.message}`;
