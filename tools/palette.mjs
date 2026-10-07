@@ -118,9 +118,9 @@ export function validatePalette(palette) {
   return { ok: errors.length === 0, errors };
 }
 
-// --- Color distance (2.2 hook) ---
-// v1 default: Euclidean RGB. OKLCH upgrade is isolated to swapping `colorDistance`
-// (pass `oklchDistance` explicitly, or via `mapFrameToPalette` opts). No pipeline change.
+// --- Color distance (2.2 hook, r2 OKLCH default) ---
+// r2 default: OKLCH perceptual. Euclidean stays exported as regression
+// comparator only (pass `euclideanDistance` explicitly). No pipeline change.
 export function euclideanDistance(a, b) {
   const dr = a.r - b.r;
   const dg = a.g - b.g;
@@ -165,7 +165,7 @@ export function oklchDistance(a, b) {
   return Math.sqrt(dL * dL + dC * dC + hTerm * hTerm);
 }
 
-export function nearestColor(r, g, b, mappable, colorDistance = euclideanDistance) {
+export function nearestColor(r, g, b, mappable, colorDistance = oklchDistance) {
   let best = null;
   let bestD = Infinity;
   for (const c of mappable) {
@@ -195,8 +195,8 @@ function assertDither(palette, dither) {
   }
 }
 
-// 2.2 frame mapping: every opaque pixel -> nearest palette entry (Euclidean v1,
-// swappable to OKLCH); alpha < threshold -> transparent BEFORE mapping.
+// 2.2 frame mapping: every opaque pixel -> nearest palette entry (OKLCH default,
+// swappable to Euclidean via opts); alpha < threshold -> transparent BEFORE mapping.
 // Reuses getMappableColors/nearestColor; returns { data, names } with data RGBA
 // (opaque hits a=255, discarded a=0) and names per-pixel palette entry (null if transparent).
 export function mapFrameToPalette(data, width, height, palette, opts = {}) {
@@ -204,10 +204,17 @@ export function mapFrameToPalette(data, width, height, palette, opts = {}) {
   if (data.length !== width * height * 4) throw new Error('data length mismatch width*height');
   const threshold = opts.threshold ?? ALPHA_THRESHOLD;
   const dither = opts.dither ?? palette.dither?.default ?? 'none';
-  const colorDistance = opts.colorDistance ?? euclideanDistance;
+  const colorDistance = opts.colorDistance ?? oklchDistance;
   assertDither(palette, dither);
   const mappable = getMappableColors(palette);
   if (mappable.length === 0) throw new Error('palette has no mappable colors');
+  // In-palette fast path (r2 Bayer harmless proof): source pixels that exactly
+  // hit a mappable RGB skip the +/-6 Bayer offset (O(1) Set lookup). Without
+  // this, close entries (e.g. scenery earth-dark 90,58,34 vs trunk 94,58,34)
+  // flip under offset and break byte-identity none-vs-bayer. v1 callers are
+  // unaffected: dither.default is none everywhere, ordered-bayer has no
+  // production caller (only tests/selfcheck pass it explicitly).
+  const mappableSet = new Set(mappable.map((c) => `${c.r},${c.g},${c.b}`));
   const out = new Uint8ClampedArray(data.length);
   const names = new Array(width * height).fill(null);
   for (let y = 0; y < height; y++) {
@@ -225,7 +232,7 @@ export function mapFrameToPalette(data, width, height, palette, opts = {}) {
       let r = data[i];
       let g = data[i + 1];
       let b = data[i + 2];
-      if (dither === 'ordered-bayer') {
+      if (dither === 'ordered-bayer' && !mappableSet.has(`${r},${g},${b}`)) {
         const t = BAYER_4X4[y % 4][x % 4] / 16 - 0.5;
         r = Math.min(255, Math.max(0, Math.round(r + t * BAYER_SPREAD)));
         g = Math.min(255, Math.max(0, Math.round(g + t * BAYER_SPREAD)));
