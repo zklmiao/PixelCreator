@@ -94,7 +94,9 @@ describe('A1 kind-aware manifest gates', () => {
       assert.equal(r.ok, true, `${id} must validate: ${r.errors.join('; ')}`);
       assert.equal(asset.kind, STATIC_KINDS[id]);
       assert.equal(asset.palette, STATIC_PALETTES[id]);
-      assert.equal(asset.size, 64);
+      // M3 128 tier: building/scenery run 128 (real-character-m3 A3),
+      // weapon/prop stay 64. Basis: frozen asset.json size fields.
+      assert.equal(asset.size, id === 'house_001' || id === 'tree_001' ? 128 : 64, `${id} size tier`);
       assert.equal(asset.actions.idle.frames, 1);
       assert.equal(asset.actions.idle.fps, 2);
       assert.equal(asset.actions.idle.loop, true);
