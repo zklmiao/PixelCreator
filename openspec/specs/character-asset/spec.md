@@ -26,6 +26,13 @@ The system SHALL mark a character asset complete only when 24 clips exist (2 per
 - **WHEN** `attack_bk` frames are missing
 - **THEN** export controls are disabled with the missing clip named
 
+### Requirement: Shared-perspective placeholder allowance
+A real-imported character asset MAY fill td slots with sd-identical pixels, provided a test pins td==sd byte equality as a placeholder and docs declare it; the allowance SHALL be removed with the placeholder test once a true top-down source lands.
+
+#### Scenario: Guardian td placeholder
+- **WHEN** listing `guardian_001` td views
+- **THEN** each td file is byte-identical to its sd counterpart and a placeholder test names the sharing
+
 ### Requirement: Asset directory layout
 The system SHALL organize one asset as one folder containing masters, view/action SVGs, `asset.json`, and a palette reference (never embedded palette values).
 

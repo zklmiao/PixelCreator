@@ -26,9 +26,9 @@ The system SHALL document how static assets reuse the generic direct-read contra
 - **WHEN** a `generic/` file is added without updating the test
 - **THEN** `node --test tools/placeholder.test.mjs` fails naming the drift
 
-### Requirement: No tres generator this round
-The system SHALL NOT ship a `.tres`/`.godot` generator in this change; the adapter stops at recipe plus worked example, with generation deferred.
+### Requirement: Tres generator over Full maps
+The system SHALL ship `tools/tres.mjs` generating `godot/<id>.spriteframes.tres` from shipped Full maps only (one file per asset; animations named `{persp}/{action}/{dir}`, speed=fps, loop→LOOP_FORWARD/LOOP_NONE, texture_filter nearest as documented default). The previous "No tres generator this round" requirement is retired by the real-character-m3 change.
 
-#### Scenario: No engine artifacts
-- **WHEN** listing `engine-placeholder/` after this change
-- **THEN** no `.tres`, `.godot`, or `.res` files exist
+#### Scenario: Knight tres
+- **WHEN** generating from knight Full maps (walk+attack plus idle sheets)
+- **THEN** one tres holds 24 animations (td/sd × idle/walk/attack × 4 dirs) with map-exact regions and timing

@@ -11,7 +11,7 @@
 | **M0** | 人物管线首闭环：量化→派生→矢量化→清单→矩阵→双表→引擎占位 | character-mvp 全部 6 项（character-asset / animation-keyframes / pixel-quantize / svg-engineering / spritesheet-export / prototype-prompt） | `2026-10-06-pixel-generator-character-mvp`（轮 0） | ✅ 已归档 |
 | **M1** | 多类资产 + Godot 配方 + 感知色距 + web 多资产可看可切 | static-asset / spritesheet-export(配方) / pixel-quantize(OKLCH+Bayer) / prototype-prompt(kind-aware) / animation-keyframes(静态矩阵) | `2026-10-06-static-kinds-godot-adapter`（轮 1）+ `2026-10-07-perceptual-color-plus-static-web`（轮 2） | ✅ 已归档 |
 | **M2** | **真实素材导入 MVP：喂真图 → 出真资产 → 人工可看** | prototype-import(新) / spritesheet-export(静态单帧) / static-asset(导入实例) | `2026-10-07-real-import-mvp`（轮 3） | ✅ 已归档 |
-| **M3** | 引擎一键接入 + 大尺寸档 + 真实角色 24 格 | spritesheet-export(.tres) / pixel-quantize(128 档) / character-asset(真实全矩阵) | 轮 4 | ⬜ |
+| **M3** | 引擎一键接入 + 大尺寸档 + 真实角色 24 格 | spritesheet-export(.tres) / pixel-quantize(128 档) / character-asset(真实全矩阵) | `2026-10-07-real-character-m3`（轮 4） | ✅ 已归档 |
 | **M4** | img2img 实调 | prototype-prompt | 轮 5（可选，最后） | ⬜ |
 
 ---
@@ -58,11 +58,13 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 
 **人工验收（✅ 2026-10-07 用户通过）**：用户走完 M2 清单并完成第 5 步自备图导入——从 Icons 包提取 `I_Bottle01–04`，选 `I_Bottle03` 经 `prototypes/potion_001/input.png` 重跑导入（SHA256 与源 zip 一致），potion_001 的 10 个 SVG 现为用户导入的瓶子艺术。为守住"入库源 → 工具 → 生成物"可复现链，`I_Bottle03.png` + compare 已晋级为第 4 个 fixture（`FIX` 3→4，新增 compare 公式测试），主干 136/136。
 
-## M3 — 引擎一键接入 + 大尺寸档 + 真实角色（⬜ 轮 4）
+## M3 — 引擎一键接入 + 大尺寸档 + 真实角色（✅ 2026-10-07 归档，轮 4）
 
 - Godot `.tres` 生成器：从 map.json 产出 AtlasTexture/SpriteFrames 资源（gap #13–#17 的 Godot 侧落地，导入从"照配方手工"变"一键"）。
 - building/scenery 128 档生成实测（schema/validator 已允许、从未跑过）。
-- 真实角色 24 格：源 `resources/last-guardian-sprites.zip`（716 张按 `amg1_{fr,bk,lf,rt}{帧号}` 命名的四方向帧）——先核对帧数是否覆盖 idle+walk+attack 64 帧，不足则补拍/补生成；character 校验器满门控不变。
+- 真实角色 24 格：源 `resources/last-guardian-sprites/`（722 项 = 716 GIF + 4 jpg + 1 readme + 1 目录项；实测为 ~90 前缀 × 4 方向 × 2 帧的单帧 32x32 Indexed GIF，非连续动作）——帧数核对结论：不足（每方向仅 2 distinct 帧；idle 1 / walk 2 / attack 2 为门计数下限）；选 amg1 系 8 件；td 无源 → sd 像素复制占位（测试钉死）；character 校验器满门控不变。
+
+**验收实测（主干）**：`node --test` 156/156；7× manifest `--check-files` 全 OK（含 guardian 24/64、house/tree 128）；7 verify 全绿；recipe 104 帧；guardian sheets 6 Full + 4 Maker + knight idle 2；两 `.tres` 24/24 动画；td==sd 整字节 20 组。
 
 ## M4 — img2img 实调（⬜ 轮 5，可选）
 

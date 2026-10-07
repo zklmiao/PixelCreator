@@ -18,6 +18,13 @@ The system SHALL import a real PNG into a frozen static skeleton via `node tools
 - **WHEN** importing into an asset whose masters are absent
 - **THEN** both perspective masters land on disk with fr-slot content marked data-master=true
 
+### Requirement: Multi-slot manifest import
+The system SHALL support `node tools/import-prototype.mjs --asset <id> --map <manifest.json>` assigning one source PNG per clip slot for characters (idle/walk/attack × dirs × perspectives), with the manifest committed and reviewed.
+
+#### Scenario: Guardian map
+- **WHEN** importing `guardian_001` via `fixtures/guardian/guardian-map.json`
+- **THEN** 40 view slots plus 2 masters land per the manifest and the reuse declaration matches landed bytes
+
 ### Requirement: Compare output contract
 
 The system SHALL write `<basename>.compare.png` next to the import output (source left, quantized result right, integer upscale semantics) so humans and the web compare view share one path convention.

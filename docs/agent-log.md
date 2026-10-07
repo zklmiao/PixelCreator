@@ -34,3 +34,12 @@
 - 合并：`1b27aa7` merge(import)（合后 135/135 + 6× manifest 全绿，即严格式 `feat(import)` gate）；`274e7cc` merge(present)（8 文件；合后 135/135 + 7 verify + recipe 全绿）。
 - 集成：无回填（`potion_001` prompt_hash 按提案非目标保持 pending）。已勾本 change tasks A1–A4/B1–B3/M1；里程碑 M2 翻 ✅（验收实测行已补）。
 - 遗留风险：`potion_001` hash 回填留后续轮次；building/scenery 128 档 + `.tres` 生成器 → M3（轮 4）；img2img → M4。
+
+## 轮 4 — real-character-m3（M3：首个真实角色 + 一键 .tres + 128 实测）
+
+- Prep（main）：`0dddede` chore(contract): freeze guardian_001 skeleton plus real-character-mvp proposal (r4-prep)（character/64/seed 2006/24 clips/40 slots 全 pending 零 SVG）。分支 `feat/m3-tracks`、`feat/m3-view` 自 prep 新建。
+- wt-A 管线轴 `feat/m3-tracks @ 54f3a28`：单 commit，114 文件（guardian 40 视图 + 2 母版 + fixtures 8+8+map + guardian 6 Full + 4 Maker sheets + knight idle 2+2 + `tools/tres.mjs` + godot 2 文件 + house/tree 128 + 3 新测试）。评审：wt 内 156/156；diff 零越界；house/tree JSON 各仅 size 单行；tres 24/24 动画名/时序/帧数（64/40）+ sheets 几何抽查通过。结论：通过。
+- wt-B 呈现轴 `feat/m3-view @ cbe5fef`：本体 `16510c4` 8 文件（compare guardian 驱动 + ASSET_IDS 扩 7 + verify-static 同步 + verify-real-import guardian 段 + docs + recipe §6 修指）+ tail `cbe5fef` 1 文件（复用/母版改 rect 集比对，td 保持整字节）。评审：rebase 后 wt 内 156/156 + 7 verify 全绿 + recipe 104 帧；td==sd 整字节 20 组独立复核。结论：通过。
+- 合并：`c1ef56b` merge(m3)（合后 156/156 + 7× manifest 全绿，即严格式 `feat(m3)` gate）；`64d4a85` merge(present)（8 文件；合后 156/156 + 7 verify + recipe 全绿）。
+- 集成：无回填（guardian/potion hash 均 pending，沿提案）。已勾本 change tasks；里程碑 M3 翻 ✅。
+- 遗留风险：td 真源替换（有源即换，删占位测试）；fuller motion（补拍/补生成 M4+）；guardian/potion hash 语义 M4 定；img2img → M4。

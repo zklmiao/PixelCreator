@@ -3,7 +3,7 @@
 ## 1. 工作区与分支
 
 - 工作区：`E:\Agent\Proj\PixeCreator-wt-A`（只在此目录内改）。
-- 分支：`feat/m3-tracks`，自主控 prep commit 新建（基点 sha 主控下发时填入本卡；开始前 `git log --oneline -1` 核对，`git status --short` 干净）。
+- 分支：`feat/m3-tracks`，自主控 prep commit 新建（基点：prep `0dddede`；开始前 `git log --oneline -1` 核对，`git status --short` 干净）。
 - 独立会话：本卡是唯一依据；歧义按字面做并在报告注明。
 
 ## 2. 背景（一段）

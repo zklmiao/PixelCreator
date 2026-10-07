@@ -3,7 +3,7 @@
 ## 1. 工作区与分支
 
 - 工作区：`E:\Agent\Proj\PixeCreator-wt-B`（只在此目录内改）。
-- 分支：`feat/m3-view`，自主控 prep commit 新建（基点 sha 主控下发时填入本卡；开始前 `git log --oneline -1` 核对，`git status --short` 干净）。
+- 分支：`feat/m3-view`，自主控 prep commit 新建（基点：prep `0dddede`；开始前 `git log --oneline -1` 核对，`git status --short` 干净）。
 - 独立会话：本卡是唯一依据；歧义按字面做并在报告注明。
 - 时序：主体与 wt-A 并行（guardian SVG 未到前矩阵允许 missing 占位开发）；合并前等主控 gate 通知（main 含 `feat(m3)`：`git log main --format=%s | grep -m1 "feat(m3)"` 有输出），gate 后 rebase → 在位确认 → DoD 重跑 → 尾巴报告。
 
