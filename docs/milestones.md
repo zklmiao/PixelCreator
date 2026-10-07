@@ -54,7 +54,9 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 4. 打开 `sheets/` 静态单帧 PNG（可直接拖进引擎）；
 5. （可选）把自己的 AI 原型图放入 `prototypes/potion_001/input.png` 重跑导入，重复 2–4。
 
-**验收实测（主干）**：`node --test` 135/135；6× manifest `--check-files` 全 OK（含 potion）；7 verify 全绿（含 verify-real-import：3 compares 98x64 + 6 shells + potion 8 格）；recipe 104 帧；potion sheets 256x64 色板零杂色；`potion_001` hash 保持 pending（非目标，不回填）。
+**验收实测（主干）**：`node --test` 136/136；6× manifest `--check-files` 全 OK（含 potion）；7 verify 全绿（含 verify-real-import：4 compares 98x64 + 6 shells + potion 8 格）；recipe 104 帧；potion sheets 256x64 色板零杂色；`potion_001` hash 保持 pending（非目标，不回填）。
+
+**人工验收（✅ 2026-10-07 用户通过）**：用户走完 M2 清单并完成第 5 步自备图导入——从 Icons 包提取 `I_Bottle01–04`，选 `I_Bottle03` 经 `prototypes/potion_001/input.png` 重跑导入（SHA256 与源 zip 一致），potion_001 的 10 个 SVG 现为用户导入的瓶子艺术。为守住"入库源 → 工具 → 生成物"可复现链，`I_Bottle03.png` + compare 已晋级为第 4 个 fixture（`FIX` 3→4，新增 compare 公式测试），主干 136/136。
 
 ## M3 — 引擎一键接入 + 大尺寸档 + 真实角色（⬜ 轮 4）
 
@@ -75,3 +77,4 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 ## 变更记录
 
 - 2026-10-07 初版：M0/M1 达成（两/三笔 change 归档），M2 `real-import-mvp` 立项（提案已草成、待评审确认后 prep），M3/M4 排队。
+- 2026-10-07 M2 收官：轮 3 合并归档（28b7b36），用户人工验收通过（含自备图导入）；I_Bottle03 晋级第 4 fixture，potion_001 内容为用户导入件，主干 136/136。
