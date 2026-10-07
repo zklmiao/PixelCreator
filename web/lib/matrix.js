@@ -10,6 +10,11 @@ export const MATRIX_ACTIONS = ['idle', 'walk', 'attack'];
 export const MATRIX_DIRS = ['fr', 'bk', 'lf', 'rt'];
 export const MATRIX_PERSPS = ['td', 'sd'];
 
+export const STATIC_KINDS = ['weapon', 'building', 'prop', 'scenery'];
+
+const kindOf = (asset) => asset?.kind ?? 'character';
+const actionsFor = (asset) => (STATIC_KINDS.includes(kindOf(asset)) ? ['idle'] : MATRIX_ACTIONS);
+
 function assertPersp(persp) {
   if (!MATRIX_PERSPS.includes(persp)) {
     throw new Error(`missing clip: ${persp}/-/-(unknown perspective, want td|sd)`);
@@ -19,7 +24,7 @@ function assertPersp(persp) {
 export function buildMatrix(asset, persp) {
   assertPersp(persp);
   const cells = [];
-  for (const action of MATRIX_ACTIONS) {
+  for (const action of actionsFor(asset)) {
     for (const dir of MATRIX_DIRS) {
       const clipId = `${persp}/${action}/${dir}`;
       try {
@@ -70,9 +75,10 @@ export function tickPlayer(player) {
 export function canExport(asset) {
   // Mirrors validateAsset missing-clip semantics (persp/action/dir naming)
   // without pulling node:fs, so the browser can gray out export.
+  // Static kinds check idle only (8 clips); character checks 24 clips.
   const missing = [];
   for (const persp of MATRIX_PERSPS) {
-    for (const action of MATRIX_ACTIONS) {
+    for (const action of actionsFor(asset)) {
       for (const dir of MATRIX_DIRS) {
         try {
           clipFrames(asset, persp, action, dir);

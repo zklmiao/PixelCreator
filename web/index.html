@@ -14,14 +14,26 @@
 
   <main>
     <section aria-label="asset shell">
-      <h2>1.1 Asset shell — knight_001</h2>
+      <h2>1.1 Asset shell — 5 assets (kind-aware)</h2>
+      <div class="row">
+        <label>asset
+          <select id="asset-select">
+            <option value="knight_001">knight_001 (character)</option>
+            <option value="sword_001">sword_001 (weapon)</option>
+            <option value="house_001">house_001 (building)</option>
+            <option value="crate_001">crate_001 (prop)</option>
+            <option value="tree_001">tree_001 (scenery)</option>
+          </select>
+        </label>
+        <span id="asset-kind" class="hint"></span>
+      </div>
       <p id="asset-meta">loading…</p>
       <div class="masters">
         <div class="slot"><h3>master_td.svg</h3><code id="master-td">…</code></div>
         <div class="slot"><h3>master_side.svg</h3><code id="master-sd">…</code></div>
       </div>
       <p id="asset-status">loading…</p>
-      <p class="hint">Shell loads <code>../assets/knight_001/asset.json</code> via fetch. Serve repo root (e.g. <code>npx serve</code>) then open <code>/web/</code>. Missing view SVGs are expected: shell-only stage.</p>
+      <p class="hint">Shell loads <code>../assets/&lt;id&gt;/asset.json</code> via fetch (default knight_001). Serve repo root (e.g. <code>npx serve</code>) then open <code>/web/</code>. Static kinds are idle-only: walk/attack present or non-idle preview fails the shell check.</p>
     </section>
 
     <section aria-label="prompt form">
@@ -58,7 +70,7 @@
     </section>
 
     <section aria-label="preview matrix">
-      <h2>5.2 Preview matrix — 12 cells + td/sd toggle</h2>
+      <h2>5.2 Preview matrix — character 12 cells / static 4 cells + td/sd toggle</h2>
       <div class="row">
         <label>perspective
           <select id="m-persp"><option value="td">td</option><option value="sd">sd</option></select>
