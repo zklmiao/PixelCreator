@@ -3,6 +3,9 @@ import { loadShell, ASSET_IDS, ASSET_URLS, assetUrlFor } from './lib/asset-shell
 import { buildPrompt, validateFields, FIXED_NEGATIVE, KNIGHT_EXAMPLE } from './lib/prompt.js';
 import { buildMatrix, createPlayer, tickPlayer, canExport } from './lib/matrix.js';
 import { COMPARE_FIXTURES, prototypeCompareUrlFor, prototypeInputFor } from './lib/compare.js';
+import {
+  GUARDIAN_MAP_URL, guardianSourcesFromMap, guardianCompareUrlFor,
+} from './lib/compare.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -149,9 +152,63 @@ function initCompare() {
   } else {
     updatePrototypeCompare('potion_001');
   }
+  initGuardianCompare();
 }
 
-// Static-web asset switcher (6 assets, default knight_001).
+// M3 guardian compares: data-driven from fixtures/guardian/guardian-map.json
+// (clip -> source), so the view never hardcodes source names. Any failure
+// (map or image) parks a named placeholder hint; the page never crashes.
+async function initGuardianCompare() {
+  const grid = $('guardian-grid');
+  const status = $('guardian-status');
+  if (!grid) return;
+  const parkAll = (text) => {
+    grid.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'ph';
+    p.textContent = text;
+    grid.appendChild(p);
+  };
+  let map;
+  try {
+    const res = await fetch(GUARDIAN_MAP_URL);
+    if (!res.ok) throw new Error(`fetch ${GUARDIAN_MAP_URL} failed: ${res.status}`);
+    map = await res.json();
+  } catch (e) {
+    if (status) status.textContent = `missing ${GUARDIAN_MAP_URL} (guardian fixtures land with the wt-A m3 merge; page stays usable)`;
+    else parkAll(`missing ${GUARDIAN_MAP_URL} (guardian fixtures land with the wt-A m3 merge; page stays usable)`);
+    return;
+  }
+  const sources = guardianSourcesFromMap(map);
+  if (sources.length === 0) {
+    if (status) status.textContent = `empty source list in ${GUARDIAN_MAP_URL} (no guardian compares to show)`;
+    else parkAll(`empty source list in ${GUARDIAN_MAP_URL} (no guardian compares to show)`);
+    return;
+  }
+  grid.innerHTML = '';
+  sources.forEach((base, i) => {
+    const url = guardianCompareUrlFor(base);
+    const fig = document.createElement('figure');
+    fig.className = 'compare';
+    fig.dataset.compareName = base;
+    const cap = document.createElement('figcaption');
+    cap.textContent = `${base} — left source / right quantized`;
+    fig.appendChild(cap);
+    const img = document.createElement('img');
+    img.id = `cmp-guardian-${i}`;
+    img.alt = `${base} compare: source left, quantized right`;
+    const ph = document.createElement('p');
+    ph.className = 'ph';
+    ph.hidden = true;
+    fig.appendChild(img);
+    fig.appendChild(ph);
+    wireCompareImg(img, ph, `missing ${url} (guardian compare not yet landed; page stays usable)`);
+    img.src = url;
+    grid.appendChild(fig);
+  });
+}
+
+// Static-web asset switcher (7 assets, default knight_001).
 // Shell + matrix reload together; prompt form stays on the knight example
 // (character path) so the frozen 4.1 template is untouched.
 function initAssetSwitcher() {
