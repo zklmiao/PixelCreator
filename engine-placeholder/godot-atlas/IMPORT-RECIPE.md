@@ -109,7 +109,8 @@ node engine-placeholder/godot-atlas/verify-recipe.mjs
 
 ## 6. 本配方不做什么
 
-- 不含 PNG（去 `sheets/` 或 `../generic/` 取）、不建 `.godot/.tres/.res`、
-  不改 `asset.json` 与 66 SVG、不动 `web/`。
+- 不含 PNG（去 `sheets/` 或 `../generic/` 取）、`.tres` 不在此产（去 `godot/`
+  取，由 `tools/tres.mjs` 自 Full maps 生成，knight/guardian 各 24 动画）、
+  不建 `.godot/.res`、不改 `asset.json` 与 66 SVG、不动 `web/`。
 - 不虚构 map 字段：凡 map 没有的（#13–#14、#18–#20、#22–#23），只给缺省声明
   或追溯取处，不写进表（map 冻结，见 §3）。

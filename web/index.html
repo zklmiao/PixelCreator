@@ -14,7 +14,7 @@
 
   <main>
     <section aria-label="asset shell">
-      <h2>1.1 Asset shell — 6 assets (kind-aware)</h2>
+      <h2>1.1 Asset shell — 7 assets (kind-aware)</h2>
       <div class="row">
         <label>asset
           <select id="asset-select">
@@ -24,6 +24,7 @@
             <option value="crate_001">crate_001 (prop)</option>
             <option value="tree_001">tree_001 (scenery)</option>
             <option value="potion_001">potion_001 (prop)</option>
+            <option value="guardian_001">guardian_001 (character)</option>
           </select>
         </label>
         <span id="asset-kind" class="hint"></span>
@@ -89,6 +90,11 @@
           <img id="cmp-I_GoldCoin" data-compare="../fixtures/import/I_GoldCoin.compare.png" alt="I_GoldCoin compare: source left, quantized right" />
           <p class="ph" id="cmp-I_GoldCoin-ph" hidden></p>
         </figure>
+      </div>
+      <h3>Guardian real character compares (<code>fixtures/guardian/*.compare.png</code>)</h3>
+      <p class="hint">Driven by <code>fixtures/guardian/guardian-map.json</code> (clip → source); td views are sd-identical placeholders until a true top-down source lands (see docs).</p>
+      <div id="guardian-grid" class="compare-grid">
+        <p class="hint" id="guardian-status">loading guardian compares…</p>
       </div>
       <div class="row">
         <label>local prototype compare (same convention)

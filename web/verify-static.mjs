@@ -1,4 +1,4 @@
-// verify-static.mjs — static-web acceptance: 6-asset kind-aware shell +
+// verify-static.mjs — static-web acceptance: 7-asset kind-aware shell +
 // idle-only 8-cell matrix + kind-aware prompt + character frozen regression +
 // B1 idle-only negative assertions. Run: node web/verify-static.mjs
 // Read-only: never writes assets/. checkShell is pure (fs read + direct call);
@@ -22,18 +22,18 @@ let failed = false;
 const fail = (m) => { console.log(`FAIL: ${m}`); failed = true; };
 const ok = (m) => console.log(`OK: ${m}`);
 
-// 0. Asset URL map covers all 6 switchable assets (default knight compat).
-if (ASSET_IDS.join() !== 'knight_001,sword_001,house_001,crate_001,tree_001,potion_001') {
-  fail(`ASSET_IDS must be knight/sword/house/crate/tree/potion, got ${ASSET_IDS.join(',')}`);
-} else ok('asset switcher lists 6 assets (knight default)');
+// 0. Asset URL map covers all 7 switchable assets (default knight compat).
+if (ASSET_IDS.join() !== 'knight_001,sword_001,house_001,crate_001,tree_001,potion_001,guardian_001') {
+  fail(`ASSET_IDS must be knight/sword/house/crate/tree/potion/guardian, got ${ASSET_IDS.join(',')}`);
+} else ok('asset switcher lists 7 assets (knight default)');
 for (const id of ASSET_IDS) {
   if (ASSET_URLS[id] !== `../assets/${id}/asset.json`) fail(`ASSET_URLS[${id}] must be ../assets/${id}/asset.json`);
 }
-ok('asset URLs map 6 ids to ../assets/<id>/asset.json');
+ok('asset URLs map 7 ids to ../assets/<id>/asset.json');
 if (ASSET_URLS.knight_001 !== '../assets/knight_001/asset.json') fail('default knight URL drifted');
 else ok('default shell URL stays knight_001 (compat)');
 
-// 1. Six shells all OK via fs + pure checkShell.
+// 1. Seven shells all OK via fs + pure checkShell.
 const STATIC_IDS = ['sword_001', 'house_001', 'crate_001', 'tree_001'];
 for (const id of [...ASSET_IDS]) {
   const asset = loadAsset(id);
@@ -240,4 +240,4 @@ for (const [kind, example, seed] of STATIC_CASES) {
 }
 
 if (failed) process.exit(1);
-console.log('OK: static web verified (6 shells/8-cell matrix/kind-aware prompt/character frozen)');
+console.log('OK: static web verified (7 shells/8-cell matrix/kind-aware prompt/character frozen)');
