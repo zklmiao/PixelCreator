@@ -6,28 +6,28 @@
           "bk": [
             {
               "file": "sword_sd_idle_bk0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "c6fd1cf6",
               "seed": 2001
             }
           ],
           "fr": [
             {
               "file": "sword_sd_idle_fr0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "a56b422e",
               "seed": 2001
             }
           ],
           "lf": [
             {
               "file": "sword_sd_idle_lf0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "3417035c",
               "seed": 2001
             }
           ],
           "rt": [
             {
               "file": "sword_sd_idle_rt0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "556d0782",
               "seed": 2001
             }
           ]
@@ -36,28 +36,28 @@
           "bk": [
             {
               "file": "sword_td_idle_bk0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "15a46d01",
               "seed": 2001
             }
           ],
           "fr": [
             {
               "file": "sword_td_idle_fr0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "0f435899",
               "seed": 2001
             }
           ],
           "lf": [
             {
               "file": "sword_td_idle_lf0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "5a387907",
               "seed": 2001
             }
           ],
           "rt": [
             {
               "file": "sword_td_idle_rt0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "89c293ed",
               "seed": 2001
             }
           ]

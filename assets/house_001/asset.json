@@ -6,28 +6,28 @@
           "bk": [
             {
               "file": "house_sd_idle_bk0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "ccc610ae",
               "seed": 2002
             }
           ],
           "fr": [
             {
               "file": "house_sd_idle_fr0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "38cf74e6",
               "seed": 2002
             }
           ],
           "lf": [
             {
               "file": "house_sd_idle_lf0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "35419814",
               "seed": 2002
             }
           ],
           "rt": [
             {
               "file": "house_sd_idle_rt0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "4b8faa3a",
               "seed": 2002
             }
           ]
@@ -36,28 +36,28 @@
           "bk": [
             {
               "file": "house_td_idle_bk0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "68b3e1f9",
               "seed": 2002
             }
           ],
           "fr": [
             {
               "file": "house_td_idle_fr0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "5e48f491",
               "seed": 2002
             }
           ],
           "lf": [
             {
               "file": "house_td_idle_lf0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "7aa3a6ff",
               "seed": 2002
             }
           ],
           "rt": [
             {
               "file": "house_td_idle_rt0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": "71b11fe5",
               "seed": 2002
             }
           ]
