@@ -19,3 +19,8 @@ pre { white-space: pre-wrap; background: #8881; padding: 12px; border-radius: 8p
 .cell h4 { margin: 0 0 4px; font-size: 14px; }
 .cell.missing { border-style: dashed; }
 .cell .ph { color: #b00020; font-size: 13px; }
+.compare-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; margin-top: 8px; }
+.compare { border: 1px solid var(--bd); border-radius: 8px; padding: 8px 10px; margin: 0; }
+.compare figcaption { font-size: 13px; color: #666; margin-bottom: 4px; }
+.compare img { max-width: 100%; image-rendering: pixelated; }
+.compare .ph { color: #b00020; font-size: 13px; }
