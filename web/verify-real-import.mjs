@@ -219,8 +219,18 @@ for (const id of ASSET_IDS) {
     }
   }
   // Landed-bytes reuse + td==sd placeholder (tolerant while SVGs land).
+  // Pixel semantics: slot metadata (action/frame/source, data-master) differs
+  // per slot by design, so reuse/master checks compare <rect> pixel sets
+  // (same rectSet precedent as tools/static-kinds.test.mjs); td==sd twins
+  // are pure copies and stay whole-byte identical per spec.
   const guardian = loadAsset('guardian_001');
   const clips = guardian.actions;
+  const rectKey = (file) => {
+    const bin = readBin(resolve(gAssetDir, file));
+    if (bin === null) return null;
+    const tags = String(bin).match(/<rect\b[^>]*>/g) ?? [];
+    return tags.sort().join('\n');
+  };
   let checked = 0;
   let tolerated = 0;
   const eqFiles = (a, b) => {
@@ -238,15 +248,25 @@ for (const id of ASSET_IDS) {
       const idle = clips.idle.clips[persp][dir].map((f) => f.file);
       const walk = clips.walk.clips[persp][dir].map((f) => f.file);
       const attack = clips.attack.clips[persp][dir].map((f) => f.file);
-      // Reuse declaration: idle=[f1], walk=[f1,f2], attack=[f2,f1].
-      const r1 = eqFiles(idle[0], walk[0]);
-      if (r1 === false) fail(`reuse mismatch: ${idle[0]} must equal ${walk[0]} (both f1)`);
-      const r2 = eqFiles(walk[1], attack[0]);
-      if (r2 === false) fail(`reuse mismatch: ${walk[1]} must equal ${attack[0]} (both f2)`);
-      const r3 = eqFiles(walk[0], attack[1]);
-      if (r3 === false) fail(`reuse mismatch: ${walk[0]} must equal ${attack[1]} (both f1)`);
-      const d = eqFiles(walk[0], walk[1]);
-      if (d === true) fail(`distinctness: ${walk[0]} must differ from ${walk[1]} (f1 vs f2)`);
+      // Reuse declaration: idle=[f1], walk=[f1,f2], attack=[f2,f1] (pixel sets).
+      const px = (a, b) => {
+        const ka = rectKey(a);
+        const kb = rectKey(b);
+        if (ka === null || kb === null) {
+          tolerated++;
+          return null;
+        }
+        checked++;
+        return ka === kb;
+      };
+      const r1 = px(idle[0], walk[0]);
+      if (r1 === false) fail(`reuse mismatch: ${idle[0]} pixels must equal ${walk[0]} (both f1)`);
+      const r2 = px(walk[1], attack[0]);
+      if (r2 === false) fail(`reuse mismatch: ${walk[1]} pixels must equal ${attack[0]} (both f2)`);
+      const r3 = px(walk[0], attack[1]);
+      if (r3 === false) fail(`reuse mismatch: ${walk[0]} pixels must equal ${attack[1]} (both f1)`);
+      const d = px(walk[0], walk[1]);
+      if (d === true) fail(`distinctness: ${walk[0]} pixels must differ from ${walk[1]} (f1 vs f2)`);
       if (persp === 'td') {
         for (const f of [...idle, ...walk, ...attack]) {
           const sdTwin = f.replace('_td_', '_sd_');
@@ -256,11 +276,17 @@ for (const id of ASSET_IDS) {
       }
     }
   }
-  // Masters carry fr-slot content.
+  // Masters carry fr-slot content (data-master marking differs by design).
   for (const [persp, fr0] of [['td', 'guardian_td_idle_fr0.svg'], ['sd', 'guardian_sd_idle_fr0.svg']]) {
     const master = guardian.masters[persp];
-    const t = eqFiles(master, fr0);
-    if (t === false) fail(`master mismatch: ${master} must equal ${fr0} (fr-slot content)`);
+    const ka = rectKey(master);
+    const kb = rectKey(fr0);
+    if (ka === null || kb === null) {
+      tolerated++;
+    } else {
+      checked++;
+      if (ka !== kb) fail(`master mismatch: ${master} pixels must equal ${fr0} (fr-slot content)`);
+    }
   }
   ok(`guardian landed-bytes reuse + td==sd placeholder checked=${checked} tolerated-missing=${tolerated}`);
   // Guardian 24-cell matrix shape via existing buildMatrix (td placeholder
