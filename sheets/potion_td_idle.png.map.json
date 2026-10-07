@@ -1,0 +1,74 @@
+{
+  "mode": "full",
+  "asset": "potion_001",
+  "perspective": "td",
+  "action": "idle",
+  "size": 64,
+  "cell": 64,
+  "cols": 4,
+  "rows": 1,
+  "sheet": "potion_td_idle.png",
+  "fps": 2,
+  "loop": true,
+  "next": null,
+  "frames": [
+    {
+      "file": "potion_td_idle_fr0.svg",
+      "dir": "fr",
+      "frame": 0,
+      "col": 0,
+      "row": 0,
+      "x": 0,
+      "y": 0,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "potion_td_idle_bk0.svg",
+      "dir": "bk",
+      "frame": 0,
+      "col": 1,
+      "row": 0,
+      "x": 64,
+      "y": 0,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "potion_td_idle_lf0.svg",
+      "dir": "lf",
+      "frame": 0,
+      "col": 2,
+      "row": 0,
+      "x": 128,
+      "y": 0,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "potion_td_idle_rt0.svg",
+      "dir": "rt",
+      "frame": 0,
+      "col": 3,
+      "row": 0,
+      "x": 192,
+      "y": 0,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    }
+  ],
+  "mapping": {
+    "kept": [
+      "potion_td_idle_fr0.svg",
+      "potion_td_idle_bk0.svg",
+      "potion_td_idle_lf0.svg",
+      "potion_td_idle_rt0.svg"
+    ],
+    "dropped": [],
+    "padded": []
+  }
+}

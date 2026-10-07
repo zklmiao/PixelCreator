@@ -19,6 +19,7 @@ export const SHEET_ROWS = SHEET_DIRS.length; // 4
 export const MAKER_COLS = 3;
 export const SHEET_ACTIONS = ['idle', 'walk', 'attack'];
 export const SHEET_MODES = ['maker', 'full'];
+export const STATIC_SHEET_KINDS = ['weapon', 'building', 'prop', 'scenery'];
 
 function frameNumFromFile(file) {
   const m = String(file).match(/(\d+)\.svg$/);
@@ -206,8 +207,102 @@ export async function loadActionFrames(assetDir, asset, perspective, action, mod
   return out;
 }
 
+// buildStaticSheet(asset, { perspective, frames }) -> { rgba, w, h, map }.
+// Static single-frame export (real-import-mvp ADDED, full-only):
+// one PNG per perspective (`<prefix>_<persp>_idle.png`), 4 columns x 1 row,
+// cell = asset.size, column order fr/bk/lf/rt. Pure function: no fs.
+// frames = [{ file, dir, data, w, h }] decoded via svgToPixels (one idle frame
+// per dir); missing/extra dirs throw. Maker mode SHALL NOT apply (no mode
+// param at all). Knight dual-mode buildSheet below is untouched.
+export function buildStaticSheet(asset, { perspective, frames } = {}) {
+  if (Array.isArray(perspective) || typeof perspective !== 'string' || !['td', 'sd'].includes(perspective)) {
+    throw new Error(
+      `td/sd 永不合表: perspective must be a single 'td'|'sd', got ${JSON.stringify(perspective)}`,
+    );
+  }
+  if (!STATIC_SHEET_KINDS.includes(asset?.kind)) {
+    throw new Error(
+      `static sheet needs kind ${STATIC_SHEET_KINDS.join('|')}, got ${JSON.stringify(asset?.kind)}`,
+    );
+  }
+  const idle = asset?.actions?.idle;
+  if (!idle) throw new Error(`missing clips: ${perspective}/idle (action absent)`);
+  const clips = idle.clips?.[perspective];
+  if (!clips) throw new Error(`missing clips: ${perspective}/idle (perspective absent)`);
+  const cell = asset.size;
+  assertCell(cell);
+  if (!Array.isArray(frames) || frames.length === 0) {
+    throw new Error('frames required: [{ file, dir, data, w, h }] decoded via svgToPixels (fs lives in CLI)');
+  }
+  const byFile = new Map(frames.map((f) => [f.file, f]));
+  const placed = [];
+  const kept = [];
+  for (let col = 0; col < SHEET_DIRS.length; col++) {
+    const dir = SHEET_DIRS[col];
+    const list = clips[dir];
+    if (!Array.isArray(list) || list.length === 0) {
+      throw new Error(`missing clip: ${perspective}/idle/${dir} (clip absent)`);
+    }
+    const file = list[0].file;
+    placed.push({ file, dir, frame: frameNumFromFile(file), col, row: 0, kind: 'kept' });
+    kept.push(file);
+  }
+  const cols = SHEET_DIRS.length;
+  const rows = 1;
+  const w = cols * cell;
+  const h = rows * cell;
+  const rgba = new Uint8ClampedArray(w * h * 4);
+  for (const p of placed) {
+    const src = byFile.get(p.file);
+    if (!src) throw new Error(`missing frame data: ${p.file} (decode it via svgToPixels first)`);
+    if (src.w !== cell || src.h !== cell) {
+      throw new Error(`${p.file}: sheet cell must be ${cell}x${cell}, got ${src.w}x${src.h}`);
+    }
+    const dx = p.col * cell;
+    for (let y = 0; y < cell; y++) {
+      for (let x = 0; x < cell; x++) {
+        const si = (y * cell + x) * 4;
+        const di = (y * w + (dx + x)) * 4;
+        rgba[di] = src.data[si];
+        rgba[di + 1] = src.data[si + 1];
+        rgba[di + 2] = src.data[si + 2];
+        rgba[di + 3] = src.data[si + 3];
+      }
+    }
+  }
+  const map = {
+    mode: 'full',
+    asset: asset.id,
+    perspective,
+    action: 'idle',
+    size: cell,
+    cell,
+    cols,
+    rows,
+    sheet: `${asset.asset}_${perspective}_idle.png`,
+    fps: idle.fps,
+    loop: idle.loop,
+    next: idle.next ?? null,
+    frames: placed.map((p) => ({
+      file: p.file,
+      dir: p.dir,
+      frame: p.frame,
+      col: p.col,
+      row: p.row,
+      x: p.col * cell,
+      y: 0,
+      w: cell,
+      h: cell,
+      kind: p.kind,
+    })),
+    mapping: { kept, dropped: [], padded: [] },
+  };
+  return { rgba, w, h, map };
+}
+
 // exportSheets(assetId?, outDir?) -> [{ sheet, map, w, h, mode, perspective, action, bytes }].
 // 批量:walk+attack × td/sd × maker/full = 8 表 + 8 map.json,落盘到 sheets/。
+// 静态 idle-only 资产走单帧分支:td/sd 各 1 表 + 1 map(full-only,无 maker)。
 export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
   const { resolve, dirname } = await import('node:path');
@@ -218,6 +313,20 @@ export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
   const asset = JSON.parse(readFileSync(resolve(assetDir, 'asset.json'), 'utf8'));
   mkdirSync(out, { recursive: true });
   const results = [];
+  if (STATIC_SHEET_KINDS.includes(asset.kind)) {
+    if (!asset.actions?.idle) throw new Error(`missing clips: idle (action absent) for static ${assetId}`);
+    for (const perspective of asset.perspectives) {
+      const frames = await loadActionFrames(assetDir, asset, perspective, 'idle', 'full');
+      const { rgba, w, h, map } = buildStaticSheet(asset, { perspective, frames });
+      const png = encodePng(rgba, w, h);
+      writeFileSync(resolve(out, map.sheet), png);
+      const mapFile = `${map.sheet}.map.json`;
+      writeFileSync(resolve(out, mapFile), JSON.stringify(map, null, 2) + '\n');
+      console.log(`OK: ${map.sheet} ${w}x${h} (full, ${perspective}/idle) + ${mapFile}`);
+      results.push({ sheet: map.sheet, map: mapFile, w, h, mode: 'full', perspective, action: 'idle', bytes: png.length });
+    }
+    return results;
+  }
   for (const action of ['walk', 'attack']) {
     for (const perspective of asset.perspectives) {
       for (const mode of ['full', 'maker']) {
