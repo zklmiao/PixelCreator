@@ -9,13 +9,14 @@ export const ACTIONS = ['idle', 'walk', 'attack'];
 export const KINDS = ['character', 'weapon', 'building', 'prop', 'scenery'];
 export const STATIC_KINDS = ['weapon', 'building', 'prop', 'scenery'];
 
-export const ASSET_IDS = ['knight_001', 'sword_001', 'house_001', 'crate_001', 'tree_001'];
+export const ASSET_IDS = ['knight_001', 'sword_001', 'house_001', 'crate_001', 'tree_001', 'potion_001'];
 export const ASSET_URLS = {
   knight_001: '../assets/knight_001/asset.json',
   sword_001: '../assets/sword_001/asset.json',
   house_001: '../assets/house_001/asset.json',
   crate_001: '../assets/crate_001/asset.json',
   tree_001: '../assets/tree_001/asset.json',
+  potion_001: '../assets/potion_001/asset.json',
 };
 
 export function assetUrlFor(id) {

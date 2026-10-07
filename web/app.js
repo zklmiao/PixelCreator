@@ -2,6 +2,7 @@
 import { loadShell, ASSET_IDS, ASSET_URLS, assetUrlFor } from './lib/asset-shell.js';
 import { buildPrompt, validateFields, FIXED_NEGATIVE, KNIGHT_EXAMPLE } from './lib/prompt.js';
 import { buildMatrix, createPlayer, tickPlayer, canExport } from './lib/matrix.js';
+import { COMPARE_FIXTURES, prototypeCompareUrlFor, prototypeInputFor } from './lib/compare.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -93,8 +94,64 @@ initAsset();
 initForm();
 initMatrix();
 initAssetSwitcher();
+initCompare();
 
-// Static-web asset switcher (5 assets, default knight_001).
+// M2 compare view: fixture imgs carry data-compare URLs; any load failure
+// parks a named placeholder hint instead of breaking the page. The local
+// prototype slot follows the same left/right convention under the
+// gitignored prototypes/<id>/input.compare.png path.
+function wireCompareImg(img, ph, missingText) {
+  if (!img) return;
+  img.addEventListener('error', () => {
+    img.hidden = true;
+    if (ph) {
+      ph.hidden = false;
+      ph.textContent = missingText;
+    }
+  });
+  img.addEventListener('load', () => {
+    img.hidden = false;
+    if (ph) ph.hidden = true;
+  });
+}
+
+function updatePrototypeCompare(assetId) {
+  const img = $('cmp-proto');
+  const ph = $('cmp-proto-ph');
+  const meta = $('proto-meta');
+  if (!img) return;
+  const url = prototypeCompareUrlFor(assetId);
+  if (meta) meta.textContent = url;
+  img.hidden = false;
+  if (ph) ph.hidden = true;
+  img.src = url;
+}
+
+function initCompare() {
+  for (const { name, url } of COMPARE_FIXTURES) {
+    const img = $(`cmp-${name}`);
+    const ph = $(`cmp-${name}-ph`);
+    if (!img) continue;
+    wireCompareImg(img, ph, `missing ${url} (fixtures land after the wt-A import merge; page stays usable)`);
+    img.src = url;
+  }
+  const protoImg = $('cmp-proto');
+  const protoPh = $('cmp-proto-ph');
+  wireCompareImg(
+    protoImg,
+    protoPh,
+    `missing prototypes/<id>/input.compare.png — put the source at ${prototypeInputFor('potion_001')} and run the import command below`,
+  );
+  const sel = $('proto-asset');
+  if (sel) {
+    sel.addEventListener('change', () => updatePrototypeCompare(sel.value));
+    updatePrototypeCompare(sel.value);
+  } else {
+    updatePrototypeCompare('potion_001');
+  }
+}
+
+// Static-web asset switcher (6 assets, default knight_001).
 // Shell + matrix reload together; prompt form stays on the knight example
 // (character path) so the frozen 4.1 template is untouched.
 function initAssetSwitcher() {

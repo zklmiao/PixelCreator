@@ -14,7 +14,7 @@
 
   <main>
     <section aria-label="asset shell">
-      <h2>1.1 Asset shell — 5 assets (kind-aware)</h2>
+      <h2>1.1 Asset shell — 6 assets (kind-aware)</h2>
       <div class="row">
         <label>asset
           <select id="asset-select">
@@ -23,6 +23,7 @@
             <option value="house_001">house_001 (building)</option>
             <option value="crate_001">crate_001 (prop)</option>
             <option value="tree_001">tree_001 (scenery)</option>
+            <option value="potion_001">potion_001 (prop)</option>
           </select>
         </label>
         <span id="asset-kind" class="hint"></span>
@@ -67,6 +68,47 @@
         </div>
       </form>
       <pre id="prompt-out"></pre>
+    </section>
+
+    <section aria-label="import compare">
+      <h2>M2 Compare view — real-import quantization (left source / right quantized)</h2>
+      <p class="hint">Fixture compare PNGs ship under <code>fixtures/import/*.compare.png</code> (serve repo root, then open <code>/web/</code>). Missing files show a placeholder hint instead of breaking the page.</p>
+      <div id="compare-grid" class="compare-grid">
+        <figure class="compare" data-compare-name="I_Chest01">
+          <figcaption>I_Chest01 — left source / right quantized</figcaption>
+          <img id="cmp-I_Chest01" data-compare="../fixtures/import/I_Chest01.compare.png" alt="I_Chest01 compare: source left, quantized right" />
+          <p class="ph" id="cmp-I_Chest01-ph" hidden></p>
+        </figure>
+        <figure class="compare" data-compare-name="I_Key01">
+          <figcaption>I_Key01 — left source / right quantized</figcaption>
+          <img id="cmp-I_Key01" data-compare="../fixtures/import/I_Key01.compare.png" alt="I_Key01 compare: source left, quantized right" />
+          <p class="ph" id="cmp-I_Key01-ph" hidden></p>
+        </figure>
+        <figure class="compare" data-compare-name="I_GoldCoin">
+          <figcaption>I_GoldCoin — left source / right quantized</figcaption>
+          <img id="cmp-I_GoldCoin" data-compare="../fixtures/import/I_GoldCoin.compare.png" alt="I_GoldCoin compare: source left, quantized right" />
+          <p class="ph" id="cmp-I_GoldCoin-ph" hidden></p>
+        </figure>
+      </div>
+      <div class="row">
+        <label>local prototype compare (same convention)
+          <select id="proto-asset">
+            <option value="potion_001">potion_001</option>
+            <option value="knight_001">knight_001</option>
+            <option value="sword_001">sword_001</option>
+            <option value="house_001">house_001</option>
+            <option value="crate_001">crate_001</option>
+            <option value="tree_001">tree_001</option>
+          </select>
+        </label>
+        <span id="proto-meta" class="hint">loading…</span>
+      </div>
+      <figure class="compare" data-compare-name="prototype">
+        <figcaption>prototypes/&lt;id&gt;/input.compare.png — same left/right convention (gitignored, local only)</figcaption>
+        <img id="cmp-proto" alt="local prototype compare: source left, quantized right" />
+        <p class="ph" id="cmp-proto-ph" hidden></p>
+      </figure>
+      <p class="hint">Self-supplied flow: put the source at <code>prototypes/&lt;id&gt;/input.png</code>, run <code>node tools/import-prototype.mjs --asset &lt;id&gt; --src prototypes/&lt;id&gt;/input.png</code>, then pick the asset above.</p>
     </section>
 
     <section aria-label="preview matrix">
