@@ -23,8 +23,8 @@
 
 - fixtures（随 wt-A 入库提交）：`fixtures/import/I_Chest01.compare.png`、
   `fixtures/import/I_Key01.compare.png`、`fixtures/import/I_GoldCoin.compare.png`
- （各自由 `<basename>.compare.png` 约定生成：左原图等比放大，右量化结果，
-  整数 upscale 语义，宽 = 2×高且高为 64 整数倍）。
+ （各自由 `<basename>.compare.png` 约定生成：左 34 宽原生源条，右 64 宽量化结果，
+  同高 64，即 98x64；源为 34x34 图标，量化宽为资产 size 档 64）。
 - 本地自备图（gitignored，不入库）：`prototypes/<id>/input.compare.png`
   同约定兼容；对比区原型槽跟随 `proto-asset` 选择器，文件缺席时显示
   缺位提示，页面不崩。

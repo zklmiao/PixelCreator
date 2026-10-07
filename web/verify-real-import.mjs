@@ -5,10 +5,11 @@
 // Read-only: never writes assets//fixtures/. checkShell is pure (fs read +
 // direct call); loadShell (fetch) is browser-only and never called here.
 // Compare layout contract (shared with tools/import-prototype.mjs wt-A):
-// source left, quantized result right, integer upscale semantics, so each
-// compare PNG is two equal 64-based squares side by side:
-// width === 2 * height and height % 64 === 0. Sources are the curated
-// 34x34 RGBA icons (proposal Why: 402 PNGs @ 34x34).
+// source left at native width, quantized result right at the asset size档,
+// shared height 64. Committed files measure 98x64 = 34 (source) + 64
+// (quantized); sources are the curated 34x34 RGBA icons, potion size档 is 64.
+// Formula is derived per file (source dims read from disk + size档 64),
+// not recorded from output: width === sourceWidth + 64, height === 64.
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,7 +70,10 @@ for (const { name, url } of COMPARE_SOURCES) {
   else ok(`${name} source is 34x34 RGBA (width=${img.width} height=${img.height})`);
 }
 
-// 3. Compares parse as PNG and follow the side-by-side size formula.
+// 3. Compares parse as PNG and follow the side-by-side size formula
+// (left native source strip + right 64-wide quantized result, height 64).
+const QUANT_W = 64;
+const COMPARE_H = 64;
 for (const { name, url } of COMPARE_FIXTURES) {
   const fp = resolve(root, 'web', url);
   if (!existsSync(fp)) {
@@ -84,12 +88,15 @@ for (const { name, url } of COMPARE_FIXTURES) {
     continue;
   }
   ok(`${name} compare parses as PNG (${img.width}x${img.height})`);
-  if (img.width !== img.height * 2) {
-    fail(`${name} compare must be two equal squares side by side (width === 2 * height), got ${img.width}x${img.height}`);
-  } else ok(`${name} compare is side by side (width ${img.width} === 2 * height ${img.height})`);
-  if (img.height % 64 !== 0) {
-    fail(`${name} compare height must be a 64-based integer upscale (height % 64 === 0), got ${img.height}`);
-  } else ok(`${name} compare height ${img.height} is 64-based (integer upscale semantics)`);
+  const srcEntry = COMPARE_SOURCES.find((s) => s.name === name);
+  const srcFp = resolve(root, 'web', srcEntry.url);
+  const srcImg = PNG.sync.read(readFileSync(srcFp));
+  if (img.width !== srcImg.width + QUANT_W) {
+    fail(`${name} compare width must be source width + 64 (left native + right quantized), got ${img.width} vs source ${srcImg.width}`);
+  } else ok(`${name} compare width ${img.width} === source ${srcImg.width} + 64 (left native, right quantized)`);
+  if (img.height !== COMPARE_H) {
+    fail(`${name} compare height must be 64 (shared asset size档), got ${img.height}`);
+  } else ok(`${name} compare height ${img.height} === 64 (shared size档)`);
 }
 
 // 4. Six shells all OK via fs + pure checkShell.

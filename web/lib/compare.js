@@ -1,7 +1,8 @@
 // compare.js — M2 import compare view data (pure ESM, zero dependencies).
 // Convention shared with tools/import-prototype.mjs (wt-A) and the web view:
-// fixtures ship 3 committed compare PNGs (source left, quantized right,
-// integer upscale semantics); user-supplied images follow the same layout
+// fixtures ship 3 committed compare PNGs (source left at native width,
+// quantized result right at the asset size档: 98x64 = 34 + 64, shared
+// height 64); user-supplied images follow the same layout
 // under gitignored prototypes/<assetId>/input.compare.png.
 // Browser-safe (no node: imports); missing files are handled by the caller
 // via img onerror so the page never crashes.
