@@ -1,0 +1,97 @@
+{
+  "actions": {
+    "idle": {
+      "clips": {
+        "sd": {
+          "bk": [
+            {
+              "file": "potion_sd_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ],
+          "fr": [
+            {
+              "file": "potion_sd_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ],
+          "lf": [
+            {
+              "file": "potion_sd_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ],
+          "rt": [
+            {
+              "file": "potion_sd_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ]
+        },
+        "td": {
+          "bk": [
+            {
+              "file": "potion_td_idle_bk0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ],
+          "fr": [
+            {
+              "file": "potion_td_idle_fr0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ],
+          "lf": [
+            {
+              "file": "potion_td_idle_lf0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ],
+          "rt": [
+            {
+              "file": "potion_td_idle_rt0.svg",
+              "prompt_hash": "pending",
+              "seed": 2005
+            }
+          ]
+        }
+      },
+      "fps": 2,
+      "frames": 1,
+      "loop": true
+    }
+  },
+  "asset": "potion",
+  "id": "potion_001",
+  "kind": "prop",
+  "masters": {
+    "sd": "master_side.svg",
+    "td": "master_td.svg"
+  },
+  "palette": "palette_prop@v1",
+  "perspectives": [
+    "td",
+    "sd"
+  ],
+  "preview": {
+    "action": "idle",
+    "dir": "fr",
+    "perspective": "td"
+  },
+  "seed": 2005,
+  "size": 64,
+  "use": "2d-rpg",
+  "views": [
+    "fr",
+    "bk",
+    "lf",
+    "rt"
+  ]
+}

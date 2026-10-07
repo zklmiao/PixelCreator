@@ -1,0 +1,34 @@
+# Spec Delta — NEW `prototype-import`
+
+## Purpose
+
+Defines real-PNG prototype import: decode, tiered quantize, palette map, vectorize into frozen skeleton slots, plus side-by-side compare output. Dual track: committed fixtures for agent acceptance, `prototypes/<id>/` for user-supplied images.
+
+## ADDED Requirements
+
+### Requirement: Single-command real import
+
+The system SHALL import a real PNG into a frozen static skeleton via `node tools/import-prototype.mjs --asset <id> --src <png>` (optional `--dir` overwrites one slot, optional `--out` redirects compare output), replicating one source to all 8 idle slots by default; import SHALL also write the two perspective masters (fr-slot content, data-master=true).
+
+#### Scenario: Icon to skeleton
+
+- **WHEN** importing a 34x34 RGBA icon into `potion_001`
+- **THEN** 8 view SVGs land in the frozen clip slots and validate `--check-files` green
+
+### Requirement: Compare output contract
+
+The system SHALL write `<basename>.compare.png` next to the import output (source left, quantized result right, integer upscale semantics) so humans and the web compare view share one path convention.
+
+#### Scenario: Compare readable
+
+- **WHEN** opening `fixtures/import/I_Chest01.compare.png`
+- **THEN** source and quantized result are discernible side by side
+
+### Requirement: Fixtures committed, user images local
+
+The system SHALL commit curated fixtures under `fixtures/import/` (source zip + filename recorded in test comments) while user-supplied images live under gitignored `prototypes/<id>/` following the same compare convention.
+
+#### Scenario: Offline deterministic test
+
+- **WHEN** running import tests without network
+- **THEN** all inputs resolve to committed fixtures and outputs are byte-identical across runs
