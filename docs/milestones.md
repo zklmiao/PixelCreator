@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | **M0** | 人物管线首闭环：量化→派生→矢量化→清单→矩阵→双表→引擎占位 | character-mvp 全部 6 项（character-asset / animation-keyframes / pixel-quantize / svg-engineering / spritesheet-export / prototype-prompt） | `2026-10-06-pixel-generator-character-mvp`（轮 0） | ✅ 已归档 |
 | **M1** | 多类资产 + Godot 配方 + 感知色距 + web 多资产可看可切 | static-asset / spritesheet-export(配方) / pixel-quantize(OKLCH+Bayer) / prototype-prompt(kind-aware) / animation-keyframes(静态矩阵) | `2026-10-06-static-kinds-godot-adapter`（轮 1）+ `2026-10-07-perceptual-color-plus-static-web`（轮 2） | ✅ 已归档 |
-| **M2** | **真实素材导入 MVP：喂真图 → 出真资产 → 人工可看** | prototype-import(新) / spritesheet-export(静态单帧) / static-asset(导入实例) | `real-import-mvp`（轮 3，提案已草成待 prep） | 🔶 进行中 |
+| **M2** | **真实素材导入 MVP：喂真图 → 出真资产 → 人工可看** | prototype-import(新) / spritesheet-export(静态单帧) / static-asset(导入实例) | `2026-10-07-real-import-mvp`（轮 3） | ✅ 已归档 |
 | **M3** | 引擎一键接入 + 大尺寸档 + 真实角色 24 格 | spritesheet-export(.tres) / pixel-quantize(128 档) / character-asset(真实全矩阵) | 轮 4 | ⬜ |
 | **M4** | img2img 实调 | prototype-prompt | 轮 5（可选，最后） | ⬜ |
 
@@ -33,7 +33,7 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 
 **遗留去向**：`.tres` 生成器原记录"留轮 3"，里程碑拍板后**顺延至 M3（轮 4）**；building/scenery 128 档生成未实测 → M3；img2img 前置数据（32 静态真实 hash）已就绪 → M4。
 
-## M2 — 真实素材导入 MVP（🔶 轮 3，当前目标）
+## M2 — 真实素材导入 MVP（✅ 2026-10-07 归档，轮 3）
 
 **目标**：喂真图 → 出真资产 → 人工可看。现状是 synth 闭环：全部 SVG 由程序合成，真实像素输入从未进过管线。
 
@@ -53,6 +53,8 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 3. 看量化对比图：左原始 34×34 图标，右 64px 色板化像素结果；
 4. 打开 `sheets/` 静态单帧 PNG（可直接拖进引擎）；
 5. （可选）把自己的 AI 原型图放入 `prototypes/potion_001/input.png` 重跑导入，重复 2–4。
+
+**验收实测（主干）**：`node --test` 135/135；6× manifest `--check-files` 全 OK（含 potion）；7 verify 全绿（含 verify-real-import：3 compares 98x64 + 6 shells + potion 8 格）；recipe 104 帧；potion sheets 256x64 色板零杂色；`potion_001` hash 保持 pending（非目标，不回填）。
 
 ## M3 — 引擎一键接入 + 大尺寸档 + 真实角色（⬜ 轮 4）
 

@@ -25,3 +25,12 @@
 - 合并：`037c463` merge(palette)（合后 117/117 + 5× manifest + 4 verify 全绿，即 oklch gate）；`18c8167` merge(present)（7 文件；合后 117/117 + 6 verify + recipe 全绿）。
 - 集成回填（主控）：`4040567` chore(asset): backfill 32 static prompt_hash via kind-aware prompt——文本级替换（格式不动，每文件 8 行）；锚点 td/fr 全中（weapon 0f435899 / building 5e48f491 / prop 9a611e61 / scenery 10d99667）；回填后 5× manifest + 117/117 全绿。已勾本 change tasks A1–A4/B1–B3/M1。
 - 遗留风险：building/scenery 128 档仅 schema/validator 允许、生成器未实测；Godot `.tres` 生成器轮 3（管线轴优先）；静态 32 帧真实 prompt_hash 已落，外部 img2img 实调（积压⑤）前置数据就绪。
+
+## 轮 3 — real-import-mvp（M2 真实素材导入：喂真图 → 出真资产 → 人工可看）
+
+- Prep（main）：`8f2d15a` chore(contract): freeze potion_001 skeleton plus real-import-mvp proposal (r3-prep)（prop/`palette_prop@v1`/64/seed 2005/idle-only 8 clips 全 pending 零 SVG + `prototypes/` 入 .gitignore）；`8682ce0` 两卡基点入库。分支 `feat/real-import`、`feat/compare-view` 自 prep 新建。
+- wt-A 管线轴 `feat/real-import @ 27499ec`：单 commit，24 文件（`tools/import-prototype.mjs` 新 242 行 + `import-prototype.test` 160 行 + `sheet.mjs` 静态导出扩展 +109 + `sheet-static.test` 137 行 + potion 8 视图 + 2 母版 + fixtures 3+3 + potion sheets 2+2）。评审：wt 内 135/135；diff 零越界；母版抽查（data-master 标记 + rect 集与 fr0 相等 2022 项）+ sheets 256x64 + map 键齐；色板纪律/确定性由评审方独立实证采信。结论：通过。
+- wt-B 呈现轴 `feat/compare-view @ 21baebe`：本体 `5fdad2f` 8 文件（`web/lib/compare.js` 新 28 行零 node: + 对比区 + `ASSET_IDS` 扩 6 + `verify-static:26` 同步 + `verify-real-import.mjs` 新 146 行 + `docs/real-import.md`）+ tail `21baebe` 3 文件（compare 公式对齐实图布局 98x64=34+64，推导式非录制）。评审：rebase 后 wt 内 135/135 + 7 verify 全绿 + recipe 104 帧；公式推导/零 node: 抽查通过。结论：通过。
+- 合并：`1b27aa7` merge(import)（合后 135/135 + 6× manifest 全绿，即严格式 `feat(import)` gate）；`274e7cc` merge(present)（8 文件；合后 135/135 + 7 verify + recipe 全绿）。
+- 集成：无回填（`potion_001` prompt_hash 按提案非目标保持 pending）。已勾本 change tasks A1–A4/B1–B3/M1；里程碑 M2 翻 ✅（验收实测行已补）。
+- 遗留风险：`potion_001` hash 回填留后续轮次；building/scenery 128 档 + `.tres` 生成器 → M3（轮 4）；img2img → M4。
