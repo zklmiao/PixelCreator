@@ -3,43 +3,83 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PixeCreator — authoring prompt shell (1.1 + 4.1)</title>
+  <title>PixeCreator · 像素资产工坊</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <header>
-    <h1>PixeCreator · Authoring shell</h1>
-    <p class="sub">1.1 scaffold: dual-master slots + asset.json shell · 4.1: 10-field prompt form (v0.2). assets/ is read-only frozen contract.</p>
+  <header class="topbar">
+    <h1>PixeCreator<span class="sub">像素资产工坊</span></h1>
+    <nav class="tabs" aria-label="主导航">
+      <button type="button" class="tab active" data-zone="library">资产库</button>
+      <button type="button" class="tab" data-zone="import">导入</button>
+      <button type="button" class="tab" data-zone="export">导出</button>
+      <button type="button" class="tab" data-zone="prompt">Prompt 工作台</button>
+    </nav>
+    <span id="bridge-dot" class="dot bad" title="bridge 未连接"></span>
   </header>
 
   <main>
-    <section aria-label="asset shell">
-      <h2>1.1 Asset shell — 7 assets (kind-aware)</h2>
-      <div class="row">
-        <label>asset
-          <select id="asset-select">
-            <option value="knight_001">knight_001 (character)</option>
-            <option value="sword_001">sword_001 (weapon)</option>
-            <option value="house_001">house_001 (building)</option>
-            <option value="crate_001">crate_001 (prop)</option>
-            <option value="tree_001">tree_001 (scenery)</option>
-            <option value="potion_001">potion_001 (prop)</option>
-            <option value="guardian_001">guardian_001 (character)</option>
-          </select>
-        </label>
-        <span id="asset-kind" class="hint"></span>
+    <section id="zone-library" class="zone" aria-label="资产库">
+      <h2>资产库</h2>
+      <p class="lead">点选卡片查看该资产的动画矩阵与详情。</p>
+      <div id="asset-cards" class="cards"></div>
+      <div id="asset-detail" class="detail">
+        <div class="detail-head">
+          <h3 id="detail-name">—</h3>
+          <span id="detail-kind" class="badge">—</span>
+        </div>
+        <p id="asset-meta" class="meta">loading…</p>
+        <div class="player-bar">
+          <label class="inline">视角
+            <select id="m-persp"><option value="td">td</option><option value="sd">sd</option></select>
+          </label>
+          <button type="button" id="ctl-play">⏸ 暂停</button>
+          <button type="button" id="ctl-step">⏭ 单步</button>
+        </div>
+        <div id="matrix-grid" class="matrix-grid"></div>
+        <p id="export-hint" class="meta"></p>
       </div>
-      <p id="asset-meta">loading…</p>
-      <div class="masters">
-        <div class="slot"><h3>master_td.svg</h3><code id="master-td">…</code></div>
-        <div class="slot"><h3>master_side.svg</h3><code id="master-sd">…</code></div>
-      </div>
-      <p id="asset-status">loading…</p>
-      <p class="hint">Shell loads <code>../assets/&lt;id&gt;/asset.json</code> via fetch (default knight_001). Serve repo root (e.g. <code>npx serve</code>) then open <code>/web/</code>. Static kinds are idle-only: walk/attack present or non-idle preview fails the shell check.</p>
     </section>
 
-    <section aria-label="prompt form">
-      <h2>4.1 Prompt form — 10 fields → English prompt</h2>
+    <section id="zone-import" class="zone" hidden aria-label="导入工作流">
+      <h2>导入工作流</h2>
+      <ol class="steps">
+        <li>选目标资产（当前 <code id="import-target">potion_001</code>，<button type="button" class="linklike" data-goto="library">去资产库切换</button>）</li>
+        <li>上传 PNG 原型，或引用本地 <code>prototypes/&lt;id&gt;/input.png</code></li>
+        <li>预览量化对比 → 确认落槽（写前自动备份）</li>
+      </ol>
+      <div class="panel">
+        <label class="filelabel">选择 PNG 原型图
+          <input type="file" id="b-import-file" accept="image/png" />
+        </label>
+        <p class="meta">仅支持 PNG；建议单物体、透明或纯色背景。Gemini 等 JPEG 原图请先裁出单体并转存 PNG。</p>
+      </div>
+      <figure id="import-compare" class="compare" hidden>
+        <figcaption>导入预览 — 左原始 / 右量化（拖动分隔对比）</figcaption>
+      </figure>
+      <div id="confirm-slot" class="confirm-slot"></div>
+      <p class="meta">本地原型对照：把源图放到 <code>prototypes/&lt;id&gt;/input.png</code>，点下方按钮刷新对比（源图不入库）。</p>
+      <button type="button" id="proto-refresh" class="minor">刷新本地原型对比</button>
+      <figure id="proto-compare" class="compare"></figure>
+    </section>
+
+    <section id="zone-export" class="zone" hidden aria-label="导出中心">
+      <h2>导出中心</h2>
+      <p class="lead">对当前资产（<code id="export-asset">knight_001</code>）执行写操作：先预览将写入的文件，确认后落盘并自动备份。</p>
+      <div class="panel">
+        <button type="button" id="b-validate">校验资产</button>
+        <button type="button" id="b-sheets">导出拼表</button>
+        <button type="button" id="b-tres">导出 .tres</button>
+        <button type="button" id="b-generate">重新生成 SVG</button>
+      </div>
+      <p id="bridge-status" class="meta">bridge: 检测中…</p>
+      <p class="meta">产物位置：<a href="../sheets/" target="_blank" rel="noopener">sheets/</a>（拼表 PNG + map.json）· <a href="../godot/" target="_blank" rel="noopener">godot/</a>（.tres）</p>
+      <div id="confirm-slot-export" class="confirm-slot"></div>
+    </section>
+
+    <section id="zone-prompt" class="zone" hidden aria-label="Prompt 工作台">
+      <h2>Prompt 工作台</h2>
+      <p class="lead">10 个字段拼出英文生图指令，贴给你的生图模型产出原型图；固定 negative 由管线保证。</p>
       <form id="prompt-form" onsubmit="return false">
         <div class="grid">
           <label>class* <input id="f-class" /></label>
@@ -61,92 +101,63 @@
             <select id="f-action"><option value="idle">idle</option><option value="walk">walk</option><option value="attack">attack</option></select>
           </label>
         </div>
-        <label class="neg">fixed negative (read-only in v1)
+        <label class="neg">fixed negative（只读）
           <textarea id="f-neg" rows="3" readonly></textarea>
         </label>
         <div class="row">
-          <button type="button" id="f-reset-knight">Reset to knight example</button>
+          <button type="button" id="f-reset-knight">恢复骑士示例</button>
         </div>
       </form>
       <pre id="prompt-out"></pre>
     </section>
-
-    <section aria-label="import compare">
-      <h2>M2 Compare view — real-import quantization (left source / right quantized)</h2>
-      <p class="hint">Fixture compare PNGs ship under <code>fixtures/import/*.compare.png</code> (serve repo root, then open <code>/web/</code>). Missing files show a placeholder hint instead of breaking the page.</p>
-      <div id="compare-grid" class="compare-grid">
-        <figure class="compare" data-compare-name="I_Chest01">
-          <figcaption>I_Chest01 — left source / right quantized</figcaption>
-          <img id="cmp-I_Chest01" data-compare="../fixtures/import/I_Chest01.compare.png" alt="I_Chest01 compare: source left, quantized right" />
-          <p class="ph" id="cmp-I_Chest01-ph" hidden></p>
-        </figure>
-        <figure class="compare" data-compare-name="I_Key01">
-          <figcaption>I_Key01 — left source / right quantized</figcaption>
-          <img id="cmp-I_Key01" data-compare="../fixtures/import/I_Key01.compare.png" alt="I_Key01 compare: source left, quantized right" />
-          <p class="ph" id="cmp-I_Key01-ph" hidden></p>
-        </figure>
-        <figure class="compare" data-compare-name="I_GoldCoin">
-          <figcaption>I_GoldCoin — left source / right quantized</figcaption>
-          <img id="cmp-I_GoldCoin" data-compare="../fixtures/import/I_GoldCoin.compare.png" alt="I_GoldCoin compare: source left, quantized right" />
-          <p class="ph" id="cmp-I_GoldCoin-ph" hidden></p>
-        </figure>
-      </div>
-      <h3>Guardian real character compares (<code>fixtures/guardian/*.compare.png</code>)</h3>
-      <p class="hint">Driven by <code>fixtures/guardian/guardian-map.json</code> (clip → source); td views are sd-identical placeholders until a true top-down source lands (see docs).</p>
-      <div id="guardian-grid" class="compare-grid">
-        <p class="hint" id="guardian-status">loading guardian compares…</p>
-      </div>
-      <div class="row">
-        <label>local prototype compare (same convention)
-          <select id="proto-asset">
-            <option value="potion_001">potion_001</option>
-            <option value="knight_001">knight_001</option>
-            <option value="sword_001">sword_001</option>
-            <option value="house_001">house_001</option>
-            <option value="crate_001">crate_001</option>
-            <option value="tree_001">tree_001</option>
-          </select>
-        </label>
-        <span id="proto-meta" class="hint">loading…</span>
-      </div>
-      <figure class="compare" data-compare-name="prototype">
-        <figcaption>prototypes/&lt;id&gt;/input.compare.png — same left/right convention (gitignored, local only)</figcaption>
-        <img id="cmp-proto" alt="local prototype compare: source left, quantized right" />
-        <p class="ph" id="cmp-proto-ph" hidden></p>
-      </figure>
-      <p class="hint">Self-supplied flow: put the source at <code>prototypes/&lt;id&gt;/input.png</code>, run <code>node tools/import-prototype.mjs --asset &lt;id&gt; --src prototypes/&lt;id&gt;/input.png</code>, then pick the asset above.</p>
-    </section>
-
-    <section aria-label="preview matrix">
-      <h2>5.2 Preview matrix — character 12 cells / static 4 cells + td/sd toggle</h2>
-      <div class="row">
-        <label>perspective
-          <select id="m-persp"><option value="td">td</option><option value="sd">sd</option></select>
-        </label>
-        <span id="matrix-meta" class="hint">loading…</span>
-      </div>
-      <div id="matrix-grid" class="matrix-grid"></div>
-      <div class="row">
-        <button type="button" id="export-btn" disabled>Export sheets</button>
-        <span id="export-hint" class="hint"></span>
-      </div>
-      <p class="hint">Matrix reuses tools/clips.mjs timing; missing cells are preview-only placeholders (never exported).</p>
-    </section>
-
-    <section aria-label="cli bridge">
-      <h2>CLI bridge — write operations (preview → confirm)</h2>
-      <div class="row">
-        <button type="button" id="b-validate">Validate</button>
-        <button type="button" id="b-generate">Regenerate SVGs</button>
-        <button type="button" id="b-sheets">Export sheets</button>
-        <button type="button" id="b-tres">Export tres</button>
-        <label>import PNG <input type="file" id="b-import-file" accept="image/png" /></label>
-        <button type="button" id="b-confirm" disabled>Confirm write</button>
-      </div>
-      <p id="bridge-status" class="hint">bridge: unknown (start with node tools/server.mjs --port 3000, then reload /web/)</p>
-      <pre id="job-log"></pre>
-    </section>
   </main>
+
+  <details id="dev-panel">
+    <summary>开发者面板</summary>
+    <div class="dev-grid">
+      <div>
+        <h4>masters 槽位</h4>
+        <code id="master-td">…</code><br />
+        <code id="master-sd">…</code>
+      </div>
+      <div>
+        <h4>shell 校验状态</h4>
+        <p id="asset-status">loading…</p>
+      </div>
+      <div>
+        <h4>bridge 任务日志</h4>
+        <pre id="job-log"></pre>
+      </div>
+      <div>
+        <h4>术语表</h4>
+        <dl class="gloss">
+          <dt>td / sd</dt><dd>俯视角 / 侧视角两套视图</dd>
+          <dt>idle / walk / attack</dt><dd>待机 / 行走 / 攻击三组动作</dd>
+          <dt>clips</dt><dd>资产的动作片段（方向 × 帧序）</dd>
+          <dt>Full / Maker</dt><dd>拼表双模式：原生帧 vs 3 列 RPG Maker 兼容</dd>
+          <dt>fixtures</dt><dd>入库的真实导入样例</dd>
+          <dt>seed</dt><dd>同角色固定随机种子，保证可复现</dd>
+        </dl>
+      </div>
+      <div>
+        <h4>verify 命令清单</h4>
+        <pre>node --test tools/*.test.mjs
+node web/verify-1.1.mjs
+node web/verify-4.1.mjs
+node web/verify-4.2.mjs
+node web/verify-5.2.mjs
+node web/verify-static.mjs
+node web/verify-real-import.mjs
+node web/verify-bridge.mjs
+node engine-placeholder/godot-atlas/verify-recipe.mjs</pre>
+      </div>
+    </div>
+  </details>
+
+  <div id="confirm-bar" class="confirm-bar" hidden>
+    <span id="confirm-text"></span>
+    <button type="button" id="b-confirm">确认写入</button>
+  </div>
 
   <script type="module" src="./app.js"></script>
 </body>
