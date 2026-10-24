@@ -51,3 +51,9 @@
 - 合并：`3005e13` merge(present): web shell v2 four-zone ia plus pixel theme (B1-B5)（合后主干 142/142 + 7 verify + recipe 全绿）。
 - 簿记：sync web-cli-bridge 4 spec delta 进主 specs（godot-adapter/prototype-import/spritesheet-export 各 +1 Requirement；web-bridge 新建第 10 个 capability）；web-shell-v2 skip_specs（纯 UI 无 delta）；双 change 归档。
 - 遗留：用户人工验收（四区导航/导入两段写/像素主题观感）；M4 backlog 不变（fuller motion/td 真源/hash 语义/img2img + 评审遗留 SP1 母版精度/SP2 sword、crate 静态表）。
+
+## 轮 5 补记 — 启动阻塞缺陷（人工启动发现，postmortem 见 docs/launch-blocker-postmortem.md）
+
+- 用户要求评审方亲自启动页面 → 发现 bridge 方式启动即死页（资产卡片墙不渲染、模块图死亡）。根因：`web/lib/matrix.js` import `../../tools/clips.mjs`，桥静态白名单漏 `/tools/` → 浏览器侧模块解析 404（Node 侧走文件系统不可见）。伴生两处：对比区容器迁移遗漏、CSS 覆盖 `[hidden]`。
+- 修复 `585ee0b`（server 白名单 + 容器补回 + 空值防御 + `[hidden]` 守卫 + web-bridge spec 修订）；浏览器回归（7 卡片/11 compares/确认条隐藏/bridge 正常）+ 142/142 + 7 verify 全绿。
+- 预防项（M4 可选）：verify-bridge 增加"模块引用图 ⊆ 静态白名单"静态审计。
