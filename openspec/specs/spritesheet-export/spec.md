@@ -39,3 +39,12 @@ The system SHALL export static idle-only assets as one PNG per perspective (`<pr
 #### Scenario: Potion sheets
 - **WHEN** exporting `potion_001` at 64px
 - **THEN** each perspective PNG is 256x64 with 4 cells in fr/bk/lf/rt order and every opaque pixel is an exact palette byte
+
+### Requirement: Server sheet export
+
+The system SHALL accept `POST /api/sheet/export { assetId }` calling the same `exportSheets` path (one action one PNG, rows `fr/bk/lf/rt`, Full/Maker dual mode, static single-frame full-only), returning preview then writing `sheets/` only after confirm.
+
+#### Scenario: Web export matches CLI
+
+- **WHEN** exporting `knight_001` via the bridge versus the CLI
+- **THEN** PNG bytes and `map.json` are identical and the matrix refresh shows the new sheets

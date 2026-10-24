@@ -32,3 +32,12 @@ The system SHALL ship `tools/tres.mjs` generating `godot/<id>.spriteframes.tres`
 #### Scenario: Knight tres
 - **WHEN** generating from knight Full maps (walk+attack plus idle sheets)
 - **THEN** one tres holds 24 animations (td/sd × idle/walk/attack × 4 dirs) with map-exact regions and timing
+
+### Requirement: Server tres export
+
+The system SHALL accept `POST /api/tres/export { assetId }` calling the same `exportTres` path (Full maps only, animations `{persp}/{action}/{dir}`, `speed=fps`, loop mapping unchanged), returning preview then writing `godot/` only after confirm.
+
+#### Scenario: Web tres matches CLI
+
+- **WHEN** exporting `knight_001` tres via the bridge versus the CLI
+- **THEN** the `.tres` text is identical with 24 animations and map-exact regions

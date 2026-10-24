@@ -43,3 +43,11 @@
 - 合并：`c1ef56b` merge(m3)（合后 156/156 + 7× manifest 全绿，即严格式 `feat(m3)` gate）；`64d4a85` merge(present)（8 文件；合后 156/156 + 7 verify + recipe 全绿）。
 - 集成：无回填（guardian/potion hash 均 pending，沿提案）。已勾本 change tasks；里程碑 M3 翻 ✅。
 - 遗留风险：td 真源替换（有源即换，删占位测试）；fuller motion（补拍/补生成 M4+）；guardian/potion hash 语义 M4 定；img2img → M4。
+
+## 轮 5 — web-shell-v2（UI 重设计：四区 IA + 像素主题）+ web-cli-bridge 归档
+
+- Prep（main）：`2e87eba` chore(openspec): add web-shell-v2 proposal plus task card (r5-prep)（proposal/tasks/自包含单卡；卡面基点按提交主题核对，根治 amend 后 sha 失效问题）。
+- wt-B 呈现轴 `feat/web-shell-v2 @ 5742f38`：单 commit，恰 3 文件（index.html/app.js/styles.css +841/−421）。评审：红线 diff 空（web/lib、tools/server.mjs、assets、7 verify 全零触碰）；142/142 + 7 verify + recipe 全绿；server 下 DOM 自证复核（四区/导航/面板默认折叠/导出唯一/术语零泄漏）；styles.css 10 色字面量除 #00000022（透明网格叠层，非新色相）外全部映射 token/色板；矩阵播放控制 ctl-play/ctl-step 在场。偏离三条均裁决可接受（含卡面 gate 词自相矛盾由 wt-B 正确修正）。结论：通过。
+- 合并：`3005e13` merge(present): web shell v2 four-zone ia plus pixel theme (B1-B5)（合后主干 142/142 + 7 verify + recipe 全绿）。
+- 簿记：sync web-cli-bridge 4 spec delta 进主 specs（godot-adapter/prototype-import/spritesheet-export 各 +1 Requirement；web-bridge 新建第 10 个 capability）；web-shell-v2 skip_specs（纯 UI 无 delta）；双 change 归档。
+- 遗留：用户人工验收（四区导航/导入两段写/像素主题观感）；M4 backlog 不变（fuller motion/td 真源/hash 语义/img2img + 评审遗留 SP1 母版精度/SP2 sword、crate 静态表）。

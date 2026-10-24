@@ -86,3 +86,5 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 - 2026-10-07 初版：M0/M1 达成（两/三笔 change 归档），M2 `real-import-mvp` 立项（提案已草成、待评审确认后 prep），M3/M4 排队。
 - 2026-10-07 M2 收官：轮 3 合并归档（28b7b36），用户人工验收通过（含自备图导入）；I_Bottle03 晋级第 4 fixture，potion_001 内容为用户导入件，主干 136/136。
 - 2026-10-07 M3 收官：轮 4 合并归档（0418a31，含归档事故自报与精确修复）；guardian_001 真实角色（40 视图，td=sd 占位测试钉死）+ tres 24/24 动画 + house/tree 128 档实测；主干 156/156；用户人工验收待做（Godot 载入 .tres）。
+- 2026-10-07 轮 4.5 bridge：web-cli-bridge 落库（67f47e1，本地桥服务器：上传导入 + 两段写 + 备份 + SSE）。
+- 2026-10-07 轮 5 UI 重设计：web-shell-v2 合并（3005e13）——四区 IA（资产库/导入/导出/Prompt）+ 像素复古主题（token 取自项目色板）+ 开发者面板折叠；web-bridge 成第 10 个 capability；用户"信息乱"反馈闭环，人工验收待做。
