@@ -38,6 +38,7 @@ const STATIC_PREFIXES = {
   '/palettes/': 'palettes',
   '/fixtures/': 'fixtures',
   '/godot/': 'godot',
+  '/tools/': 'tools',
 };
 
 const MIME = {

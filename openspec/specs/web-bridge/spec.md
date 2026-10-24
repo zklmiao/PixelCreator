@@ -7,7 +7,7 @@ Local bridge server contract that serves the repo read-only views and exposes th
 
 ### Requirement: Single-origin static plus API
 
-The system SHALL serve `GET /web/ /assets/* /sheets/* /palettes/* /fixtures/* /godot/*` and `POST /api/*` from one `node tools/server.mjs` process bound to loopback, so the Web needs no separate static server.
+The system SHALL serve `GET /web/ /assets/* /sheets/* /palettes/* /fixtures/* /godot/* /tools/*` and `POST /api/*` from one `node tools/server.mjs` process bound to loopback, so the Web needs no separate static server (`/tools/` is required because `web/lib/matrix.js` imports `tools/clips.mjs` for timing; loopback-only).
 
 #### Scenario: One command serves all
 

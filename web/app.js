@@ -343,6 +343,8 @@ function parkFigure(fig, text) {
 }
 
 async function initFixtureCompares() {
+  const fixtureGrid = $('compare-grid');
+  if (!fixtureGrid) return;
   for (const { name, url } of COMPARE_FIXTURES) {
     const fig = document.createElement('figure');
     fig.className = 'compare';
@@ -350,7 +352,7 @@ async function initFixtureCompares() {
     const cap = document.createElement('figcaption');
     cap.textContent = `${name} — 左原始 / 右量化`;
     fig.append(cap);
-    $('compare-grid').appendChild(fig);
+    fixtureGrid.appendChild(fig);
     makeCompareSlider(fig, url, 64);
   }
 }

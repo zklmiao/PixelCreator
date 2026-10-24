@@ -3,6 +3,10 @@
    openspec/changes/web-shell-v2 task card token table). Zero dependencies,
    zero external resources, no build step. */
 
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --px-bg: #3a2a1a;         /* character/hair — page background */
   --px-surface: #5a3a22;    /* scenery/earth-dark — card surface */
