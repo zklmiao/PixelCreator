@@ -10,6 +10,8 @@ import {
 const $ = (id) => document.getElementById(id);
 
 let currentAssetId = 'knight_001';
+let bridgeJobId = null;
+let bridgeBusy = false;
 
 async function initAsset(assetId = currentAssetId) {
   currentAssetId = assetId;
@@ -98,6 +100,7 @@ initForm();
 initMatrix();
 initAssetSwitcher();
 initCompare();
+initBridge();
 
 // M2 compare view: fixture imgs carry data-compare URLs; any load failure
 // parks a named placeholder hint instead of breaking the page. The local
@@ -208,9 +211,146 @@ async function initGuardianCompare() {
   });
 }
 
-// Static-web asset switcher (7 assets, default knight_001).
-// Shell + matrix reload together; prompt form stays on the knight example
-// (character path) so the frozen 4.1 template is untouched.
+// CLI bridge wiring (web-cli-bridge): every write op is two-phase.
+// POST /api/* returns { jobId, preview }; the confirm button commits it
+// (server backs up then writes); SSE streams progress into #job-log.
+
+function bridgeStatus(text) {
+  const el = $('bridge-status');
+  if (el) el.textContent = text;
+}
+
+function bridgeLog(line) {
+  const el = $('job-log');
+  if (el) el.textContent += `${line}\n`;
+}
+
+function setBridgeUiBusy(busy) {
+  bridgeBusy = busy;
+  const c = $('b-confirm');
+  if (c) c.disabled = busy || !bridgeJobId;
+  for (const id of ['b-validate', 'b-generate', 'b-sheets', 'b-tres']) {
+    const el = $(id);
+    if (el) el.disabled = busy;
+  }
+}
+
+async function bridgePost(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error(j.message ?? `${res.status} ${path}`);
+  return j;
+}
+
+async function startJob(path, body, label) {
+  try {
+    setBridgeUiBusy(true);
+    const j = await bridgePost(path, body);
+    bridgeJobId = j.jobId ?? null;
+    const p = j.preview ?? {};
+    bridgeStatus(
+      `${label}: willWrite ${p.willWrite?.length ?? '?'}, willBackup ${p.willBackup ?? '?'}, delta ${p.bytesDelta ?? 'n/a'} — click Confirm write to apply`,
+    );
+    if (!bridgeJobId && j.ok !== undefined) {
+      // sync response (validate)
+      bridgeLog(JSON.stringify(j).slice(0, 200));
+    }
+    setBridgeUiBusy(false);
+  } catch (e) {
+    bridgeStatus(`bridge error: ${e.message} (is \`node tools/server.mjs\` running?)`);
+    setBridgeUiBusy(false);
+  }
+}
+
+async function confirmJob() {
+  if (!bridgeJobId) return;
+  try {
+    setBridgeUiBusy(true);
+    await bridgePost(`/api/jobs/${bridgeJobId}/confirm`, {});
+    bridgeStatus('confirmed — queued; streaming progress…');
+    const src = new EventSource(`/api/jobs/${bridgeJobId}/events`);
+    src.onmessage = (e) => bridgeLog(`${e.type ?? 'msg'}: ${e.data}`);
+    src.addEventListener('progress', (e) => bridgeLog(`progress: ${e.data}`));
+    src.addEventListener('log', (e) => bridgeLog(`log: ${e.data}`));
+    src.addEventListener('done', async (e) => {
+      bridgeStatus('done — matrix reloading…');
+      bridgeLog(`done: ${e.data}`);
+      src.close();
+      setBridgeUiBusy(false);
+      bridgeJobId = null;
+      await reloadMatrixFor(currentAssetId);
+    });
+    src.addEventListener('error', (e) => {
+      bridgeLog(`error: ${e.data ?? 'stream closed'}`);
+      src.close();
+      setBridgeUiBusy(false);
+      bridgeJobId = null;
+    });
+  } catch (e) {
+    bridgeStatus(`confirm error: ${e.message}`);
+    setBridgeUiBusy(false);
+  }
+}
+
+function initBridge() {
+  const hv = async () => {
+    try {
+      const r = await fetch('/api/health');
+      const j = await r.json();
+      bridgeStatus(`bridge: ok (${j.assets} assets, queue ${j.queued}) — pick an op`);
+    } catch {
+      bridgeStatus('bridge: NOT running — start `node tools/server.mjs --port 3000` then reload');
+    }
+  };
+  hv();
+  $('b-validate')?.addEventListener('click', () =>
+    startJob('/api/validate', { assetId: currentAssetId }, 'validate'),
+  );
+  $('b-generate')?.addEventListener('click', () =>
+    startJob('/api/generate', { assetId: currentAssetId }, 'generate'),
+  );
+  $('b-sheets')?.addEventListener('click', () =>
+    startJob('/api/sheet/export', { assetId: currentAssetId }, 'sheet export'),
+  );
+  $('b-tres')?.addEventListener('click', () =>
+    startJob('/api/tres/export', { assetId: currentAssetId }, 'tres export'),
+  );
+  $('b-confirm')?.addEventListener('click', confirmJob);
+  $('b-import-file')?.addEventListener('change', async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const fd = new FormData();
+    fd.append('assetId', currentAssetId);
+    fd.append('file', f, f.name);
+    try {
+      setBridgeUiBusy(true);
+      const res = await fetch('/api/import', { method: 'POST', body: fd });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.message ?? 'import failed');
+      bridgeJobId = j.jobId;
+      const p = j.preview ?? {};
+      $('bridge-status').textContent =
+        `import: ${f.name} ${p.srcW}x${p.srcH} -> willWrite ${p.willWrite?.length}, backup ${p.willBackup}, delta ${p.bytesDelta} — confirm to apply`;
+      setBridgeUiBusy(false);
+    } catch (err) {
+      bridgeStatus(`import error: ${err.message}`);
+      setBridgeUiBusy(false);
+    }
+  });
+  // Dead buttons from the read-only era now trigger the same flow.
+  $('export-btn')?.addEventListener('click', () =>
+    startJob('/api/sheet/export', { assetId: currentAssetId }, 'sheet export'),
+  );
+  document.getElementById('matrix-grid')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-clip]');
+    if (!btn) return;
+    startJob('/api/generate', { assetId: currentAssetId }, `regenerate for ${btn.dataset.clip}`);
+  });
+}
 function initAssetSwitcher() {
   const sel = $('asset-select');
   if (!sel) return;

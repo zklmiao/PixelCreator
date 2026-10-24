@@ -1039,7 +1039,8 @@ function frameNumFromFile(file) {
   return m ? Number(m[1]) : 0;
 }
 
-async function generateKnightSvgs(assetId = 'knight_001') {
+export async function generateKnightSvgs(assetId = 'knight_001', opts = {}) {
+  const onProgress = typeof opts?.onProgress === 'function' ? opts.onProgress : null;
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname, resolve } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -1092,6 +1093,7 @@ async function generateKnightSvgs(assetId = 'knight_001') {
           });
           writeFileSync(resolve(assetDir, clip.file), svg, 'utf8');
           views++;
+          if (onProgress) await onProgress({ file: clip.file, done: views });
         }
       }
     }
@@ -1111,12 +1113,14 @@ async function generateKnightSvgs(assetId = 'knight_001') {
     });
     writeFileSync(resolve(assetDir, asset.masters[persp]), svg, 'utf8');
     masters++;
+    if (onProgress) await onProgress({ file: asset.masters[persp], done: views + masters });
   }
   console.log(`OK: generated ${views} views + ${masters} masters for ${assetId} -> ${assetDir}`);
   return { views, masters, assetDir };
 }
 
-async function generateStaticSvgs(assetId) {
+export async function generateStaticSvgs(assetId, opts = {}) {
+  const onProgressStatic = typeof opts?.onProgress === 'function' ? opts.onProgress : null;
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname, resolve } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -1173,6 +1177,7 @@ async function generateStaticSvgs(assetId) {
           });
           writeFileSync(resolve(assetDir, clip.file), svg, 'utf8');
           views++;
+          if (onProgressStatic) await onProgressStatic({ file: clip.file, done: views });
         }
       }
     }
@@ -1190,6 +1195,7 @@ async function generateStaticSvgs(assetId) {
     });
     writeFileSync(resolve(assetDir, asset.masters[persp]), svg, 'utf8');
     masters++;
+    if (onProgressStatic) await onProgressStatic({ file: asset.masters[persp], done: views + masters });
   }
   console.log(`OK: generated ${views} views + ${masters} masters for ${assetId} -> ${assetDir}`);
   return { views, masters, assetDir };

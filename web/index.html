@@ -132,6 +132,20 @@
       </div>
       <p class="hint">Matrix reuses tools/clips.mjs timing; missing cells are preview-only placeholders (never exported).</p>
     </section>
+
+    <section aria-label="cli bridge">
+      <h2>CLI bridge — write operations (preview → confirm)</h2>
+      <div class="row">
+        <button type="button" id="b-validate">Validate</button>
+        <button type="button" id="b-generate">Regenerate SVGs</button>
+        <button type="button" id="b-sheets">Export sheets</button>
+        <button type="button" id="b-tres">Export tres</button>
+        <label>import PNG <input type="file" id="b-import-file" accept="image/png" /></label>
+        <button type="button" id="b-confirm" disabled>Confirm write</button>
+      </div>
+      <p id="bridge-status" class="hint">bridge: unknown (start with node tools/server.mjs --port 3000, then reload /web/)</p>
+      <pre id="job-log"></pre>
+    </section>
   </main>
 
   <script type="module" src="./app.js"></script>

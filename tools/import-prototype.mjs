@@ -95,13 +95,40 @@ export async function decodePngFile(srcPath) {
   } catch (e) {
     throw new Error(`import-prototype: cannot read src ${JSON.stringify(srcPath)}: ${e.message}`);
   }
+  return decodePngBuffer(buf, srcPath);
+}
+
+// Decode PNG bytes (server upload path) -> { data, width, height }.
+// Same pngjs path as files so buffer/file entries stay byte-identical.
+export function decodePngBuffer(buf, label = 'buffer') {
   let png;
   try {
-    png = PNG.sync.read(buf);
+    png = PNG.sync.read(Buffer.from(buf));
   } catch (e) {
-    throw new Error(`import-prototype: src ${JSON.stringify(srcPath)} is not a decodable PNG: ${e.message}`);
+    throw new Error(`import-prototype: src ${JSON.stringify(String(label))} is not a decodable PNG: ${e.message}`);
   }
   return { data: new Uint8ClampedArray(png.data), width: png.width, height: png.height };
+}
+
+// Pure artifact builder shared by file + buffer entries (no fs).
+// Returns { files: Map<relPath, svg>, compare: { data, width, height }, views, masters, srcBase }.
+export function computeImportArtifacts({ asset, palette, quant, srcBase, dir = null } = {}) {
+  const slots = resolveSlots(asset, dir);
+  const files = new Map();
+  const frWritten = new Set();
+  for (const { persp, dir: d } of slots) {
+    const clip = asset.actions?.idle?.clips?.[persp]?.[d]?.[0];
+    if (!clip) throw new Error(`import-prototype: missing clip slot ${persp}/idle/${d} in ${asset.id}`);
+    files.set(clip.file, svgForSlot(quant, asset, palette, persp, d, clip, srcBase, false));
+    if (d === 'fr') frWritten.add(persp);
+  }
+  for (const persp of asset.perspectives) {
+    if (!frWritten.has(persp)) continue;
+    const frClip = asset.actions?.idle?.clips?.[persp]?.fr?.[0];
+    if (!frClip) throw new Error(`import-prototype: missing fr slot for master ${persp} in ${asset.id}`);
+    files.set(asset.masters[persp], svgForSlot(quant, asset, palette, persp, 'fr', frClip, srcBase, true));
+  }
+  return { files, slots: slots.length, frWritten: [...frWritten] };
 }
 
 // Geometry (tier fit + square pad) then OKLCH palette mapping (default path).
@@ -199,41 +226,51 @@ export function resolveSlots(asset, dir) {
 export async function runImport({ assetId, srcPath, dir = null, outDir = null } = {}) {
   if (!assetId) throw new Error('import-prototype: --asset <id> is required');
   if (!srcPath) throw new Error('import-prototype: --src <png> is required');
+  const { readFileSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const abs = resolve(srcPath);
+  let buf;
+  try {
+    buf = readFileSync(abs);
+  } catch (e) {
+    throw new Error(`import-prototype: cannot read src ${JSON.stringify(srcPath)}: ${e.message}`);
+  }
+  return runImportBuffer({ assetId, buffer: buf, srcBase: baseNameNoExt(srcPath), dir, outDir: outDir ?? null, compareDir: outDir ?? dirname(abs), writeCompare: true, compareBaseDir: abs });
+}
+
+// Buffer entry for the web bridge (same bytes as the file path).
+// compareDir overrides where `<srcBase>.compare.png` lands; when null it lands
+// next to the caller's hint path (compareBaseDir) to preserve CLI behavior.
+export async function runImportBuffer({ assetId, buffer, srcBase = 'upload', dir = null, outDir = null, compareDir = undefined, writeCompare = true, compareBaseDir = null } = {}) {
+  if (!assetId) throw new Error('import-prototype: --asset <id> is required');
+  if (!buffer) throw new Error('import-prototype: buffer is required');
   const { writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname, resolve } = await import('node:path');
   const { asset, assetDir, palette } = await loadImportAsset(assetId);
-  const src = await decodePngFile(srcPath);
+  const src = decodePngBuffer(buffer, srcBase);
   const quant = quantizeAndMap(src, asset, palette);
-  const slots = resolveSlots(asset, dir);
-  const srcBase = baseNameNoExt(srcPath);
+  const { files } = computeImportArtifacts({ asset, palette, quant, srcBase, dir });
   let views = 0;
-  const frWritten = new Set();
-  for (const { persp, dir: d } of slots) {
-    const clip = asset.actions?.idle?.clips?.[persp]?.[d]?.[0];
-    if (!clip) throw new Error(`import-prototype: missing clip slot ${persp}/idle/${d} in ${assetId}`);
-    const svg = svgForSlot(quant, asset, palette, persp, d, clip, srcBase, false);
-    mkdirSync(assetDir, { recursive: true });
-    writeFileSync(resolve(assetDir, clip.file), svg, 'utf8');
-    views++;
-    if (d === 'fr') frWritten.add(persp);
-  }
   let masters = 0;
-  for (const persp of asset.perspectives) {
-    if (!frWritten.has(persp)) continue;
-    const frClip = asset.actions?.idle?.clips?.[persp]?.fr?.[0];
-    if (!frClip) throw new Error(`import-prototype: missing fr slot for master ${persp} in ${assetId}`);
-    const svg = svgForSlot(quant, asset, palette, persp, 'fr', frClip, srcBase, true);
-    writeFileSync(resolve(assetDir, asset.masters[persp]), svg, 'utf8');
-    masters++;
+  for (const [rel, svg] of files) {
+    const isMaster = Object.values(asset.masters ?? {}).includes(rel);
+    mkdirSync(assetDir, { recursive: true });
+    writeFileSync(resolve(assetDir, rel), svg, 'utf8');
+    if (isMaster) masters++;
+    else views++;
   }
   const cmp = buildCompare(src.data, src.width, src.height, quant.mapped.data, asset.size);
   const pngBytes = encodePng(cmp.data, cmp.width, cmp.height);
-  const comparePath = resolve(outDir ?? dirname(resolve(srcPath)), `${srcBase}.compare.png`);
-  mkdirSync(dirname(comparePath), { recursive: true });
-  writeFileSync(comparePath, pngBytes);
+  const rawBase = compareDir !== undefined && compareDir !== null ? compareDir : (outDir ?? (compareBaseDir ? dirname(compareBaseDir) : process.cwd()));
+  const baseDir = rawBase ?? '.';
+  const comparePath = resolve(baseDir, `${srcBase}.compare.png`);
+  if (writeCompare) {
+    mkdirSync(dirname(comparePath), { recursive: true });
+    writeFileSync(comparePath, pngBytes);
+  }
   console.log(`OK: imported ${srcBase}.png -> ${assetId} (${views} views + ${masters} masters, ${src.width}x${src.height} -> ${asset.size}x${asset.size})`);
   console.log(`OK: compare ${comparePath} ${cmp.width}x${cmp.height} (src left, quantized right)`);
-  return { views, masters, comparePath, width: cmp.width, height: cmp.height };
+  return { views, masters, comparePath, width: cmp.width, height: cmp.height, pngBytes, files };
 }
 
 // Multi-slot manifest import for characters (real-character-m3):

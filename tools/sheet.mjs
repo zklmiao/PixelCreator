@@ -304,7 +304,8 @@ export function buildStaticSheet(asset, { perspective, frames } = {}) {
 // 人物:walk+attack × td/sd × maker/full = 8 表 + idle × td/sd × full = 2 表,
 // 共 10 表 + 10 map.json 落盘到 sheets/（idle 仅 Full：单帧无 Maker 形态）。
 // 静态 idle-only 资产走单帧分支:td/sd 各 1 表 + 1 map(full-only,无 maker)。
-export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
+export async function exportSheets(assetId = 'knight_001', outDir = 'sheets', opts = {}) {
+  const onProgress = typeof opts?.onProgress === 'function' ? opts.onProgress : null;
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
   const { resolve, dirname } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -325,6 +326,7 @@ export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
       writeFileSync(resolve(out, mapFile), JSON.stringify(map, null, 2) + '\n');
       console.log(`OK: ${map.sheet} ${w}x${h} (full, ${perspective}/idle) + ${mapFile}`);
       results.push({ sheet: map.sheet, map: mapFile, w, h, mode: 'full', perspective, action: 'idle', bytes: png.length });
+      if (onProgress) await onProgress({ sheet: map.sheet, done: results.length });
     }
     return results;
   }
@@ -339,6 +341,7 @@ export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
         writeFileSync(resolve(out, mapFile), JSON.stringify(map, null, 2) + '\n');
         console.log(`OK: ${map.sheet} ${w}x${h} (${mode}, ${perspective}/${action}) + ${mapFile}`);
         results.push({ sheet: map.sheet, map: mapFile, w, h, mode, perspective, action, bytes: png.length });
+        if (onProgress) await onProgress({ sheet: map.sheet, done: results.length });
       }
     }
   }
@@ -352,6 +355,7 @@ export async function exportSheets(assetId = 'knight_001', outDir = 'sheets') {
       writeFileSync(resolve(out, mapFile), JSON.stringify(map, null, 2) + '\n');
       console.log(`OK: ${map.sheet} ${w}x${h} (full, ${perspective}/idle) + ${mapFile}`);
       results.push({ sheet: map.sheet, map: mapFile, w, h, mode: 'full', perspective, action: 'idle', bytes: png.length });
+      if (onProgress) await onProgress({ sheet: map.sheet, done: results.length });
     }
   }
   return results;
