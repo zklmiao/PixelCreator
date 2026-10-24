@@ -16,6 +16,9 @@
 | `assets/<id>/` | 资产事实源：`asset.json` + 视图 SVG + 双母版 |
 | `palettes/*.v1.json` | 按 kind 分的固定色板（character/weapon/building/prop/scenery） |
 | `sheets/` | 生成物：一动作一 PNG + `*.map.json`（Full/Maker 双模式） |
+| `fixtures/` | 导入 fixtures（Icons 图标 + guardian 帧 PNG + 各自 compare 图） |
+| `godot/` | `.tres` 一键产物（SpriteFrames，由 Full map.json 生成，24 动画/资产） |
+| `prototypes/` | gitignore：用户自备原型图工作区（`prototypes/<id>/input.png`） |
 | `engine-placeholder/` | 引擎占位：`generic/`（map.json 直读）+ `godot-atlas/`（导入配方） |
 | `openspec/` | specs（冻结）/ changes（进行中）/ changes/archive（已归档） |
 | `docs/` | `agent-log.md`（开发轮次记录）、`milestones.md`（产品里程碑 M0–M4）、管线说明 |
@@ -25,11 +28,14 @@
 ```bash
 node --test tools/*.test.mjs                  # 全量单测
 node --test tools/<name>.test.mjs              # 单文件，如 palette.test.mjs
-node tools/asset-manifest.mjs validate assets/knight_001/asset.json --check-files
-node web/verify-1.1.mjs                        # 以下四个 web 验收（1.1/4.1/4.2/5.2）
+node tools/asset-manifest.mjs validate assets/knight_001/asset.json --check-files   # 7 资产同式
+node web/verify-1.1.mjs                        # 以下六个 web 验收（1.1/4.1/4.2/5.2/static/real-import）
 node web/verify-4.1.mjs
 node web/verify-4.2.mjs
 node web/verify-5.2.mjs
+node web/verify-static.mjs
+node web/verify-real-import.mjs
+node web/verify-bridge.mjs                     # web-cli-bridge 验收（路由/白名单/SSE/确认备份/字节一致）
 node engine-placeholder/godot-atlas/verify-recipe.mjs
 ```
 
@@ -43,10 +49,12 @@ node tools/palette.mjs validate palettes/*.v1.json
 
 ```bash
 node tools/vectorize.mjs generate --asset knight_001   # 再生成某资产全部 SVG
-node tools/sheet.mjs export --asset knight_001 --out sheets   # 导出拼表（16 文件）
+node tools/sheet.mjs export --asset knight_001 --out sheets   # 导出拼表（knight 16 文件；静态资产为单帧表）
+node tools/import-prototype.mjs --asset potion_001 --src prototypes/potion_001/input.png   # 真实 PNG 导入（落 clip 槽 + 量化对比图）
+node tools/tres.mjs export --asset knight_001          # 生成 godot/<id>.spriteframes.tres（Godot 一键接入）
 ```
 
-Web UI 需从仓库根起静态服务器（`fetch(../assets/…)` 在 `file://` 下不可用），例如 `npx serve` 后打开 `/web/`。
+Web UI: `node tools/server.mjs --port 3000`（loopback 静态+API 一体）后打开 `/web/`：5 个 CLI 能力可直接点按——Validate 校验、Regenerate SVGs、Export sheets、Export tres、导入 PNG（均 preview→confirm→备份到 `.backup/`，进度走 SSE）。旧用法 `npx serve` 仍只读可用；资产切换器 7 个资产（含真实导入的 guardian/potion）、量化对比区（`fixtures/import/*.compare.png`）、各资产矩阵播放。分步说明见 `docs/real-import.md`。
 
 ## 管线四步
 
@@ -58,8 +66,10 @@ Web UI 需从仓库根起静态服务器（`fetch(../assets/…)` 在 `file://` 
 ## 核心契约
 
 - 视图命名：`{asset}_{td|sd}_{idle|walk|attack}_{fr|bk|lf|rt}{帧号}.svg`（`asset-manifest.mjs` 强制）。
-- 人物 `knight_001`：24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd），fps idle 2 / walk 6 / attack 8（attack 不循环，接 `next: idle`）。
-- 静态四类（sword/weapon、house/building、crate/prop、tree/scenery）：各 idle-only 8 clips。
+- 人物 `knight_001`（synth 样例）：24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）。
+- 人物 `guardian_001`（真实导入，M3）：24 clips（idle 1f / walk 2f / attack 2f，帧预算下限），40 视图；td 槽 = sd 像素复制占位（测试钉死，有真源即换）。
+- 静态五类（sword/weapon、house/building、crate/prop、tree/scenery、potion/prop）：各 idle-only 8 clips；house/tree `size` 128，其余 64。
+- 时序统一：fps idle 2 / walk 6 / attack 8（attack 不循环，接 `next: idle`）。
 - 像素风展示一律最近邻（前端 `imageSmoothingEnabled=false`，Godot 侧 `texture_filter=nearest`）。
 
 ## 变更流程

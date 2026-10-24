@@ -1,5 +1,7 @@
 # 静态 Web 支持（kind-aware：shell / 矩阵 / prompt）
 
+> 状态：本文写于 M2 时点（当时 5 资产）。资产数随轮次增长——M3 起为 7 个（新增 `potion_001`、`guardian_001`），机制描述仍有效；最新导入/人工查看流程见 `docs/real-import.md`，里程碑全景见 `docs/milestones.md`。
+
 本轮（wt-B）把 web 层三处 character-only 硬编码改为 kind-aware，人物路径字节不变。
 范围：`web/**` 只读 `assets/**`，`web/lib/*.js` 零依赖（`node:` 禁入）；`web/verify-*.mjs` 为 node 脚本，可用 `node:fs`/`node:path`。
 

@@ -12,7 +12,7 @@
 | **M1** | 多类资产 + Godot 配方 + 感知色距 + web 多资产可看可切 | static-asset / spritesheet-export(配方) / pixel-quantize(OKLCH+Bayer) / prototype-prompt(kind-aware) / animation-keyframes(静态矩阵) | `2026-10-06-static-kinds-godot-adapter`（轮 1）+ `2026-10-07-perceptual-color-plus-static-web`（轮 2） | ✅ 已归档 |
 | **M2** | **真实素材导入 MVP：喂真图 → 出真资产 → 人工可看** | prototype-import(新) / spritesheet-export(静态单帧) / static-asset(导入实例) | `2026-10-07-real-import-mvp`（轮 3） | ✅ 已归档 |
 | **M3** | 引擎一键接入 + 大尺寸档 + 真实角色 24 格 | spritesheet-export(.tres) / pixel-quantize(128 档) / character-asset(真实全矩阵) | `2026-10-07-real-character-m3`（轮 4） | ✅ 已归档 |
-| **M4** | img2img 实调 | prototype-prompt | 轮 5（可选，最后） | ⬜ |
+| **M4** | fuller motion + td 真源 + hash 语义 + img2img 实调 | animation-keyframes(补帧) / character-asset(占位移除) / prototype-prompt(hash 语义+实调) | 轮 5+（img2img 需用户拍板接入方式） | ⬜ |
 
 ---
 
@@ -66,17 +66,23 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 
 **验收实测（主干）**：`node --test` 156/156；7× manifest `--check-files` 全 OK（含 guardian 24/64、house/tree 128）；7 verify 全绿；recipe 104 帧；guardian sheets 6 Full + 4 Maker + knight idle 2；两 `.tres` 24/24 动画；td==sd 整字节 20 组。
 
-## M4 — img2img 实调（⬜ 轮 5，可选）
+**人工验收**：待用户——(1) Godot 4.x 载入 `godot/*.spriteframes.tres`（连 `sheets/` 一起拷，tres 内引用 `res://sheets/*.png`）试播 knight/guardian 各动画；(2) 本地 server 下 web 查看 guardian 24 格矩阵与 house/tree 128 形态。离线验证已覆盖文本契约与映射一致性，Godot 实载是唯一未自动化环节，结果请反馈主控记档。
 
-外部生图模型实调替代手动导入（denoise 档位与 seed 锁语义已固化，32 静态真实 hash 前置数据已就绪）。需联网与 key，违离线基线，故排在最后；无 key 时全流程手动导入路径（M2 已交付）始终可用。
+## M4 — fuller motion + td 真源 + hash 语义 + img2img 实调（⬜ 轮 5+）
+
+- **fuller motion**：guardian 每方向仅 2 帧（门计数下限），补拍/补生成至 3–5 帧让动作更饱满。
+- **td 真源**：替换 td=sd 占位——届时单列 change（删占位测试 + 换 20 个 td 文件 + 回归）。
+- **hash 语义**：guardian/potion 的 `"pending"` 定案（导入源非 prompt 产物，需要独立于 prompt_hash 的溯源字段或映射）。
+- **img2img 实调**：外部生图模型实调替代手动导入（denoise 档位与 seed 锁语义已固化，32 静态真实 hash 前置数据已就绪）。需联网与 key，违离线基线，须用户先拍板接入方式（哪个服务、key 存放）；无 key 时全流程手动导入路径（M2 已交付）始终可用。
 
 ---
 
 ## 轮次索引
 
-轮 0–2 的执行与评审细节见 `docs/agent-log.md`（主控独占）；轮 3 起随收官追加。
+轮 0–4 的执行与评审细节见 `docs/agent-log.md`（主控独占）；轮 5 起随收官追加。
 
 ## 变更记录
 
 - 2026-10-07 初版：M0/M1 达成（两/三笔 change 归档），M2 `real-import-mvp` 立项（提案已草成、待评审确认后 prep），M3/M4 排队。
 - 2026-10-07 M2 收官：轮 3 合并归档（28b7b36），用户人工验收通过（含自备图导入）；I_Bottle03 晋级第 4 fixture，potion_001 内容为用户导入件，主干 136/136。
+- 2026-10-07 M3 收官：轮 4 合并归档（0418a31，含归档事故自报与精确修复）；guardian_001 真实角色（40 视图，td=sd 占位测试钉死）+ tres 24/24 动画 + house/tree 128 档实测；主干 156/156；用户人工验收待做（Godot 载入 .tres）。
