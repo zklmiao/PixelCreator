@@ -1,36 +1,567 @@
-// app.js — 1.1 shell + 4.1 form wiring (zero dependencies).
+// app.js — web-shell-v2 four-zone workspace (zero dependencies).
+// Zones: library / import / export / prompt. web/lib behavior contracts are
+// frozen (guarded by web/verify-*.mjs); this file only re-wires presentation.
 import { loadShell, ASSET_IDS, ASSET_URLS, assetUrlFor } from './lib/asset-shell.js';
 import { buildPrompt, validateFields, FIXED_NEGATIVE, KNIGHT_EXAMPLE } from './lib/prompt.js';
 import { buildMatrix, createPlayer, tickPlayer, canExport } from './lib/matrix.js';
-import { COMPARE_FIXTURES, prototypeCompareUrlFor, prototypeInputFor } from './lib/compare.js';
 import {
+  COMPARE_FIXTURES, prototypeCompareUrlFor, prototypeInputFor,
   GUARDIAN_MAP_URL, guardianSourcesFromMap, guardianCompareUrlFor,
 } from './lib/compare.js';
 
 const $ = (id) => document.getElementById(id);
 
+// ---------- state ----------
 let currentAssetId = 'knight_001';
+let importTargetId = 'potion_001';
 let bridgeJobId = null;
 let bridgeBusy = false;
+let matrixAsset = null;
+let matrixPersp = 'td';
+let cellStates = [];
+let playing = true;
 
-async function initAsset(assetId = currentAssetId) {
-  currentAssetId = assetId;
-  const box = $('asset-status');
-  try {
-    const { asset, shell, slots } = await loadShell(assetUrlFor(currentAssetId));
-    $('master-td').textContent = slots.find((s) => s.perspective === 'td').file;
-    $('master-sd').textContent = slots.find((s) => s.perspective === 'sd').file;
-    $('asset-meta').textContent = `${asset.id} · ${asset.kind ?? 'character'} · size ${asset.size} · ${asset.palette} · seed ${asset.seed}`;
-    box.textContent = shell.ok ? 'OK: dual-master shell loadable' : `FAIL: ${shell.errors.join('; ')}`;
-    box.dataset.ok = String(shell.ok);
-    const kindEl = $('asset-kind');
-    if (kindEl) kindEl.textContent = `kind=${asset.kind ?? 'character'} (idle-only=${['weapon', 'building', 'prop', 'scenery'].includes(asset.kind ?? '')})`;
-  } catch (e) {
-    box.textContent = `FAIL: ${e.message} (serve repo root, e.g. npx serve, then open /web/)`;
-    box.dataset.ok = 'false';
+const isStaticKind = (k) => ['weapon', 'building', 'prop', 'scenery'].includes(k ?? 'character');
+const kindOf = (asset) => asset?.kind ?? 'character';
+
+// ---------- nav ----------
+function showZone(name) {
+  for (const z of document.querySelectorAll('.zone')) z.hidden = z.id !== `zone-${name}`;
+  for (const t of document.querySelectorAll('.tab')) t.classList.toggle('active', t.dataset.zone === name);
+}
+
+function initNav() {
+  for (const t of document.querySelectorAll('.tab')) {
+    t.addEventListener('click', () => showZone(t.dataset.zone));
+  }
+  for (const b of document.querySelectorAll('[data-goto]')) {
+    b.addEventListener('click', () => showZone(b.dataset.goto));
   }
 }
 
+// ---------- asset meta + dev panel ----------
+async function loadAssetMeta(assetId) {
+  currentAssetId = assetId;
+  const box = $('asset-status');
+  try {
+    const { asset, shell, slots } = await loadShell(assetUrlFor(assetId));
+    $('master-td').textContent = slots.find((s) => s.perspective === 'td').file;
+    $('master-sd').textContent = slots.find((s) => s.perspective === 'sd').file;
+    $('asset-meta').textContent =
+      `size ${asset.size} · ${asset.palette} · seed ${asset.seed} · ${clipsTotal(asset)} clips`;
+    box.textContent = shell.ok ? 'OK' : `FAIL: ${shell.errors.join('; ')}`;
+    box.dataset.ok = String(shell.ok);
+    return asset;
+  } catch (e) {
+    box.textContent = `FAIL: ${e.message}`;
+    box.dataset.ok = 'false';
+    throw e;
+  }
+}
+
+function clipsTotal(asset) {
+  let n = 0;
+  for (const a of Object.values(asset.actions ?? {})) {
+    for (const persp of Object.values(a.clips ?? {})) {
+      for (const list of Object.values(persp)) n += list.length;
+    }
+  }
+  return n;
+}
+
+// ---------- library: cards ----------
+function idlePreviewUrl(assetId, asset) {
+  const f = asset?.actions?.idle?.clips?.td?.fr?.[0]?.file;
+  return f ? `../assets/${assetId}/${f}` : null;
+}
+
+async function initCards() {
+  const grid = $('asset-cards');
+  grid.innerHTML = '';
+  for (const id of ASSET_IDS) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'card';
+    card.dataset.asset = id;
+    const img = document.createElement('img');
+    img.alt = `${id} idle preview`;
+    const ph = document.createElement('p');
+    ph.className = 'ph';
+    ph.hidden = true;
+    const name = document.createElement('span');
+    name.className = 'card-name';
+    name.textContent = id;
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    card.append(img, ph, name, badge);
+    card.addEventListener('click', () => selectAsset(id));
+    grid.appendChild(card);
+    try {
+      const asset = await loadAsset(id);
+      sizeCache[id] = asset.size;
+      const kind = kindOf(asset);
+      badge.textContent = kind;
+      img.dataset.kind = kind;
+      const url = idlePreviewUrl(id, asset);
+      if (url) {
+        img.addEventListener('error', () => {
+          img.hidden = true;
+          ph.hidden = false;
+          ph.textContent = '预览缺失';
+        });
+        img.src = url;
+      } else {
+        img.hidden = true;
+        ph.hidden = false;
+        ph.textContent = '预览缺失';
+      }
+    } catch (e) {
+      img.hidden = true;
+      ph.hidden = false;
+      ph.textContent = `加载失败: ${e.message}`;
+    }
+  }
+}
+
+function markSelectedCard(id) {
+  for (const c of document.querySelectorAll('.card')) {
+    c.classList.toggle('selected', c.dataset.asset === id);
+  }
+}
+
+async function loadAsset(id) {
+  const { asset } = await loadShell(assetUrlFor(id));
+  return asset;
+}
+
+async function selectAsset(id) {
+  currentAssetId = id;
+  importTargetId = id;
+  markSelectedCard(id);
+  $('import-target').textContent = id;
+  $('export-asset').textContent = id;
+  try {
+    const asset = await loadAssetMeta(id);
+    sizeCache[id] = asset.size;
+    matrixAsset = asset;
+    const kind = kindOf(asset);
+    $('detail-name').textContent = id;
+    $('detail-kind').textContent = kind;
+    matrixPersp = asset.preview?.perspective ?? 'td';
+    $('m-persp').value = matrixPersp;
+    renderMatrix(matrixPersp);
+    updatePrototypeCompare();
+  } catch (e) {
+    $('detail-name').textContent = id;
+    $('detail-kind').textContent = '—';
+    $('asset-meta').textContent = `FAIL: ${e.message}`;
+  }
+}
+
+// ---------- matrix player (with play/pause/step) ----------
+function clearMatrixTimers() {
+  for (const s of cellStates) if (s.timer) clearInterval(s.timer);
+  cellStates = cellStates.map((s) => ({ ...s, timer: null }));
+}
+
+function armMatrixTimers() {
+  clearMatrixTimers();
+  if (!playing) return;
+  for (const s of cellStates) {
+    if (s.missing) continue;
+    s.timer = setInterval(() => stepCell(s), s.player.durationMs);
+  }
+}
+
+function stepCell(s) {
+  try {
+    s.player = tickPlayer(s.player);
+    s.img.src = `../assets/${matrixAsset.id}/${s.player.file}`;
+  } catch {
+    if (s.timer) clearInterval(s.timer);
+    s.timer = null;
+  }
+}
+
+function renderMatrix(persp) {
+  const grid = $('matrix-grid');
+  const hint = $('export-hint');
+  if (!grid || !matrixAsset) return;
+  matrixPersp = persp;
+  clearMatrixTimers();
+  cellStates = [];
+  grid.innerHTML = '';
+  const { cells } = buildMatrix(matrixAsset, persp);
+  const missing = cells.filter((c) => c.missing);
+  for (const cell of cells) {
+    const el = document.createElement('div');
+    el.className = `cell${cell.missing ? ' missing' : ''}`;
+    el.dataset.action = cell.action;
+    el.dataset.dir = cell.dir;
+    const head = document.createElement('h4');
+    head.textContent = `${cell.action} · ${cell.dir}`;
+    el.appendChild(head);
+    if (cell.missing) {
+      const ph = document.createElement('p');
+      ph.className = 'ph';
+      ph.textContent = `missing ${cell.clipId}`;
+      el.appendChild(ph);
+      const gen = document.createElement('button');
+      gen.type = 'button';
+      gen.textContent = '生成此格';
+      gen.title = `generate ${cell.clipId}`;
+      gen.dataset.clip = cell.clipId;
+      el.appendChild(gen);
+    } else {
+      const img = document.createElement('img');
+      img.alt = `${cell.action} ${cell.dir} frame`;
+      img.src = `../assets/${matrixAsset.id}/${cell.files[0]}`;
+      el.appendChild(img);
+      const meta = document.createElement('p');
+      meta.className = 'meta';
+      meta.textContent = `${cell.files.length}f · ${cell.durationMs.toFixed(0)}ms`;
+      el.appendChild(meta);
+      const player = createPlayer(matrixAsset, persp, cell.action, cell.dir, 0);
+      cellStates.push({ player, img, el, missing: false, timer: null });
+    }
+    grid.appendChild(el);
+  }
+  armMatrixTimers();
+  const ex = canExport(matrixAsset);
+  hint.textContent = ex.ok
+    ? `已就绪：全部 ${cells.length * 2} clips 在位，可在导出中心出表`
+    : `导出暂不可用（缺 ${ex.missing.length}：${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}）——缺失格可点"生成此格"补齐`;
+}
+
+function initMatrixControls() {
+  $('m-persp')?.addEventListener('change', (e) => renderMatrix(e.target.value));
+  $('ctl-play')?.addEventListener('click', () => {
+    playing = !playing;
+    $('ctl-play').textContent = playing ? '⏸ 暂停' : '▶ 播放';
+    if (playing) armMatrixTimers();
+    else clearMatrixTimers();
+  });
+  $('ctl-step')?.addEventListener('click', () => {
+    for (const s of cellStates) if (!s.missing) stepCell(s);
+  });
+  $('matrix-grid')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-clip]');
+    if (!btn) return;
+    startJob('/api/generate', { assetId: currentAssetId }, `重新生成 ${btn.dataset.clip}`);
+  });
+}
+
+async function reloadMatrixFor(assetId) {
+  await selectAsset(assetId);
+}
+
+// ---------- compare sliders (source left / quantized right, draggable) ----------
+function makeCompareSlider(fig, url, size) {
+  for (const n of [...fig.querySelectorAll(':scope > :not(figcaption)')]) n.remove();
+  const img = document.createElement('img');
+  img.alt = 'quantize compare';
+  img.hidden = true;
+  const ph = document.createElement('p');
+  ph.className = 'ph';
+  ph.hidden = true;
+  const cv = document.createElement('canvas');
+  cv.className = 'compare-canvas';
+  cv.hidden = true;
+  const bar = document.createElement('div');
+  bar.className = 'divider';
+  bar.hidden = true;
+  fig.append(cv, bar, img, ph);
+  const paint = (pct) => {
+    const w = cv.width, h = cv.height, srcW = w - size;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, w, h);
+    // base: quantized right panel stretched to full canvas
+    ctx.drawImage(comp.img, srcW, 0, size, h, 0, 0, w, h);
+    // overlay: source left panel clipped to the divider
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, Math.max(1, Math.round((w * pct) / 100)), h);
+    ctx.clip();
+    ctx.drawImage(comp.img, 0, 0, srcW, h, 0, 0, w, h);
+    ctx.restore();
+    bar.style.left = `${pct}%`;
+    bar.dataset.side = pct < 50 ? 'src' : 'out';
+  };
+  const comp = { img: null, w: 0, h: 0 };
+  const image = new Image();
+  image.addEventListener('error', () => {
+    cv.hidden = true;
+    bar.hidden = true;
+    ph.hidden = false;
+    ph.textContent = `对比图缺失：${url}`;
+  });
+  image.addEventListener('load', () => {
+    img.hidden = true;
+    ph.hidden = true;
+    comp.img = image;
+    comp.w = image.width;
+    comp.h = image.height;
+    cv.width = image.width;
+    cv.height = image.height;
+    cv.hidden = false;
+    bar.hidden = false;
+    paint(50);
+    // center the divider under the pointer on first click
+    cv.onclick = (e) => {
+      const r = cv.getBoundingClientRect();
+      paint(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+    };
+  });
+  image.src = url;
+  bar.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const move = (ev) => {
+      const r = cv.getBoundingClientRect();
+      paint(Math.min(100, Math.max(0, ((ev.clientX - r.left) / r.width) * 100)));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+  return { paint };
+}
+
+// ---------- compare sections (fixtures / guardian / prototype) ----------
+function parkFigure(fig, text) {
+  let ph = fig.querySelector(':scope > .ph');
+  if (!ph) {
+    ph = document.createElement('p');
+    ph.className = 'ph';
+    fig.appendChild(ph);
+  }
+  ph.hidden = false;
+  ph.textContent = text;
+}
+
+async function initFixtureCompares() {
+  for (const { name, url } of COMPARE_FIXTURES) {
+    const fig = document.createElement('figure');
+    fig.className = 'compare';
+    fig.dataset.compareName = name;
+    const cap = document.createElement('figcaption');
+    cap.textContent = `${name} — 左原始 / 右量化`;
+    fig.append(cap);
+    $('compare-grid').appendChild(fig);
+    makeCompareSlider(fig, url, 64);
+  }
+}
+
+async function initGuardianCompares() {
+  const grid = $('guardian-grid');
+  if (!grid) return;
+  let map;
+  try {
+    const res = await fetch(GUARDIAN_MAP_URL);
+    if (!res.ok) throw new Error(`fetch ${GUARDIAN_MAP_URL}: ${res.status}`);
+    map = await res.json();
+  } catch (e) {
+    parkFigure(grid, `guardian 对比缺失：${e.message}`);
+    return;
+  }
+  const sources = guardianSourcesFromMap(map);
+  if (sources.length === 0) {
+    parkFigure(grid, 'guardian-map.json 无源帧');
+    return;
+  }
+  grid.innerHTML = '';
+  for (const base of sources) {
+    const fig = document.createElement('figure');
+    fig.className = 'compare';
+    fig.dataset.compareName = base;
+    const cap = document.createElement('figcaption');
+    cap.textContent = `${base} — 左源帧 / 右量化`;
+    fig.append(cap);
+    grid.appendChild(fig);
+    makeCompareSlider(fig, guardianCompareUrlFor(base), 64);
+  }
+}
+
+function updatePrototypeCompare() {
+  const fig = $('proto-compare');
+  if (!fig) return;
+  fig.innerHTML = '';
+  const cap = document.createElement('figcaption');
+  cap.textContent = `prototypes/${importTargetId}/input.compare.png — 左源图 / 右量化（拖动分隔对比）`;
+  fig.append(cap);
+  makeCompareSlider(fig, prototypeCompareUrlFor(importTargetId), assetSizeOf(importTargetId));
+}
+
+const sizeCache = {};
+function assetSizeOf(id) {
+  return sizeCache[id] ?? 64;
+}
+
+// ---------- import flow (two-phase write via bridge) ----------
+function initImportFlow() {
+  $('b-import-file')?.addEventListener('change', async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      setBridgeBusy(true);
+      const fd = new FormData();
+      fd.append('assetId', importTargetId);
+      fd.append('file', f, f.name);
+      const res = await fetch('/api/import', { method: 'POST', body: fd });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.message ?? 'import failed');
+      bridgeJobId = j.jobId;
+      const p = j.preview ?? {};
+      $('import-compare').hidden = false;
+      // paint the in-memory compare preview served by the bridge
+      makeCompareSlider($('import-compare'), j.links.compare, assetSizeOf(importTargetId));
+      showConfirm(
+        `导入 ${f.name}（${p.srcW}×${p.srcH}）→ 将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`,
+        'confirm-slot',
+      );
+      setBridgeBusy(false);
+    } catch (err) {
+      setBridgeBusy(false);
+      bridgeStatus(`导入失败：${err.message}`);
+    }
+  });
+  $('proto-refresh')?.addEventListener('click', () => updatePrototypeCompare());
+}
+
+// ---------- export center + bridge (two-phase, SSE) ----------
+function bridgeStatus(text) {
+  const el = $('bridge-status');
+  if (el) el.textContent = text;
+  const dot = $('bridge-dot');
+  if (dot) {
+    const ok = !/未|NOT|失败|error/i.test(text);
+    dot.classList.toggle('bad', !ok);
+    dot.classList.toggle('ok', ok);
+    dot.title = text;
+  }
+}
+
+function bridgeLog(line) {
+  const el = $('job-log');
+  if (el) el.textContent += `${line}\n`;
+}
+
+function setBridgeBusy(busy) {
+  bridgeBusy = busy;
+  const c = $('b-confirm');
+  if (c) c.disabled = busy || !bridgeJobId;
+  for (const id of ['b-validate', 'b-generate', 'b-sheets', 'b-tres']) {
+    const el = $(id);
+    if (el) el.disabled = busy;
+  }
+}
+
+function showConfirm(text, slotId) {
+  const bar = $('confirm-bar');
+  $('confirm-text').textContent = text;
+  $(slotId).appendChild(bar);
+  bar.hidden = false;
+  const c = $('b-confirm');
+  c.disabled = bridgeBusy || !bridgeJobId;
+}
+
+async function bridgePost(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error(j.message ?? `${res.status} ${path}`);
+  return j;
+}
+
+async function startJob(path, body, label) {
+  try {
+    setBridgeBusy(true);
+    const j = await bridgePost(path, body);
+    bridgeJobId = j.jobId ?? null;
+    const p = j.preview ?? {};
+    if (!bridgeJobId && j.ok !== undefined) {
+      bridgeStatus(`${label}：完成（无写入）`);
+      bridgeLog(JSON.stringify(j).slice(0, 300));
+      setBridgeBusy(false);
+      return;
+    }
+    showConfirm(
+      `${label}：将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个（Δ${p.bytesDelta ?? 'n/a'} 字节）`,
+      'confirm-slot-export',
+    );
+    bridgeStatus(`${label}：预览就绪，确认后落盘`);
+    setBridgeBusy(false);
+  } catch (e) {
+    bridgeStatus(`${label} 失败：${e.message}（bridge 未运行？请先 node tools/server.mjs）`);
+    setBridgeBusy(false);
+  }
+}
+
+async function confirmJob() {
+  if (!bridgeJobId) return;
+  try {
+    setBridgeBusy(true);
+    await bridgePost(`/api/jobs/${bridgeJobId}/confirm`, {});
+    bridgeStatus('已确认——执行中…');
+    const src = new EventSource(`/api/jobs/${bridgeJobId}/events`);
+    src.addEventListener('progress', (e) => bridgeLog(`progress: ${e.data}`));
+    src.addEventListener('log', (e) => bridgeLog(`log: ${e.data}`));
+    src.addEventListener('done', async (e) => {
+      bridgeStatus('完成——矩阵已刷新');
+      bridgeLog(`done: ${e.data}`);
+      src.close();
+      setBridgeBusy(false);
+      bridgeJobId = null;
+      $('confirm-bar').hidden = true;
+      await reloadMatrixFor(currentAssetId);
+      await initCards();
+      markSelectedCard(currentAssetId);
+    });
+    src.addEventListener('error', (e) => {
+      bridgeLog(`error: ${e.data ?? 'stream closed'}`);
+      src.close();
+      setBridgeBusy(false);
+      bridgeJobId = null;
+    });
+  } catch (e) {
+    bridgeStatus(`confirm 失败：${e.message}`);
+    setBridgeBusy(false);
+  }
+}
+
+function initBridge() {
+  const hv = async () => {
+    try {
+      const r = await fetch('/api/health');
+      const j = await r.json();
+      bridgeStatus(`bridge: 正常（${j.assets} 资产，队列 ${j.queued}）`);
+    } catch {
+      bridgeStatus('bridge 未运行——请先 node tools/server.mjs，然后刷新页面');
+    }
+  };
+  hv();
+  $('b-validate')?.addEventListener('click', () =>
+    startJob('/api/validate', { assetId: currentAssetId }, '校验'),
+  );
+  $('b-generate')?.addEventListener('click', () =>
+    startJob('/api/generate', { assetId: currentAssetId }, '重新生成 SVG'),
+  );
+  $('b-sheets')?.addEventListener('click', () =>
+    startJob('/api/sheet/export', { assetId: currentAssetId }, '导出拼表'),
+  );
+  $('b-tres')?.addEventListener('click', () =>
+    startJob('/api/tres/export', { assetId: currentAssetId }, '导出 .tres'),
+  );
+  $('b-confirm')?.addEventListener('click', confirmJob);
+}
+
+// ---------- prompt workbench (behavior frozen) ----------
 function readForm() {
   return {
     charClass: $('f-class').value,
@@ -64,7 +595,7 @@ function renderPrompt() {
   const v = validateFields({ ...fields, seed: fields.seed === '' ? '' : fields.seed });
   const out = $('prompt-out');
   if (!v.ok) {
-    out.textContent = `form incomplete: ${v.errors.join('; ')}`;
+    out.textContent = `表单未完成：${v.errors.join('; ')}`;
     return;
   }
   const perspective = $('f-persp').value;
@@ -95,371 +626,17 @@ function initForm() {
   renderPrompt();
 }
 
-initAsset();
+// ---------- startup ----------
+initNav();
 initForm();
-initMatrix();
-initAssetSwitcher();
-initCompare();
+initMatrixControls();
 initBridge();
-
-// M2 compare view: fixture imgs carry data-compare URLs; any load failure
-// parks a named placeholder hint instead of breaking the page. The local
-// prototype slot follows the same left/right convention under the
-// gitignored prototypes/<id>/input.compare.png path.
-function wireCompareImg(img, ph, missingText) {
-  if (!img) return;
-  img.addEventListener('error', () => {
-    img.hidden = true;
-    if (ph) {
-      ph.hidden = false;
-      ph.textContent = missingText;
-    }
-  });
-  img.addEventListener('load', () => {
-    img.hidden = false;
-    if (ph) ph.hidden = true;
-  });
-}
-
-function updatePrototypeCompare(assetId) {
-  const img = $('cmp-proto');
-  const ph = $('cmp-proto-ph');
-  const meta = $('proto-meta');
-  if (!img) return;
-  const url = prototypeCompareUrlFor(assetId);
-  if (meta) meta.textContent = url;
-  img.hidden = false;
-  if (ph) ph.hidden = true;
-  img.src = url;
-}
-
-function initCompare() {
-  for (const { name, url } of COMPARE_FIXTURES) {
-    const img = $(`cmp-${name}`);
-    const ph = $(`cmp-${name}-ph`);
-    if (!img) continue;
-    wireCompareImg(img, ph, `missing ${url} (fixtures land after the wt-A import merge; page stays usable)`);
-    img.src = url;
-  }
-  const protoImg = $('cmp-proto');
-  const protoPh = $('cmp-proto-ph');
-  wireCompareImg(
-    protoImg,
-    protoPh,
-    `missing prototypes/<id>/input.compare.png — put the source at ${prototypeInputFor('potion_001')} and run the import command below`,
-  );
-  const sel = $('proto-asset');
-  if (sel) {
-    sel.addEventListener('change', () => updatePrototypeCompare(sel.value));
-    updatePrototypeCompare(sel.value);
-  } else {
-    updatePrototypeCompare('potion_001');
-  }
-  initGuardianCompare();
-}
-
-// M3 guardian compares: data-driven from fixtures/guardian/guardian-map.json
-// (clip -> source), so the view never hardcodes source names. Any failure
-// (map or image) parks a named placeholder hint; the page never crashes.
-async function initGuardianCompare() {
-  const grid = $('guardian-grid');
-  const status = $('guardian-status');
-  if (!grid) return;
-  const parkAll = (text) => {
-    grid.innerHTML = '';
-    const p = document.createElement('p');
-    p.className = 'ph';
-    p.textContent = text;
-    grid.appendChild(p);
-  };
-  let map;
-  try {
-    const res = await fetch(GUARDIAN_MAP_URL);
-    if (!res.ok) throw new Error(`fetch ${GUARDIAN_MAP_URL} failed: ${res.status}`);
-    map = await res.json();
-  } catch (e) {
-    if (status) status.textContent = `missing ${GUARDIAN_MAP_URL} (guardian fixtures land with the wt-A m3 merge; page stays usable)`;
-    else parkAll(`missing ${GUARDIAN_MAP_URL} (guardian fixtures land with the wt-A m3 merge; page stays usable)`);
-    return;
-  }
-  const sources = guardianSourcesFromMap(map);
-  if (sources.length === 0) {
-    if (status) status.textContent = `empty source list in ${GUARDIAN_MAP_URL} (no guardian compares to show)`;
-    else parkAll(`empty source list in ${GUARDIAN_MAP_URL} (no guardian compares to show)`);
-    return;
-  }
-  grid.innerHTML = '';
-  sources.forEach((base, i) => {
-    const url = guardianCompareUrlFor(base);
-    const fig = document.createElement('figure');
-    fig.className = 'compare';
-    fig.dataset.compareName = base;
-    const cap = document.createElement('figcaption');
-    cap.textContent = `${base} — left source / right quantized`;
-    fig.appendChild(cap);
-    const img = document.createElement('img');
-    img.id = `cmp-guardian-${i}`;
-    img.alt = `${base} compare: source left, quantized right`;
-    const ph = document.createElement('p');
-    ph.className = 'ph';
-    ph.hidden = true;
-    fig.appendChild(img);
-    fig.appendChild(ph);
-    wireCompareImg(img, ph, `missing ${url} (guardian compare not yet landed; page stays usable)`);
-    img.src = url;
-    grid.appendChild(fig);
-  });
-}
-
-// CLI bridge wiring (web-cli-bridge): every write op is two-phase.
-// POST /api/* returns { jobId, preview }; the confirm button commits it
-// (server backs up then writes); SSE streams progress into #job-log.
-
-function bridgeStatus(text) {
-  const el = $('bridge-status');
-  if (el) el.textContent = text;
-}
-
-function bridgeLog(line) {
-  const el = $('job-log');
-  if (el) el.textContent += `${line}\n`;
-}
-
-function setBridgeUiBusy(busy) {
-  bridgeBusy = busy;
-  const c = $('b-confirm');
-  if (c) c.disabled = busy || !bridgeJobId;
-  for (const id of ['b-validate', 'b-generate', 'b-sheets', 'b-tres']) {
-    const el = $(id);
-    if (el) el.disabled = busy;
-  }
-}
-
-async function bridgePost(path, body) {
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body ?? {}),
-  });
-  const j = await res.json();
-  if (!res.ok) throw new Error(j.message ?? `${res.status} ${path}`);
-  return j;
-}
-
-async function startJob(path, body, label) {
-  try {
-    setBridgeUiBusy(true);
-    const j = await bridgePost(path, body);
-    bridgeJobId = j.jobId ?? null;
-    const p = j.preview ?? {};
-    bridgeStatus(
-      `${label}: willWrite ${p.willWrite?.length ?? '?'}, willBackup ${p.willBackup ?? '?'}, delta ${p.bytesDelta ?? 'n/a'} — click Confirm write to apply`,
-    );
-    if (!bridgeJobId && j.ok !== undefined) {
-      // sync response (validate)
-      bridgeLog(JSON.stringify(j).slice(0, 200));
-    }
-    setBridgeUiBusy(false);
-  } catch (e) {
-    bridgeStatus(`bridge error: ${e.message} (is \`node tools/server.mjs\` running?)`);
-    setBridgeUiBusy(false);
-  }
-}
-
-async function confirmJob() {
-  if (!bridgeJobId) return;
-  try {
-    setBridgeUiBusy(true);
-    await bridgePost(`/api/jobs/${bridgeJobId}/confirm`, {});
-    bridgeStatus('confirmed — queued; streaming progress…');
-    const src = new EventSource(`/api/jobs/${bridgeJobId}/events`);
-    src.onmessage = (e) => bridgeLog(`${e.type ?? 'msg'}: ${e.data}`);
-    src.addEventListener('progress', (e) => bridgeLog(`progress: ${e.data}`));
-    src.addEventListener('log', (e) => bridgeLog(`log: ${e.data}`));
-    src.addEventListener('done', async (e) => {
-      bridgeStatus('done — matrix reloading…');
-      bridgeLog(`done: ${e.data}`);
-      src.close();
-      setBridgeUiBusy(false);
-      bridgeJobId = null;
-      await reloadMatrixFor(currentAssetId);
-    });
-    src.addEventListener('error', (e) => {
-      bridgeLog(`error: ${e.data ?? 'stream closed'}`);
-      src.close();
-      setBridgeUiBusy(false);
-      bridgeJobId = null;
-    });
-  } catch (e) {
-    bridgeStatus(`confirm error: ${e.message}`);
-    setBridgeUiBusy(false);
-  }
-}
-
-function initBridge() {
-  const hv = async () => {
-    try {
-      const r = await fetch('/api/health');
-      const j = await r.json();
-      bridgeStatus(`bridge: ok (${j.assets} assets, queue ${j.queued}) — pick an op`);
-    } catch {
-      bridgeStatus('bridge: NOT running — start `node tools/server.mjs --port 3000` then reload');
-    }
-  };
-  hv();
-  $('b-validate')?.addEventListener('click', () =>
-    startJob('/api/validate', { assetId: currentAssetId }, 'validate'),
-  );
-  $('b-generate')?.addEventListener('click', () =>
-    startJob('/api/generate', { assetId: currentAssetId }, 'generate'),
-  );
-  $('b-sheets')?.addEventListener('click', () =>
-    startJob('/api/sheet/export', { assetId: currentAssetId }, 'sheet export'),
-  );
-  $('b-tres')?.addEventListener('click', () =>
-    startJob('/api/tres/export', { assetId: currentAssetId }, 'tres export'),
-  );
-  $('b-confirm')?.addEventListener('click', confirmJob);
-  $('b-import-file')?.addEventListener('change', async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const fd = new FormData();
-    fd.append('assetId', currentAssetId);
-    fd.append('file', f, f.name);
-    try {
-      setBridgeUiBusy(true);
-      const res = await fetch('/api/import', { method: 'POST', body: fd });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.message ?? 'import failed');
-      bridgeJobId = j.jobId;
-      const p = j.preview ?? {};
-      $('bridge-status').textContent =
-        `import: ${f.name} ${p.srcW}x${p.srcH} -> willWrite ${p.willWrite?.length}, backup ${p.willBackup}, delta ${p.bytesDelta} — confirm to apply`;
-      setBridgeUiBusy(false);
-    } catch (err) {
-      bridgeStatus(`import error: ${err.message}`);
-      setBridgeUiBusy(false);
-    }
-  });
-  // Dead buttons from the read-only era now trigger the same flow.
-  $('export-btn')?.addEventListener('click', () =>
-    startJob('/api/sheet/export', { assetId: currentAssetId }, 'sheet export'),
-  );
-  document.getElementById('matrix-grid')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-clip]');
-    if (!btn) return;
-    startJob('/api/generate', { assetId: currentAssetId }, `regenerate for ${btn.dataset.clip}`);
-  });
-}
-function initAssetSwitcher() {
-  const sel = $('asset-select');
-  if (!sel) return;
-  sel.value = currentAssetId;
-  sel.addEventListener('change', async () => {
-    const id = sel.value;
-    if (!ASSET_IDS.includes(id)) return;
-    await initAsset(id);
-    await reloadMatrixFor(id);
-  });
-}
-
-// 5.2 matrix wiring (additive; 1.1/4.1 above untouched).
-let matrixAsset = null;
-let matrixTimers = [];
-
-function clearMatrixTimers() {
-  for (const t of matrixTimers) clearInterval(t);
-  matrixTimers = [];
-}
-
-function renderMatrix(persp) {
-  const grid = $('matrix-grid');
-  const meta = $('matrix-meta');
-  const btn = $('export-btn');
-  const hint = $('export-hint');
-  if (!grid || !matrixAsset) return;
-  clearMatrixTimers();
-  grid.innerHTML = '';
-  const { cells } = buildMatrix(matrixAsset, persp);
-  const missing = cells.filter((c) => c.missing);
-  meta.textContent = `${persp}: ${cells.length} cells, ${missing.length} missing`;
-  for (const cell of cells) {
-    const el = document.createElement('div');
-    el.className = `cell${cell.missing ? ' missing' : ''}`;
-    el.dataset.action = cell.action;
-    el.dataset.dir = cell.dir;
-    const head = document.createElement('h4');
-    head.textContent = `${cell.action} · ${cell.dir}`;
-    el.appendChild(head);
-    if (cell.missing) {
-      const ph = document.createElement('p');
-      ph.className = 'ph';
-      ph.textContent = `missing ${cell.clipId}`;
-      el.appendChild(ph);
-      const gen = document.createElement('button');
-      gen.type = 'button';
-      gen.textContent = 'Generate';
-      gen.title = `generate ${cell.clipId} (manual flow, 4.2 reserved slot)`;
-      gen.dataset.clip = cell.clipId;
-      el.appendChild(gen);
-    } else {
-      const cur = document.createElement('code');
-      cur.textContent = cell.files[0];
-      el.appendChild(cur);
-      const sub = document.createElement('p');
-      sub.className = 'hint';
-      sub.textContent = `${cell.files.length}f × ${cell.durationMs.toFixed(2)}ms`;
-      el.appendChild(sub);
-      let player = createPlayer(matrixAsset, persp, cell.action, cell.dir, 0);
-      const timer = setInterval(() => {
-        try {
-          player = tickPlayer(player);
-          cur.textContent = player.file;
-        } catch {
-          // Strict cell vanished mid-play (should not happen on full asset).
-          clearInterval(timer);
-        }
-      }, player.durationMs);
-      matrixTimers.push(timer);
-    }
-    grid.appendChild(el);
-  }
-  const ex = canExport(matrixAsset);
-  const total = cells.length * 2;
-  btn.disabled = !ex.ok;
-  btn.title = ex.ok ? `all ${total} clips present` : `missing: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
-  hint.textContent = ex.ok ? `ready: ${total} clips full` : `export disabled — missing ${ex.missing.length}: ${ex.missing.slice(0, 3).join('; ')}${ex.missing.length > 3 ? '…' : ''}`;
-}
-
-async function initMatrix() {
-  if (!$('matrix-grid')) return;
-  try {
-    const { asset } = await loadShell(assetUrlFor(currentAssetId));
-    matrixAsset = asset;
-    const sel = $('m-persp');
-    const start = asset.preview?.perspective ?? 'td';
-    if (sel) {
-      sel.value = start;
-      sel.addEventListener('change', () => renderMatrix(sel.value));
-    }
-    renderMatrix(start);
-  } catch (e) {
-    const meta = $('matrix-meta');
-    if (meta) meta.textContent = `FAIL: ${e.message}`;
-  }
-}
-
-async function reloadMatrixFor(assetId) {
-  currentAssetId = assetId;
-  try {
-    const { asset } = await loadShell(assetUrlFor(currentAssetId));
-    matrixAsset = asset;
-    const sel = $('m-persp');
-    const persp = sel?.value ?? asset.preview?.perspective ?? 'td';
-    if (sel) sel.value = persp;
-    renderMatrix(persp);
-  } catch (e) {
-    const meta = $('matrix-meta');
-    if (meta) meta.textContent = `FAIL: ${e.message}`;
-  }
-}
+initImportFlow();
+initCards()
+  .then(() => selectAsset(currentAssetId))
+  .then(() => {
+    initFixtureCompares();
+    initGuardianCompares();
+    updatePrototypeCompare();
+  })
+  .catch((e) => bridgeStatus(`初始化失败：${e.message}`));
