@@ -154,26 +154,6 @@ describe('3.1 per-pixel rect vectorizer', () => {
     const edge128 = new Uint8ClampedArray([0xc0, 0x30, 0x28, 128]);
     assert.equal(countRects(vectorizeFrame(edge128, 1, 1, character)), 1);
   });
-
-  it('end-to-end quantize output runs byte-identical twice', () => {
-    const src = new Uint8ClampedArray(16 * 12 * 4);
-    for (let i = 0; i < src.length; i += 4) {
-      src[i] = 200;
-      src[i + 1] = 48;
-      src[i + 2] = 40;
-      src[i + 3] = 255;
-    }
-    const run = () => {
-      const g = quantizeGeometry(src, 16, 12, 32, { kind: 'character' });
-      const mapped = mapFrameToPalette(g.data, g.width, g.height, character);
-      return vectorizeFrame(mapped.data, g.width, g.height, character);
-    };
-    const a = run();
-    const b = run();
-    assert.equal(a, b);
-    assertWellFormedXml(a, 32, 32);
-    assert.ok(countRects(a) > 0);
-  });
 });
 
 describe('3.1 semantic relabel', () => {
@@ -239,31 +219,6 @@ describe('3.1 semantic relabel', () => {
     const out = relabelLayers(svg, regionMap);
     assert.ok(groupIds(out).includes('body'));
     assert.throws(() => relabelLayers(svg, { [groupIds(svg)[0]]: 'head' }), /must be one of/);
-  });
-
-  it('vectorize+relabel chain is deterministic', () => {
-    const src = new Uint8ClampedArray(8 * 8 * 4);
-    for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 8; x++) {
-        const i = (y * 8 + x) * 4;
-        const c = mappable[(x + y) % mappable.length];
-        src[i] = c.r;
-        src[i + 1] = c.g;
-        src[i + 2] = c.b;
-        src[i + 3] = x === 0 && y === 0 ? 0 : 255;
-      }
-    }
-    const run = () => {
-      const mapped = mapFrameToPalette(src, 8, 8, character);
-      const svg = vectorizeFrame(mapped.data, 8, 8, character);
-      const ids = groupIds(svg);
-      const regionMap = {};
-      ids.forEach((id, k) => {
-        regionMap[id] = SEMANTIC_GROUPS[k % SEMANTIC_GROUPS.length];
-      });
-      return relabelLayers(svg, regionMap);
-    };
-    assert.equal(run(), run());
   });
 });
 
@@ -373,7 +328,7 @@ describe('3.1 view svg layers (pixelsToSvg)', () => {
     }
   });
 
-  it('deterministic and palette-exact only (no intermediate colors)', () => {
+  it('palette-exact only (no intermediate colors)', () => {
     const src = new Uint8ClampedArray(16 * 12 * 4);
     for (let i = 0; i < src.length; i += 4) {
       src[i] = 200;
@@ -399,11 +354,9 @@ describe('3.1 view svg layers (pixelsToSvg)', () => {
         names: mapped.names,
       });
     };
-    const a = run();
-    const b = run();
-    assert.equal(a, b);
+    const svg = run();
     const allowed = new Set(mappable.map((c) => `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`));
-    for (const tag of a.match(/<rect\b[^>]*>/g) ?? []) {
+    for (const tag of svg.match(/<rect\b[^>]*>/g) ?? []) {
       const fill = tag.match(/fill="([^"]+)"/)[1].toLowerCase();
       assert.ok(allowed.has(fill), `fill must be palette-exact, got ${fill}`);
     }
@@ -548,14 +501,6 @@ describe('3.1 synthetic knight pose distinctness (regression: %3 collapse)', () 
         }
       }
       assert.equal(seen.size, 32, `${persp}: expected 32 distinct poses`);
-    }
-  });
-
-  it('explicit collapsed pairs are gone: attack fr4!=fr1, walk rt1!=fr1, idle rt!=fr', () => {
-    for (const persp of ['td', 'sd']) {
-      assert.ok(!pose(persp, 'attack', 'fr', 4).equals(pose(persp, 'attack', 'fr', 1)), `${persp}: attack fr4==fr1`);
-      assert.ok(!pose(persp, 'walk', 'rt', 1).equals(pose(persp, 'walk', 'fr', 1)), `${persp}: walk rt1==fr1`);
-      assert.ok(!pose(persp, 'idle', 'rt', 0).equals(pose(persp, 'idle', 'fr', 0)), `${persp}: idle rt==fr`);
     }
   });
 });

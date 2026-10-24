@@ -1,6 +1,6 @@
 # 量化前后对比 — pixel-generator-character-mvp 2.3
 
-依据：`openspec/changes/pixel-generator-character-mvp/specs/pixel-quantize/spec.md`
+依据：`openspec/specs/pixel-quantize/spec.md`（原 change 已归档：`openspec/changes/archive/2026-10-06-pixel-generator-character-mvp/`）
 （分辨率档与正方形 pad、透明规则、类色板、dither 策略）。
 数据来源均为本仓库：`palettes/*.v1.json`、`tools/quantize.mjs`、`tools/palette.mjs`。
 无外部图片。

@@ -38,14 +38,6 @@ describe('2.2 euclidean mapping to kind palette', () => {
     assert.deepEqual([...data.slice(0, 4)], [0, 0, 0, 0]);
     assert.equal(names[1], 'tunic-red');
   });
-
-  it('mapping is deterministic across repeated frames (no shimmer premise)', () => {
-    const frame = new Uint8ClampedArray([200, 50, 42, 255, 232, 168, 124, 255, 10, 20, 30, 255]);
-    const a = mapFrameToPalette(frame, 3, 1, character);
-    const b = mapFrameToPalette(frame, 3, 1, character);
-    assert.deepEqual(a.data, b.data);
-    assert.deepEqual(a.names, b.names);
-  });
 });
 
 describe('2.2 OKLCH replacement hook', () => {

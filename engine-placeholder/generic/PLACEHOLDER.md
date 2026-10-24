@@ -83,11 +83,13 @@ fr4 截断）；`mapping.dropped` = 截断具名（如 `knight_td_attack_fr4.svg
 
 ## 5. 静态资产直读扩展（static kinds，本轮 SVG-only）
 
-静态四资产（`sword_001`/weapon、`house_001`/building、`crate_001`/prop、
-`tree_001`/scenery）本轮无表（静态拼表已延期：
-`static-kinds-godot-adapter/design.md` Open Questions 明示 statics ship
-SVG-only；`node tools/sheet.mjs export` 只导 knight），沿用本直读契约的
-退化形态——单格直读，无 map.json：
+静态资产（`sword_001`/weapon、`house_001`/building、`crate_001`/prop、
+`tree_001`/scenery、`potion_001`/prop）的静态单帧导出已随 M2 冻结
+（spritesheet-export：`<prefix>_<persp>_idle.png` 4 列 × 1 行 + full-mode
+map.json）；截至 M3 实际落表的是 `potion_001`（M2 导入件），
+`house_001`/`tree_001` 已升 128 档、出表随时可跑
+（`node tools/sheet.mjs export --asset <id>`）。有表资产沿用本直读契约，
+未出表资产走单格直读退化形态：
 
 1. 选资产：读 `assets/<id>/asset.json`。实测四静态均为 `idle` 单动作、
    `frames: 1`、`fps: 2`、`loop: true`、`size: 64`，色板按 kind

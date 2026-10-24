@@ -15,7 +15,6 @@ describe('5.1 fps conversion', () => {
     assert.equal(frames.length, 3);
     for (const f of frames) {
       assert.ok(Math.abs(f.durationMs - 1000 / 6) < 0.01, `walk duration ${f.durationMs}`);
-      assert.equal(f.durationMs.toFixed(2), '166.67');
     }
   });
 

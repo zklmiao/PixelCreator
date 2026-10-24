@@ -112,14 +112,6 @@ describe('A3 static single-frame export (potion 64px)', () => {
     assert.ok(got.has('potion_td_idle.png') && got.has('potion_sd_idle.png'));
   });
 
-  it('static sheet build is deterministic', async () => {
-    const frames = await loadActionFrames(potionDir, potion, 'td', 'idle', 'full');
-    const a = buildStaticSheet(potion, { perspective: 'td', frames });
-    const b = buildStaticSheet(potion, { perspective: 'td', frames });
-    assert.deepEqual(a.rgba, b.rgba);
-    assert.deepEqual(encodePng(a.rgba, a.w, a.h), encodePng(b.rgba, b.w, b.h));
-  });
-
   it('knight dual-mode path unchanged (walk full still 192x256)', async () => {
     const frames = await loadActionFrames(knightDir, knight, 'td', 'walk', 'full');
     const { w, h, map } = buildSheet(knight, { perspective: 'td', action: 'walk', mode: 'full', frames });

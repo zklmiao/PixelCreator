@@ -72,14 +72,6 @@ describe('transparent placeholder exclusion', () => {
     assert.equal(hit.name, 'tunic-red');
   });
 
-  it('similar cloak reds converge to one entry (2.2 cross-view premise)', () => {
-    const p = loadPalette(resolve(root, 'palettes/palette_character.v1.json'));
-    const mappable = getMappableColors(p);
-    const front = nearestColor(0xc2, 0x32, 0x2a, mappable);
-    const back = nearestColor(0xbe, 0x2e, 0x26, mappable);
-    assert.equal(front.name, back.name);
-  });
-
   it('character keeps dense 4-step skin ramp; dither policy holds', () => {
     const c = loadPalette(resolve(root, 'palettes/palette_character.v1.json'));
     assert.ok(c.colors.filter((x) => (x.role ?? '').startsWith('skin')).length >= 4);

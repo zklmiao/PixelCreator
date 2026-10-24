@@ -7,7 +7,7 @@
 // Maker never enters (#21), no uid (rebuilt on import).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildTresText, exportTres } from './tres.mjs';
@@ -137,8 +137,11 @@ describe('A2 knight tres (24 animations, Full only)', () => {
     assert.ok(text.startsWith('[gd_resource type="SpriteFrames" load_steps=72 format=3]'), 'load_steps = 6 ext + 64 atlas + 2');
   });
 
-  it('export is deterministic (rebuild byte-identical)', async () => {
+  it('export is deterministic (stale file rebuilt byte-identical)', async () => {
     const before = readFileSync(resolve(root, 'godot/knight_001.spriteframes.tres'), 'utf8');
+    // Prove the writer actually runs: poison the file, export must replace it
+    // byte-for-byte (a no-op writer or a broken write path now fails here).
+    writeFileSync(resolve(root, 'godot/knight_001.spriteframes.tres'), 'stale-content-must-be-replaced');
     await exportTres('knight_001', 'godot');
     const after = readFileSync(resolve(root, 'godot/knight_001.spriteframes.tres'), 'utf8');
     assert.equal(after, before);

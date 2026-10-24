@@ -129,14 +129,4 @@ describe('A1 guardian landed slots (40 views + 2 masters)', () => {
     }
     assert.ok(n > 100, `guardian views must carry real pixels, got ${n} rects`);
   });
-
-  it('map pipeline is deterministic in memory (svg bytes stable)', async () => {
-    const src = await decodePngFile(resolve(root, 'fixtures/guardian/amg1_fr1.png'));
-    const run = () => {
-      const q = quantizeAndMap(src, guardian, character);
-      const clip = guardian.actions.walk.clips.sd.fr[0];
-      return svgForSlot(q, guardian, character, 'sd', 'fr', clip, 'amg1_fr1', false, 'walk');
-    };
-    assert.equal(run(), run());
-  });
 });

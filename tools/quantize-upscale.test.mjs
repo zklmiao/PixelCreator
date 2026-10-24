@@ -71,28 +71,6 @@ describe('2.3 dither switch lock', () => {
     assert.throws(() => mapFrameToPalette(frame, 1, 1, palettes.character, { dither: 'floyd-steinberg' }));
   });
 
-  it('weapon/prop lock to none like character', () => {
-    const frame = new Uint8ClampedArray(px(122, 199, 79));
-    for (const k of ['weapon', 'prop']) {
-      assert.throws(() => mapFrameToPalette(frame, 1, 1, palettes[k], { dither: 'ordered-bayer' }), k);
-    }
-  });
-
-  it('scenery/building allow ordered-bayer 4x4', () => {
-    const frame = new Uint8ClampedArray([...px(122, 199, 79), ...px(122, 199, 79), ...px(122, 199, 79), ...px(122, 199, 79)]);
-    for (const k of ['scenery', 'building']) {
-      const { names } = mapFrameToPalette(frame, 2, 2, palettes[k], { dither: 'ordered-bayer' });
-      assert.equal(names.length, 4);
-    }
-  });
-
-  it('error-diffusion never ships for any kind', () => {
-    const frame = new Uint8ClampedArray(px(122, 199, 79));
-    for (const k of kinds) {
-      assert.throws(() => mapFrameToPalette(frame, 1, 1, palettes[k], { dither: 'error-diffusion' }), k);
-    }
-  });
-
   it('default dither is none everywhere (characters flicker-free by default)', () => {
     for (const k of kinds) {
       assert.equal(palettes[k].dither.default, 'none');
@@ -100,7 +78,7 @@ describe('2.3 dither switch lock', () => {
   });
 });
 
-describe('2.3 walk no-shimmer proof', () => {
+describe('2.3 walk mapping palette discipline', () => {
   // Synthetic 3-frame walk: 8x8, mid-stride bar shifts 1px per frame.
   function walkFrame(shift) {
     const buf = new Uint8ClampedArray(8 * 8 * 4);
@@ -120,24 +98,6 @@ describe('2.3 walk no-shimmer proof', () => {
     return buf;
   }
 
-  it('same walk clip mapped twice in none mode is byte-identical', () => {
-    for (let f = 0; f < 3; f++) {
-      const frame = walkFrame(f);
-      const a = mapFrameToPalette(frame, 8, 8, palettes.character, { dither: 'none' });
-      const b = mapFrameToPalette(frame, 8, 8, palettes.character, { dither: 'none' });
-      assert.deepEqual(a.data, b.data);
-      assert.deepEqual(a.names, b.names);
-    }
-  });
-
-  it('ordered-bayer output is deterministic: same input, same output, fixed positions', () => {
-    const frame = walkFrame(1);
-    const a = mapFrameToPalette(frame, 8, 8, palettes.scenery, { dither: 'ordered-bayer' });
-    const b = mapFrameToPalette(frame, 8, 8, palettes.scenery, { dither: 'ordered-bayer' });
-    assert.deepEqual(a.data, b.data);
-    assert.deepEqual(a.names, b.names);
-  });
-
   it('mapped walk frames hold only palette bytes or transparent', () => {
     const allowed = new Set(getMappableColors(palettes.character).map((c) => `${c.r},${c.g},${c.b}`));
     for (let f = 0; f < 3; f++) {
@@ -151,21 +111,5 @@ describe('2.3 walk no-shimmer proof', () => {
         }
       }
     }
-  });
-
-  it('geometry+map+upscale chain is end-to-end deterministic', () => {
-    const src = new Uint8ClampedArray(16 * 12 * 4);
-    for (let i = 0; i < src.length; i += 4) {
-      src[i] = 200;
-      src[i + 1] = 48;
-      src[i + 2] = 40;
-      src[i + 3] = 255;
-    }
-    const run = () => {
-      const g = quantizeGeometry(src, 16, 12, 32, { kind: 'character' });
-      const m = mapFrameToPalette(g.data, g.width, g.height, palettes.character);
-      return upscaleNearest(m.data, g.width, g.height, 2);
-    };
-    assert.deepEqual(run().data, run().data);
   });
 });

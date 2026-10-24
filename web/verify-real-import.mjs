@@ -1,6 +1,6 @@
 // verify-real-import.mjs — M2/M3 real-import acceptance: fixture compare PNGs
 // (exist + parse as PNG + side-by-side size formula) + 7 shells all OK via
-// pure checkShell + potion 8-cell shape (form only, fullness tolerated) +
+// pure checkShell + potion 8-cell shape (form and fullness) +
 // guardian provenance (map + 8 sources + reuse-vs-landed + td==sd + 24-cell
 // shape) + character regression. Run: node web/verify-real-import.mjs
 // Read-only: never writes assets//fixtures/. checkShell is pure (fs read +
@@ -109,8 +109,8 @@ for (const id of ASSET_IDS) {
   else ok(`${id} shell ok (kind=${asset.kind})`);
 }
 
-// 5. Potion matrix shape: 4 idle cells per side (form only, fullness tolerated
-// while SVGs land — missing parks as named placeholders and never exports).
+// 5. Potion matrix shape: 4 idle cells per side (form and fullness — all 8
+// clips landed in r3; a missing clip file is a hard failure).
 {
   const potion = loadAsset('potion_001');
   let total = 0;
@@ -121,11 +121,12 @@ for (const id of ASSET_IDS) {
     if (!m.cells.every((c) => c.action === 'idle')) fail(`potion/${persp}: all cells must be idle`);
     else ok(`potion/${persp}: all cells idle-only`);
     const miss = m.cells.filter((c) => c.missing);
-    ok(`potion/${persp}: missing=${miss.length} (tolerated pre-generation: ${miss.map((c) => c.clipId).join(',') || 'full'})`);
+    if (miss.length !== 0) fail(`potion/${persp}: unexpected missing clips: ${miss.map((c) => c.clipId).join(',')}`);
+    else ok(`potion/${persp}: missing=0 (all idle clips landed)`);
     total += m.cells.length;
   }
   if (total !== 8) fail(`potion: toggle total must be 8, got ${total}`);
-  else ok('potion toggle totals 8 idle cells (form verified, fullness tolerated)');
+  else ok('potion toggle totals 8 idle cells (form and fullness verified)');
 }
 
 // 6. Character regression: knight shell + 12-cell matrix + export ready.
@@ -147,12 +148,18 @@ for (const id of ASSET_IDS) {
 // 7. Guardian provenance: map + 8 sources (32x32) + reuse declaration vs
 // landed bytes (idle f1 / walk f1,f2 / attack f2,f1) + td==sd placeholder +
 // 8 compares (96x64 derived: 32 source + 64 size档) + 24-cell matrix shape.
-// Landed-file checks tolerate missing pre-generation (report counts); map +
-// source presence is hard (lands with the wt-A m3 merge).
+// Landed-file checks: every referenced file must be on disk (the r3 merge
+// landed them all; a missing file is a hard failure now).
 {
   const gdir = resolve(root, 'fixtures/guardian');
   const gAssetDir = resolve(root, 'assets/guardian_001');
-  const readBin = (fp) => (existsSync(fp) ? readFileSync(fp) : null);
+  const readBin = (fp) => {
+    if (!existsSync(fp)) {
+      fail(`landed file missing: ${fp}`);
+      return Buffer.alloc(0);
+    }
+    return readFileSync(fp);
+  };
   if (!existsSync(gdir)) {
     fail('fixtures/guardian/ missing (lands with the wt-A m3 merge)');
   } else {
@@ -218,7 +225,7 @@ for (const id of ASSET_IDS) {
       } else ok(`${f} is 96x64 (32 source + 64 quantized, left/right panels)`);
     }
   }
-  // Landed-bytes reuse + td==sd placeholder (tolerant while SVGs land).
+  // Landed-bytes reuse + td==sd placeholder (all files must be on disk).
   // Pixel semantics: slot metadata (action/frame/source, data-master) differs
   // per slot by design, so reuse/master checks compare <rect> pixel sets
   // (same rectSet precedent as tools/static-kinds.test.mjs); td==sd twins
@@ -232,16 +239,9 @@ for (const id of ASSET_IDS) {
     return tags.sort().join('\n');
   };
   let checked = 0;
-  let tolerated = 0;
   const eqFiles = (a, b) => {
-    const ba = readBin(resolve(gAssetDir, a));
-    const bb = readBin(resolve(gAssetDir, b));
-    if (ba === null || bb === null) {
-      tolerated++;
-      return null;
-    }
     checked++;
-    return ba.equals(bb);
+    return readBin(resolve(gAssetDir, a)).equals(readBin(resolve(gAssetDir, b)));
   };
   for (const persp of ['td', 'sd']) {
     for (const dir of ['fr', 'bk', 'lf', 'rt']) {
@@ -250,14 +250,8 @@ for (const id of ASSET_IDS) {
       const attack = clips.attack.clips[persp][dir].map((f) => f.file);
       // Reuse declaration: idle=[f1], walk=[f1,f2], attack=[f2,f1] (pixel sets).
       const px = (a, b) => {
-        const ka = rectKey(a);
-        const kb = rectKey(b);
-        if (ka === null || kb === null) {
-          tolerated++;
-          return null;
-        }
         checked++;
-        return ka === kb;
+        return rectKey(a) === rectKey(b);
       };
       const r1 = px(idle[0], walk[0]);
       if (r1 === false) fail(`reuse mismatch: ${idle[0]} pixels must equal ${walk[0]} (both f1)`);
@@ -279,16 +273,10 @@ for (const id of ASSET_IDS) {
   // Masters carry fr-slot content (data-master marking differs by design).
   for (const [persp, fr0] of [['td', 'guardian_td_idle_fr0.svg'], ['sd', 'guardian_sd_idle_fr0.svg']]) {
     const master = guardian.masters[persp];
-    const ka = rectKey(master);
-    const kb = rectKey(fr0);
-    if (ka === null || kb === null) {
-      tolerated++;
-    } else {
-      checked++;
-      if (ka !== kb) fail(`master mismatch: ${master} pixels must equal ${fr0} (fr-slot content)`);
-    }
+    checked++;
+    if (rectKey(master) !== rectKey(fr0)) fail(`master mismatch: ${master} pixels must equal ${fr0} (fr-slot content)`);
   }
-  ok(`guardian landed-bytes reuse + td==sd placeholder checked=${checked} tolerated-missing=${tolerated}`);
+  ok(`guardian landed-bytes reuse + td==sd placeholder checked=${checked}`);
   // Guardian 24-cell matrix shape via existing buildMatrix (td placeholder
   // consumed as a normal perspective; fullness tolerated pre-generation).
   {
@@ -302,11 +290,12 @@ for (const id of ASSET_IDS) {
       if (acts !== wantActions.sort().join(',')) fail(`guardian/${persp}: actions must be idle/walk/attack, got ${acts}`);
       else ok(`guardian/${persp}: idle/walk/attack actions present`);
       const miss = m.cells.filter((c) => c.missing);
-      ok(`guardian/${persp}: missing=${miss.length} (tolerated pre-generation)`);
+      if (miss.length !== 0) fail(`guardian/${persp}: unexpected missing clips: ${miss.map((c) => c.clipId).join(',')}`);
+      else ok(`guardian/${persp}: missing=0 (all clips landed)`);
       total += m.cells.length;
     }
     if (total !== 24) fail(`guardian: toggle total must be 24, got ${total}`);
-    else ok('guardian toggle totals 24 cells (form verified, fullness tolerated)');
+    else ok('guardian toggle totals 24 cells (form and fullness verified)');
   }
 }
 

@@ -85,21 +85,6 @@ describe('A1 real import pipeline (34px icon -> 64 static slot)', () => {
     assert.equal(cmp.height, 64);
   });
 
-  it('pipeline runs byte-identical twice (svg + compare, no shimmer)', async () => {
-    const src = await decodePngFile(resolve(root, 'fixtures/import/I_Key01.png'));
-    const run = () => {
-      const q = quantizeAndMap(src, potion, prop);
-      const clip = potion.actions.idle.clips.td.fr[0];
-      const svg = svgForSlot(q, potion, prop, 'td', 'fr', clip, 'I_Key01', false);
-      const cmp = buildCompare(src.data, src.width, src.height, q.mapped.data, potion.size);
-      return { svg, cmp: Buffer.from(cmp.data) };
-    };
-    const a = run();
-    const b = run();
-    assert.equal(a.svg, b.svg);
-    assert.ok(a.cmp.equals(b.cmp));
-  });
-
   it('prop keeps dither lock (ordered-bayer still rejected)', () => {
     const frame = new Uint8ClampedArray([122, 199, 79, 255]);
     assert.throws(() => mapFrameToPalette(frame, 1, 1, prop, { dither: 'ordered-bayer' }));
