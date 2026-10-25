@@ -27,6 +27,13 @@ import {
 } from './import-prototype.mjs';
 import { encodePng } from './sheet.mjs';
 import { ASSET_IDS } from '../web/lib/asset-shell.js';
+import {
+  img2imgStatus,
+  orchestrateGuardianMid,
+  orchestrateGuardianTd,
+  runGuardianImportSegment,
+  TD_DERIVE_PLAN,
+} from './img2img-providers.mjs';
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(moduleDir, '..');
@@ -282,6 +289,47 @@ function previewTres(assetId) {
   return finishPreview([`godot/${assetId}.spriteframes.tres`], {});
 }
 
+// M4 img2img orchestration preview (dry-run, no writes, no provider calls):
+// lists the fixture PNGs the job will produce plus every asset file the
+// follow-up map import re-lands (slots + masters) and the per-source compares.
+function previewImg2img(assetId, kind) {
+  const { doc } = loadAssetDoc(assetId);
+  const willWrite = new Set();
+  for (const [action, a] of Object.entries(doc.actions ?? {})) {
+    for (const persp of doc.perspectives ?? []) {
+      for (const d of doc.views ?? []) {
+        for (const clip of a.clips?.[persp]?.[d] ?? []) willWrite.add(`assets/${assetId}/${clip.file}`);
+      }
+    }
+  }
+  for (const persp of doc.perspectives ?? []) {
+    if (doc.masters?.[persp]) willWrite.add(`assets/${assetId}/${doc.masters[persp]}`);
+  }
+  if (kind === 'inbetween') {
+    for (const d of doc.views ?? []) {
+      willWrite.add(`fixtures/guardian/mid/guardian_sd_${d}_mid.png`);
+      willWrite.add(`fixtures/guardian/mid/guardian_td_${d}_mid.png`);
+    }
+  } else {
+    for (const d of doc.views ?? []) {
+      for (const { action, frames } of TD_DERIVE_PLAN) {
+        for (const n of Object.keys(frames)) willWrite.add(`fixtures/guardian/td/guardian_${action}_${d}${n}.png`);
+      }
+    }
+  }
+  // One compare per distinct map source, landing next to the source file.
+  const mapPath = join(REPO_ROOT, 'fixtures', 'guardian', 'guardian-map.json');
+  const map = JSON.parse(readFileSync(mapPath, 'utf8'));
+  for (const src of new Set(Object.values(map.slots ?? {}))) {
+    const norm = String(src).split(/[\\/]/).join('/');
+    const cut = norm.lastIndexOf('/');
+    const dir = cut >= 0 ? norm.slice(0, cut) : '';
+    const base = cut >= 0 ? norm.slice(cut + 1) : norm;
+    willWrite.add(`fixtures/guardian/${dir ? `${dir}/` : ''}${base.replace(/\.png$/i, '')}.compare.png`);
+  }
+  return finishPreview([...willWrite].sort(), { kind: 'character' });
+}
+
 function finishPreview(willWrite, extra = {}) {
   let willBackup = 0;
   let existingBytes = 0;
@@ -506,6 +554,24 @@ async function execImport(job, progress) {
   return { wrote: done, backedUp: backed.count, backupDir: backed.dir, cmpW: job.store.cmpW, cmpH: job.store.cmpH };
 }
 
+// M4 img2img executors: provider calls land fixture PNGs, then the shared map
+// import re-lands every slot deterministically. Provider/network errors stop
+// the job after confirm (design.md: "confirm 后逐文件写、失败即停并保留备份").
+async function execImg2img(job, progress) {
+  const { assetId, op } = job;
+  const backed = backupFiles(assetId, job.preview.willWrite);
+  progress('log', { line: `backup ${backed.count} files -> ${backed.dir}` });
+  const orchestrate = op === 'img2img-inbetween' ? orchestrateGuardianMid : orchestrateGuardianTd;
+  const fixtures = await orchestrate({
+    rootDir: REPO_ROOT,
+    onProgress: async ({ file, done }) => progress('progress', { done, file: `fixtures/guardian/.../${String(file).split(/[\\/]/).pop()}` }),
+  });
+  progress('log', { line: `OK: ${fixtures.length} fixture PNGs (provider ${img2imgStatus().active})` });
+  const seg = await runGuardianImportSegment({ rootDir: REPO_ROOT });
+  progress('progress', { done: seg.views + seg.masters, file: `assets/${assetId}/*` });
+  return { fixtures: fixtures.length, views: seg.views, masters: seg.masters, backedUp: backed.count, backupDir: backed.dir };
+}
+
 // ---- HTTP ----
 
 async function handle(req, res) {
@@ -666,6 +732,41 @@ async function handle(req, res) {
       sendJson(res, 202, { ok: true, jobId: job.id, status: 'preview', preview, links: { events: `/api/jobs/${job.id}/events`, confirm: `/api/jobs/${job.id}/confirm`, compare: `/api/jobs/${job.id}/compare` } });
     } catch (e) {
       sendErr(res, e, e.status ?? 400);
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && path === '/api/img2img/status') {
+    // Configured provider names only — never key material (web-bridge ADDED).
+    sendJson(res, 200, img2imgStatus());
+    return;
+  }
+
+  if (req.method === 'POST' && (path === '/api/img2img/inbetween' || path === '/api/img2img/derive-td')) {
+    try {
+      const buf = await readBody(req, 1024 * 1024);
+      const { assetId } = JSON.parse(buf.toString('utf8') ?? '{}');
+      assertAssetId(assetId);
+      if (assetId !== 'guardian_001') {
+        throw Object.assign(new Error(`img2img orchestration needs a committed guardian map, got ${JSON.stringify(assetId)}`), {
+          code: 'NO_ORCHESTRATION_MAP',
+          status: 400,
+        });
+      }
+      const st = img2imgStatus();
+      if (!st.active || !st.configured.includes(st.active)) {
+        throw Object.assign(
+          new Error(`no usable img2img provider configured (active=${JSON.stringify(st.active)}, configured=${JSON.stringify(st.configured)})`),
+          { code: 'PROVIDER_NOT_CONFIGURED', status: 400 },
+        );
+      }
+      const kind = path === '/api/img2img/inbetween' ? 'inbetween' : 'derive-td';
+      const preview = previewImg2img(assetId, kind);
+      const op = kind === 'inbetween' ? 'img2img-inbetween' : 'img2img-derive-td';
+      const job = createJob(op, assetId, preview, execImg2img);
+      sendJson(res, 202, { ok: true, jobId: job.id, status: 'preview', preview, links: { events: `/api/jobs/${job.id}/events`, confirm: `/api/jobs/${job.id}/confirm` } });
+    } catch (e) {
+      sendErr(res, e.code === 'UNKNOWN_ASSET' ? e : { ...e, status: e.status ?? 400, code: e.code ?? 'BAD_REQUEST' });
     }
     return;
   }

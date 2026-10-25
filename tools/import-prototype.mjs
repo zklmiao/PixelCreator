@@ -227,7 +227,7 @@ export async function runImport({ assetId, srcPath, dir = null, outDir = null } 
   if (!assetId) throw new Error('import-prototype: --asset <id> is required');
   if (!srcPath) throw new Error('import-prototype: --src <png> is required');
   const { readFileSync } = await import('node:fs');
-  const { resolve } = await import('node:path');
+  const { resolve, dirname } = await import('node:path');
   const abs = resolve(srcPath);
   let buf;
   try {
@@ -273,20 +273,23 @@ export async function runImportBuffer({ assetId, buffer, srcBase = 'upload', dir
   return { views, masters, comparePath, width: cmp.width, height: cmp.height, pngBytes, files };
 }
 
-// Multi-slot manifest import for characters (real-character-m3):
+// Multi-slot manifest import for characters (real-character-m3, extended m4):
 // `--map fixtures/guardian/guardian-map.json` assigns one source PNG per
-// clip slot ({ clipFile: srcPng } + reuse declaration). td slots are filled
-// with byte-copies of their sd counterparts (documented placeholder: no
-// top-down source exists; a test pins td==sd byte equality). Masters carry
-// fr-slot content + master flag; td masters copy sd masters byte-for-byte.
-// One `<basename>.compare.png` per distinct source lands next to the map
-// (or --out). asset.json is never touched (prompt_hash stays "pending").
-export async function runMapImport({ assetId, mapPath, outDir = null } = {}) {
+// clip slot ({ clipFile: srcPng } + reuse declaration). Since img2img-live,
+// td slots generate from their own td sources (never sd byte-copies; the
+// placeholder allowance retired with guardian's derived td sources), and each
+// perspective's master carries its own fr-slot content. One
+// `<basename>.compare.png` per distinct source lands next to the source file
+// (or --out). asset.json is never touched (hashes stay as committed).
+// `stageRoot` redirects asset-file writes (deterministic regression runs in a
+// temp dir compare byte-identical against the committed slots).
+export async function runMapImport({ assetId, mapPath, outDir = null, stageRoot = null } = {}) {
   if (!assetId) throw new Error('import-prototype: --asset <id> is required');
   if (!mapPath) throw new Error('import-prototype: --map <manifest.json> is required');
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname, resolve, basename } = await import('node:path');
   const { asset, assetDir, palette } = await loadImportAsset(assetId, { allowCharacter: true });
+  const writeDir = stageRoot ? resolve(stageRoot) : assetDir;
   const mapAbs = resolve(mapPath);
   let manifest;
   try {
@@ -323,43 +326,35 @@ export async function runMapImport({ assetId, mapPath, outDir = null } = {}) {
     quants.set(srcFile, quantizeAndMap(src, asset, palette));
     srcMeta.set(srcFile, src);
   }
-  // sd slots generate; td slots byte-copy their sd counterparts.
-  const sdSvg = new Map(); // key action/dir/idx -> svg bytes
+  // Every slot (sd and td) generates from its own declared source.
   let views = 0;
-  const slotKey = (action, d, idx) => `${action}/${d}/${idx}`;
   for (const [action, a] of Object.entries(asset.actions ?? {})) {
-    for (const d of asset.views) {
-      const sdList = a.clips?.sd?.[d] ?? [];
-      const tdList = a.clips?.td?.[d] ?? [];
-      if (sdList.length !== tdList.length) {
-        throw new Error(`import-prototype: td/sd clip count mismatch for ${action}/${d} in ${assetId}`);
+    for (const persp of asset.perspectives) {
+      for (const d of asset.views) {
+        const list = a.clips?.[persp]?.[d] ?? [];
+        list.forEach((clip) => {
+          const srcFile = slots[clip.file];
+          const srcBase = baseNameNoExt(srcFile);
+          const quant = quants.get(srcFile);
+          const svg = svgForSlot(quant, asset, palette, persp, d, clip, srcBase, false, action);
+          mkdirSync(writeDir, { recursive: true });
+          writeFileSync(resolve(writeDir, clip.file), svg, 'utf8');
+          views++;
+        });
       }
-      sdList.forEach((clip, idx) => {
-        const srcFile = slots[clip.file];
-        const srcBase = baseNameNoExt(srcFile);
-        const quant = quants.get(srcFile);
-        const svg = svgForSlot(quant, asset, palette, 'sd', d, clip, srcBase, false, action);
-        sdSvg.set(slotKey(action, d, idx), svg);
-        writeFileSync(resolve(assetDir, clip.file), svg, 'utf8');
-        views++;
-        const tdClip = tdList[idx];
-        if (slots[tdClip.file] !== srcFile) {
-          throw new Error(
-            `import-prototype: td placeholder requires ${tdClip.file} to share ${clip.file} source, got ${JSON.stringify(slots[tdClip.file])}`,
-          );
-        }
-        writeFileSync(resolve(assetDir, tdClip.file), svg, 'utf8');
-        views++;
-      });
     }
   }
+  // Masters carry their own perspective's fr-slot content.
   let masters = 0;
-  const sdFrQuant = quants.get(slots[asset.actions.idle.clips.sd.fr[0].file]);
-  const sdFrBase = baseNameNoExt(slots[asset.actions.idle.clips.sd.fr[0].file]);
-  const sdFrClip = asset.actions.idle.clips.sd.fr[0];
-  const masterSvg = svgForSlot(sdFrQuant, asset, palette, 'sd', 'fr', sdFrClip, sdFrBase, true, 'idle');
   for (const persp of asset.perspectives) {
-    writeFileSync(resolve(assetDir, asset.masters[persp]), masterSvg, 'utf8');
+    const frClip = asset.actions.idle.clips[persp]?.fr?.[0];
+    if (!frClip) throw new Error(`import-prototype: missing ${persp} idle fr slot for master in ${assetId}`);
+    const srcFile = slots[frClip.file];
+    const quant = quants.get(srcFile);
+    const srcBase = baseNameNoExt(srcFile);
+    const masterSvg = svgForSlot(quant, asset, palette, persp, 'fr', frClip, srcBase, true, 'idle');
+    mkdirSync(writeDir, { recursive: true });
+    writeFileSync(resolve(writeDir, asset.masters[persp]), masterSvg, 'utf8');
     masters++;
   }
   const compares = [];
@@ -368,12 +363,12 @@ export async function runMapImport({ assetId, mapPath, outDir = null } = {}) {
     const srcBase = baseNameNoExt(srcFile);
     const cmp = buildCompare(src.data, src.width, src.height, quant.mapped.data, asset.size);
     const pngBytes = encodePng(cmp.data, cmp.width, cmp.height);
-    const comparePath = resolve(outDir ?? mapDir, `${srcBase}.compare.png`);
+    const comparePath = resolve(outDir ?? dirname(resolve(mapDir, srcFile)), `${srcBase}.compare.png`);
     mkdirSync(dirname(comparePath), { recursive: true });
     writeFileSync(comparePath, pngBytes);
     compares.push(comparePath);
   }
-  console.log(`OK: map-imported ${basename(mapAbs)} -> ${assetId} (${views} views + ${masters} masters, td=sd byte-copies)`);
+  console.log(`OK: map-imported ${basename(mapAbs)} -> ${assetId} (${views} views + ${masters} masters${stageRoot ? `, staged ${basename(stageRoot)}` : ''})`);
   for (const c of compares) console.log(`OK: compare ${c}`);
   return { views, masters, compares };
 }

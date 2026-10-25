@@ -1,8 +1,9 @@
-// verify-real-import.mjs — M2/M3 real-import acceptance: fixture compare PNGs
-// (exist + parse as PNG + side-by-side size formula) + 7 shells all OK via
+// verify-real-import.mjs — M2/M3/M4 real-import acceptance: fixture compare
+// PNGs (exist + parse as PNG + side-by-side size formula) + 7 shells all OK via
 // pure checkShell + potion 8-cell shape (form and fullness) +
-// guardian provenance (map + 8 sources + reuse-vs-landed + td==sd + 24-cell
-// shape) + character regression. Run: node web/verify-real-import.mjs
+// guardian provenance (map + 8 amg1 + mid/td stand-ins + reuse-vs-landed +
+// td own-source distinctness + 24-cell shape) + character regression.
+// Run: node web/verify-real-import.mjs
 // Read-only: never writes assets//fixtures/. checkShell is pure (fs read +
 // direct call); loadShell (fetch) is browser-only and never called here.
 // Compare layout contract (shared with tools/import-prototype.mjs wt-A):
@@ -178,17 +179,29 @@ for (const id of ASSET_IDS) {
       }
       if (map !== undefined) {
         const mapText = JSON.stringify(map);
-        if (!mapText.includes('f1') || !mapText.includes('f2')) {
-          fail('guardian-map.json must declare the f1/f2 frame reuse (idle f1 / walk f1,f2 / attack f2,f1)');
-        } else ok('guardian-map.json declares f1/f2 reuse (idle f1 / walk f1,f2 / attack f2,f1)');
+        if (!mapText.includes('f1') || !mapText.includes('f2') || !mapText.includes('ai-mid')) {
+          fail('guardian-map.json must declare the frame reuse (idle f1 / walk f1,ai-mid,f2 / attack f2,ai-mid,f1)');
+        } else ok('guardian-map.json declares f1/ai-mid/f2 reuse (idle f1 / walk f1,ai-mid,f2 / attack f2,ai-mid,f1)');
         const refs = guardianSourcesFromMap(map);
-        if (refs.length !== 8) {
-          fail(`guardian-map.json must reference 8 source PNGs, got ${refs.length}: ${refs.join(',')}`);
-        } else ok(`guardian-map.json references 8 sources: ${refs.join(',')}`);
+        if (refs.length !== 36) {
+          fail(`guardian-map.json must reference 36 source PNGs (8 amg1 + 8 mid + 20 td), got ${refs.length}`);
+        } else ok(`guardian-map.json references 36 sources (8 amg1 + 8 mid + 20 td)`);
+        // Sources live at fixtures/guardian/ (amg1 + compares) or under mid/ and
+        // td/ subdirectories; resolve a ref against the dir that holds it.
+        const refDirFor = (base) => {
+          for (const sub of ['', 'mid/', 'td/']) {
+            if (existsSync(resolve(gdir, sub, base))) return sub;
+          }
+          return null;
+        };
+        let refMissing = 0;
         for (const base of refs) {
-          if (!existsSync(resolve(gdir, base))) fail(`map-referenced source missing: fixtures/guardian/${base}`);
+          if (refDirFor(base) === null) {
+            fail(`map-referenced source missing: fixtures/guardian/{,mid/,td/}${base}`);
+            refMissing++;
+          }
         }
-        if (!failed) ok('all map-referenced sources land on disk');
+        if (!refMissing && !failed) ok('all map-referenced sources land on disk (top level + mid/ + td/)');
       }
     }
     const srcFiles = have.filter((f) => /\.png$/i.test(f) && !/\.compare\.png$/i.test(f));
@@ -225,11 +238,12 @@ for (const id of ASSET_IDS) {
       } else ok(`${f} is 96x64 (32 source + 64 quantized, left/right panels)`);
     }
   }
-  // Landed-bytes reuse + td==sd placeholder (all files must be on disk).
+  // Landed-bytes reuse + td own-source checks (all files must be on disk).
   // Pixel semantics: slot metadata (action/frame/source, data-master) differs
   // per slot by design, so reuse/master checks compare <rect> pixel sets
-  // (same rectSet precedent as tools/static-kinds.test.mjs); td==sd twins
-  // are pure copies and stay whole-byte identical per spec.
+  // (same rectSet precedent as tools/static-kinds.test.mjs). Since
+  // img2img-live, td views hold their own sources: never sd byte-copies, and
+  // the AI mid slots differ from both endpoints (3-frame distinctness).
   const guardian = loadAsset('guardian_001');
   const clips = guardian.actions;
   const rectKey = (file) => {
@@ -239,44 +253,48 @@ for (const id of ASSET_IDS) {
     return tags.sort().join('\n');
   };
   let checked = 0;
-  const eqFiles = (a, b) => {
-    checked++;
-    return readBin(resolve(gAssetDir, a)).equals(readBin(resolve(gAssetDir, b)));
-  };
   for (const persp of ['td', 'sd']) {
     for (const dir of ['fr', 'bk', 'lf', 'rt']) {
       const idle = clips.idle.clips[persp][dir].map((f) => f.file);
       const walk = clips.walk.clips[persp][dir].map((f) => f.file);
       const attack = clips.attack.clips[persp][dir].map((f) => f.file);
-      // Reuse declaration: idle=[f1], walk=[f1,f2], attack=[f2,f1] (pixel sets).
+      // Reuse declaration: idle=[f1], walk=[f1,ai-mid,f2], attack=[f2,ai-mid,f1]
+      // (pixel sets; attack keeps the reverse-order difference).
       const px = (a, b) => {
         checked++;
         return rectKey(a) === rectKey(b);
       };
-      const r1 = px(idle[0], walk[0]);
-      if (r1 === false) fail(`reuse mismatch: ${idle[0]} pixels must equal ${walk[0]} (both f1)`);
-      const r2 = px(walk[1], attack[0]);
-      if (r2 === false) fail(`reuse mismatch: ${walk[1]} pixels must equal ${attack[0]} (both f2)`);
-      const r3 = px(walk[0], attack[1]);
-      if (r3 === false) fail(`reuse mismatch: ${walk[0]} pixels must equal ${attack[1]} (both f1)`);
-      const d = px(walk[0], walk[1]);
-      if (d === true) fail(`distinctness: ${walk[0]} pixels must differ from ${walk[1]} (f1 vs f2)`);
+      if (px(idle[0], walk[0]) === false) fail(`reuse mismatch: ${idle[0]} pixels must equal ${walk[0]} (both f1)`);
+      if (px(walk[2], attack[0]) === false) fail(`reuse mismatch: ${walk[2]} pixels must equal ${attack[0]} (both f2)`);
+      if (px(walk[0], attack[2]) === false) fail(`reuse mismatch: ${walk[0]} pixels must equal ${attack[2]} (both f1)`);
+      if (px(walk[1], attack[1]) === false) fail(`reuse mismatch: ${walk[1]} pixels must equal ${attack[1]} (both AI mid)`);
+      if (px(walk[0], walk[1]) === true) fail(`distinctness: ${walk[0]} pixels must differ from ${walk[1]} (f1 vs ai-mid)`);
+      if (px(walk[1], walk[2]) === true) fail(`distinctness: ${walk[1]} pixels must differ from ${walk[2]} (ai-mid vs f2)`);
       if (persp === 'td') {
         for (const f of [...idle, ...walk, ...attack]) {
           const sdTwin = f.replace('_td_', '_sd_');
-          const t = eqFiles(f, sdTwin);
-          if (t === false) fail(`td placeholder mismatch: ${f} must be byte-identical to ${sdTwin}`);
+          checked++;
+          const sameBytes = readBin(resolve(gAssetDir, f)).equals(readBin(resolve(gAssetDir, sdTwin)));
+          if (sameBytes) fail(`td own-source violation: ${f} must not byte-copy ${sdTwin}`);
+          if (rectKey(f) === rectKey(sdTwin)) fail(`td own-source violation: ${f} pixels must differ from ${sdTwin}`);
         }
       }
     }
   }
-  // Masters carry fr-slot content (data-master marking differs by design).
+  // Masters carry their own perspective's fr-slot content (data-master marking
+  // differs by design).
   for (const [persp, fr0] of [['td', 'guardian_td_idle_fr0.svg'], ['sd', 'guardian_sd_idle_fr0.svg']]) {
     const master = guardian.masters[persp];
     checked++;
     if (rectKey(master) !== rectKey(fr0)) fail(`master mismatch: ${master} pixels must equal ${fr0} (fr-slot content)`);
   }
-  ok(`guardian landed-bytes reuse + td==sd placeholder checked=${checked}`);
+  checked++;
+  if (rectKey('master_td.svg') === rectKey('master_side.svg')) fail('masters must differ per perspective (td own sources)');
+  ok(`guardian landed-bytes reuse + td own-source distinctness checked=${checked}`);
+  // Exact counter (值断言优先): 48 reuse/distinctness pixel checks (2 persp x
+  // 4 dirs x 6) + 56 td own-source checks (28 views x byte+rect) + 3 masters
+  // (2 fr-content + 1 td-vs-sd differ) = 79. A dropped check fails here.
+  if (checked !== 79) fail(`guardian check counter drifted: ${checked} != 79`);
   // Guardian 24-cell matrix shape via existing buildMatrix (td placeholder
   // consumed as a normal perspective; fullness tolerated pre-generation).
   {

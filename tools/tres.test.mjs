@@ -148,15 +148,15 @@ describe('A2 knight tres (24 animations, Full only)', () => {
   });
 });
 
-describe('A2 guardian tres (24 animations, 2-frame actions)', () => {
+describe('A2 guardian tres (24 animations, 3-frame walk/attack)', () => {
   const text = readFileSync(resolve(root, 'godot/guardian_001.spriteframes.tres'), 'utf8');
 
-  it('24 animations; walk/attack carry 2 frames per dir', () => {
+  it('24 animations; walk/attack carry 3 frames per dir (img2img-live mid frames)', () => {
     assert.equal(animNames(text).length, 24);
     for (const p of ['td', 'sd']) {
       for (const d of DIRS) {
-        assert.equal(animBlock(text, `${p}/walk/${d}`).split('"texture":').length - 1, 2);
-        assert.equal(animBlock(text, `${p}/attack/${d}`).split('"texture":').length - 1, 2);
+        assert.equal(animBlock(text, `${p}/walk/${d}`).split('"texture":').length - 1, 3);
+        assert.equal(animBlock(text, `${p}/attack/${d}`).split('"texture":').length - 1, 3);
         assert.equal(animBlock(text, `${p}/idle/${d}`).split('"texture":').length - 1, 1);
       }
     }
@@ -169,7 +169,7 @@ describe('A2 guardian tres (24 animations, 2-frame actions)', () => {
     assert.ok(animBlock(text, 'td/attack/fr').includes('"loop": false'));
     assert.ok(animBlock(text, 'td/walk/fr').includes('"loop": true'));
     const n = (text.match(/\[sub_resource type="AtlasTexture"/g) ?? []).length;
-    assert.equal(n, 40, 'guardian atlas frames = idle 8 + walk 16 + attack 16');
-    assert.ok(text.startsWith('[gd_resource type="SpriteFrames" load_steps=48 format=3]'), 'load_steps = 6 ext + 40 atlas + 2');
+    assert.equal(n, 56, 'guardian atlas frames = idle 8 + walk 24 + attack 24');
+    assert.ok(text.startsWith('[gd_resource type="SpriteFrames" load_steps=64 format=3]'), 'load_steps = 6 ext + 56 atlas + 2');
   });
 });
