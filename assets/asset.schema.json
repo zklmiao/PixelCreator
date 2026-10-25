@@ -3,129 +3,364 @@
   "$id": "https://pixecreator.local/schemas/asset.schema.json",
   "title": "Pixel asset manifest (kind-aware v2, static-kinds-godot-adapter prep; character gate unchanged)",
   "type": "object",
-  "required": ["id", "asset", "kind", "use", "size", "palette", "seed", "perspectives", "views", "masters", "actions", "preview"],
+  "required": [
+    "id",
+    "asset",
+    "kind",
+    "use",
+    "size",
+    "palette",
+    "seed",
+    "perspectives",
+    "views",
+    "masters",
+    "actions",
+    "preview"
+  ],
   "properties": {
-    "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-    "asset": { "type": "string", "pattern": "^[a-z0-9]+$", "description": "Short file-name prefix; clip files are {asset}_{td|sd}_{action}_{dir}{N}.svg" },
-    "kind": { "enum": ["character", "weapon", "building", "prop", "scenery"] },
-    "use": { "const": "2d-rpg" },
-    "size": { "enum": [32, 48, 64, 128] },
-    "palette": { "type": "string", "pattern": "^palette_[a-z]+@v[0-9]+$", "description": "Shape only; kind-match (palette_{kind}@vN) enforced per kind below and in tools/asset-manifest.mjs" },
-    "seed": { "type": "integer" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "asset": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+$",
+      "description": "Short file-name prefix; clip files are {asset}_{td|sd}_{action}_{dir}{N}.svg"
+    },
+    "kind": {
+      "enum": [
+        "character",
+        "weapon",
+        "building",
+        "prop",
+        "scenery"
+      ]
+    },
+    "use": {
+      "const": "2d-rpg"
+    },
+    "size": {
+      "enum": [
+        32,
+        48,
+        64,
+        128
+      ]
+    },
+    "palette": {
+      "type": "string",
+      "pattern": "^palette_[a-z]+@v[0-9]+$",
+      "description": "Shape only; kind-match (palette_{kind}@vN) enforced per kind below and in tools/asset-manifest.mjs"
+    },
+    "seed": {
+      "type": "integer"
+    },
     "perspectives": {
-      "type": "array", "minItems": 2, "maxItems": 2,
-      "items": { "enum": ["td", "sd"] }
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "enum": [
+          "td",
+          "sd"
+        ]
+      }
     },
     "views": {
-      "type": "array", "minItems": 4, "maxItems": 4,
-      "items": { "enum": ["fr", "bk", "lf", "rt"] }
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "enum": [
+          "fr",
+          "bk",
+          "lf",
+          "rt"
+        ]
+      }
     },
     "masters": {
       "type": "object",
-      "required": ["td", "sd"],
+      "required": [
+        "td",
+        "sd"
+      ],
       "additionalProperties": false,
       "properties": {
-        "td": { "type": "string", "pattern": "\\.svg$" },
-        "sd": { "type": "string", "pattern": "\\.svg$" }
+        "td": {
+          "type": "string",
+          "pattern": "\\.svg$"
+        },
+        "sd": {
+          "type": "string",
+          "pattern": "\\.svg$"
+        }
       }
     },
     "actions": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "idle": { "$ref": "#/$defs/action" },
-        "walk": { "$ref": "#/$defs/action" },
-        "attack": { "$ref": "#/$defs/action" }
+        "idle": {
+          "$ref": "#/$defs/action"
+        },
+        "walk": {
+          "$ref": "#/$defs/action"
+        },
+        "attack": {
+          "$ref": "#/$defs/action"
+        }
       }
     },
     "preview": {
       "type": "object",
-      "required": ["perspective", "action", "dir"],
+      "required": [
+        "perspective",
+        "action",
+        "dir"
+      ],
       "additionalProperties": false,
       "properties": {
-        "perspective": { "enum": ["td", "sd"] },
-        "action": { "enum": ["idle", "walk", "attack"] },
-        "dir": { "enum": ["fr", "bk", "lf", "rt"] }
+        "perspective": {
+          "enum": [
+            "td",
+            "sd"
+          ]
+        },
+        "action": {
+          "enum": [
+            "idle",
+            "walk",
+            "attack"
+          ]
+        },
+        "dir": {
+          "enum": [
+            "fr",
+            "bk",
+            "lf",
+            "rt"
+          ]
+        }
       }
     }
   },
   "allOf": [
     {
-      "if": { "properties": { "kind": { "const": "character" } } },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "character"
+          }
+        }
+      },
       "then": {
         "properties": {
-          "size": { "enum": [32, 48, 64] },
-          "palette": { "pattern": "^palette_character@v[0-9]+$" },
-          "actions": { "required": ["idle", "walk", "attack"] }
+          "size": {
+            "enum": [
+              32,
+              48,
+              64
+            ]
+          },
+          "palette": {
+            "pattern": "^palette_character@v[0-9]+$"
+          },
+          "actions": {
+            "required": [
+              "idle",
+              "walk",
+              "attack"
+            ]
+          }
         }
       },
       "else": {
         "properties": {
-          "palette": { "pattern": "^palette_(weapon|building|prop|scenery)@v[0-9]+$" },
+          "palette": {
+            "pattern": "^palette_(weapon|building|prop|scenery)@v[0-9]+$"
+          },
           "actions": {
-            "required": ["idle"],
+            "required": [
+              "idle"
+            ],
             "allOf": [
-              { "not": { "required": ["walk"] } },
-              { "not": { "required": ["attack"] } }
+              {
+                "not": {
+                  "required": [
+                    "walk"
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "required": [
+                    "attack"
+                  ]
+                }
+              }
             ]
           }
         }
       }
     },
     {
-      "if": { "properties": { "kind": { "enum": ["weapon", "prop"] } } },
-      "then": { "properties": { "size": { "enum": [32, 48, 64] } } }
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "weapon",
+              "prop"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "size": {
+            "enum": [
+              32,
+              48,
+              64
+            ]
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "kind": { "enum": ["building", "scenery"] } } },
-      "then": { "properties": { "size": { "enum": [32, 48, 64, 128] } } }
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "building",
+              "scenery"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "size": {
+            "enum": [
+              32,
+              48,
+              64,
+              128
+            ]
+          }
+        }
+      }
     }
   ],
   "$defs": {
     "action": {
       "type": "object",
-      "required": ["frames", "fps", "loop", "clips"],
+      "required": [
+        "frames",
+        "fps",
+        "loop",
+        "clips"
+      ],
       "additionalProperties": false,
       "properties": {
-        "frames": { "type": "integer", "minimum": 1, "maximum": 5 },
-        "fps": { "type": "number", "exclusiveMinimum": 0 },
-        "loop": { "type": "boolean" },
-        "next": { "type": "string" },
+        "frames": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "fps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "loop": {
+          "type": "boolean"
+        },
+        "next": {
+          "type": "string"
+        },
         "clips": {
           "type": "object",
-          "required": ["td", "sd"],
+          "required": [
+            "td",
+            "sd"
+          ],
           "additionalProperties": false,
           "properties": {
-            "td": { "$ref": "#/$defs/dirClips" },
-            "sd": { "$ref": "#/$defs/dirClips" }
+            "td": {
+              "$ref": "#/$defs/dirClips"
+            },
+            "sd": {
+              "$ref": "#/$defs/dirClips"
+            }
           }
         }
       }
     },
     "dirClips": {
       "type": "object",
-      "required": ["fr", "bk", "lf", "rt"],
+      "required": [
+        "fr",
+        "bk",
+        "lf",
+        "rt"
+      ],
       "additionalProperties": false,
       "properties": {
-        "fr": { "$ref": "#/$defs/frameList" },
-        "bk": { "$ref": "#/$defs/frameList" },
-        "lf": { "$ref": "#/$defs/frameList" },
-        "rt": { "$ref": "#/$defs/frameList" }
+        "fr": {
+          "$ref": "#/$defs/frameList"
+        },
+        "bk": {
+          "$ref": "#/$defs/frameList"
+        },
+        "lf": {
+          "$ref": "#/$defs/frameList"
+        },
+        "rt": {
+          "$ref": "#/$defs/frameList"
+        }
       }
     },
     "frameList": {
-      "type": "array", "minItems": 1, "maxItems": 5,
-      "items": { "$ref": "#/$defs/frame" }
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/frame"
+      }
     },
     "frame": {
       "type": "object",
-      "required": ["file", "seed", "prompt_hash"],
+      "required": [
+        "file",
+        "seed",
+        "prompt_hash"
+      ],
       "additionalProperties": false,
       "properties": {
-        "file": { "type": "string", "pattern": "^[a-z0-9_]+_(td|sd)_(idle|walk|attack)_(fr|bk|lf|rt)[0-9]+\\.svg$" },
-        "seed": { "type": "integer" },
-        "prompt_hash": { "type": "string", "minLength": 6 },
-        "denoise": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+        "file": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+_(td|sd)_(idle|walk|attack)_(fr|bk|lf|rt)[0-9]+\\.svg$"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "prompt_hash": {
+          "type": "string",
+          "minLength": 6
+        },
+        "denoise": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "source_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{12}$",
+          "description": "sha256-12 of the imported/derived source image; null for prompt-derived frames and unadopted slots"
+        }
       }
     }
   }
