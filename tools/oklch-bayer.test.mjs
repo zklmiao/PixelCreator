@@ -14,6 +14,8 @@ import {
 } from './palette.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const mappableOf = (palette, name) => getMappableColors(palette).find((c) => c.name === name);
+
 const character = loadPalette(resolve(root, 'palettes/palette_character.v1.json'));
 const weapon = loadPalette(resolve(root, 'palettes/palette_weapon.v1.json'));
 const building = loadPalette(resolve(root, 'palettes/palette_building.v1.json'));
@@ -193,5 +195,35 @@ describe('r2 A2 Bayer harmless proof', () => {
     for (const [k, p] of Object.entries({ character, weapon, building, prop, scenery })) {
       assert.throws(() => mapFrameToPalette(frame, 1, 1, p, { dither: 'error-diffusion' }), k);
     }
+  });
+});
+
+
+// r6 debt: ordered-Bayer must actually dither OFF-palette inputs. The
+// harmless-proof suite above pins in-palette identity; this pins the opposite
+// direction — an off-palette ramp midpoint flips nearest entry under the
+// ±6 channel swing, so a 8x1 constant band breaks into BOTH entries.
+// Probe basis (arithmetic, recorded in comment): water-light (106,200,232)
+// vs water-dark (42,106,168); midpoint (74,153,200): offset -6 -> water-dark,
+// 0/+6 -> water-light under OKLCH.
+describe('r6 Bayer actually dithers off-palette input', () => {
+  const light = mappableOf(scenery, 'water-light');
+  const dark = mappableOf(scenery, 'water-dark');
+  const mid = new Uint8ClampedArray(8 * 4);
+  for (let i = 0; i < 8; i++) {
+    mid[i * 4] = Math.round((light.r + dark.r) / 2);
+    mid[i * 4 + 1] = Math.round((light.g + dark.g) / 2);
+    mid[i * 4 + 2] = Math.round((light.b + dark.b) / 2);
+    mid[i * 4 + 3] = 255;
+  }
+  it('none collapses the off-palette band to a single entry; bayer breaks it into both', () => {
+    const none = mapFrameToPalette(mid, 8, 1, scenery, { dither: 'none' });
+    const uniqNone = [...new Set(none.names)];
+    assert.equal(uniqNone.length, 1, `none must be blocky, got ${uniqNone.join(',')}`);
+    const bayer = mapFrameToPalette(mid, 8, 1, scenery, { dither: 'ordered-bayer' });
+    const uniqBayer = [...new Set(bayer.names)];
+    assert.equal(uniqBayer.length, 2, `bayer must mix both entries, got ${uniqBayer.join(',')}`);
+    assert.ok(uniqBayer.includes('water-light') && uniqBayer.includes('water-dark'));
+    assert.ok(!Buffer.from(none.data).equals(Buffer.from(bayer.data)), 'bayer bytes must differ from none');
   });
 });

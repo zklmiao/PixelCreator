@@ -13,11 +13,15 @@ The system SHALL structure every view SVG with groups `body`, `limb-l`, `limb-r`
 - **THEN** body, limbs, outfit, and weapon-slot groups are separately selectable
 
 ### Requirement: One master plus N view files
-The system SHALL store one master SVG per perspective plus one SVG per direction/action/frame clip; the front view equals the master at grid size while the master retains infinite precision.
+The system SHALL store one master SVG per perspective plus one SVG per direction/action/frame clip; the front view equals the master at the asset's size tier, and both are grid-locked raster-derived SVGs. Masters SHALL regain vector precision only when a vector source import capability lands.
 
 #### Scenario: Master versus front view
-- **WHEN** exporting `view_front.svg` at 64px
-- **THEN** it matches `master.svg` rasterized grid-aligned at 64px
+- **WHEN** exporting a view at the asset's size tier
+- **THEN** it matches `master.svg` rasterized grid-aligned at that size
+
+#### Scenario: Precision upgrade removal condition
+- **WHEN** a vector source import capability lands in a future change
+- **THEN** this grid-locked wording and its pinning test are replaced by a true-vector master requirement in that change
 
 ### Requirement: SVG metadata pointer
 The system SHALL embed lightweight metadata (view, action, dir, perspective, size, palette ref, source prototype) in each SVG and keep timing/palette values in `asset.json`.

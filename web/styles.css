@@ -8,12 +8,13 @@
 }
 
 :root {
-  --px-bg: #3a2a1a;         /* character/hair — page background */
-  --px-surface: #5a3a22;    /* scenery/earth-dark — card surface */
-  --px-surface-2: #442a14;  /* prop/wood-dark — nested surface / offset shadow */
-  --px-border: #ffd9b3;     /* character/skin-1 — hard borders */
-  --px-text: #ffd9b3;       /* character/skin-1 */
-  --px-text-dim: #c07a4e;   /* character/skin-3 — secondary text */
+  /* r6 cool theme (user call): dark blue-steel base from project palettes */
+  --px-bg: #23232b;         /* character/eye — page background */
+  --px-surface: #565e6c;    /* character/steel-dark — card surface */
+  --px-surface-2: #191b20;  /* character/outline — nested surface / offset shadow */
+  --px-border: #dde3ea;     /* character/steel-light — hard borders */
+  --px-text: #dde3ea;       /* character/steel-light */
+  --px-text-dim: #9aa4b2;   /* character/steel-mid — secondary text */
   --px-accent: #c03028;     /* character/tunic-red — primary action / selected */
   --px-accent-2: #6ac8e8;   /* scenery/water-light — links / secondary accent */
   --px-ok: #7ac74f;         /* scenery/grass-light — success */

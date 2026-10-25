@@ -7,7 +7,7 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../tools/server.mjs';
 
@@ -122,6 +122,38 @@ try {
   check('confirm single-use', (c2.status === 409 && c2.json.code === 'ALREADY_CONFIRMED') || c2.status === 202);
 } finally {
   server.close();
+}
+
+
+// r6 debt (postmortem prevention): every static import reachable from
+// web/app.js must fall under a STATIC_PREFIXES dir the bridge serves —
+// a missing prefix (like the /tools/ launch blocker) fails here, not in
+// a user's browser.
+{
+  const serverSrc = readFileSync(resolve(root, 'tools/server.mjs'), 'utf8');
+  const m = serverSrc.match(/STATIC_PREFIXES\s*=\s*\{([^}]*)\}/s);
+  check('server.mjs declares STATIC_PREFIXES', !!m);
+  const served = new Set([...m[1].matchAll(/'([^']+)':\s*'([^']+)'/g)].map((x) => x[2]));
+  const seen = new Set();
+  const queue = ['web/app.js'];
+  const bad = [];
+  while (queue.length > 0) {
+    const rel = queue.pop();
+    if (seen.has(rel)) continue;
+    seen.add(rel);
+    const abs = resolve(root, rel);
+    if (!existsSync(abs)) { bad.push(`missing module ${rel}`); continue; }
+    const topDir = rel.includes('/') ? rel.slice(0, rel.indexOf('/')) : rel;
+    if (!served.has(topDir)) bad.push(`unserved ${rel} (top dir not in STATIC_PREFIXES)`);
+    const src = readFileSync(abs, 'utf8');
+    for (const spec of [...src.matchAll(/from\s+'(\.[^']+)'/g)].map((x) => x[1])) {
+      let target = resolve(dirname(abs), spec).slice(root.length + 1).split(sep).join('/');
+      if (!/\.[a-z]+$/.test(target)) target += '.js';
+      queue.push(target);
+    }
+  }
+  check(`module graph served (${[...seen].sort().join(' <- ')})`, bad.length === 0);
+  if (bad.length > 0) console.error('  audit failures: ' + bad.join(' | '));
 }
 
 if (fail > 0) {

@@ -1,0 +1,74 @@
+{
+  "mode": "full",
+  "asset": "house_001",
+  "perspective": "sd",
+  "action": "idle",
+  "size": 128,
+  "cell": 128,
+  "cols": 4,
+  "rows": 1,
+  "sheet": "house_sd_idle.png",
+  "fps": 2,
+  "loop": true,
+  "next": null,
+  "frames": [
+    {
+      "file": "house_sd_idle_fr0.svg",
+      "dir": "fr",
+      "frame": 0,
+      "col": 0,
+      "row": 0,
+      "x": 0,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "kind": "kept"
+    },
+    {
+      "file": "house_sd_idle_bk0.svg",
+      "dir": "bk",
+      "frame": 0,
+      "col": 1,
+      "row": 0,
+      "x": 128,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "kind": "kept"
+    },
+    {
+      "file": "house_sd_idle_lf0.svg",
+      "dir": "lf",
+      "frame": 0,
+      "col": 2,
+      "row": 0,
+      "x": 256,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "kind": "kept"
+    },
+    {
+      "file": "house_sd_idle_rt0.svg",
+      "dir": "rt",
+      "frame": 0,
+      "col": 3,
+      "row": 0,
+      "x": 384,
+      "y": 0,
+      "w": 128,
+      "h": 128,
+      "kind": "kept"
+    }
+  ],
+  "mapping": {
+    "kept": [
+      "house_sd_idle_fr0.svg",
+      "house_sd_idle_bk0.svg",
+      "house_sd_idle_lf0.svg",
+      "house_sd_idle_rt0.svg"
+    ],
+    "dropped": [],
+    "padded": []
+  }
+}

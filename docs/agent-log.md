@@ -57,3 +57,10 @@
 - 用户要求评审方亲自启动页面 → 发现 bridge 方式启动即死页（资产卡片墙不渲染、模块图死亡）。根因：`web/lib/matrix.js` import `../../tools/clips.mjs`，桥静态白名单漏 `/tools/` → 浏览器侧模块解析 404（Node 侧走文件系统不可见）。伴生两处：对比区容器迁移遗漏、CSS 覆盖 `[hidden]`。
 - 修复 `585ee0b`（server 白名单 + 容器补回 + 空值防御 + `[hidden]` 守卫 + web-bridge spec 修订）；浏览器回归（7 卡片/11 compares/确认条隐藏/bridge 正常）+ 142/142 + 7 verify 全绿。
 - 预防项（M4 可选）：verify-bridge 增加"模块引用图 ⊆ 静态白名单"静态审计。
+
+## 轮 6 — debts-cleanup（评审遗留 + postmortem 预防 + UI 冷调）
+
+- change `debts-cleanup`（单轴主控执行）：①静态单帧表补齐——sword/crate 256x64、house/tree 512x128（128 档首批真实出表）；②svg-engineering 母版"无限精度"条款降格（MODIFIED delta：网格锁定 + 矢量源到达时升级的移除条件，guardian td 占位同款写法；vectorize.test 注释同步）；③Bayer 效果测试——water 中点带 none 单色 / bayer 打散双色（探针依据在案），突变证明：杀死 ±6 偏移 → 测试红；④verify-bridge +模块可达性审计（web/app.js import 闭包 ⊆ STATIC_PREFIXES，16 项）；⑤UI 深冷调（用户 Q5 反馈"屎黄"）——9 token 换 eye/steel-dark/steel-light/steel-mid/outline 系，像素框架不动。
+- 回归：143/143（+1 Bayer 效果测试）；7 verify（verify-bridge 14→16 项）；7× manifest。
+- 教训沉淀：本轮 python 批量编辑两次被转义折叠（、
+），改用 Edit 工具单点修——批量脚本里含正则/换行的字符串应写入文件而非 heredoc 内联。

@@ -364,9 +364,9 @@ describe('3.1 view svg layers (pixelsToSvg)', () => {
 
   // NOTE: generate reuses the idle-fr-0 synthesis for masters (see
   // vectorize.mjs generateKnightSvgs), so this asserts grid-equality by
-  // construction, NOT infinite-precision mastery. Spec svg-engineering
-  // "master retains infinite precision" remains open; this test only guards
-  // against master/front drift at 64px.
+  // construction. Spec svg-engineering downgraded in r6 (debts-cleanup):
+  // masters are grid-locked like views until a vector source import lands;
+  // this test guards master/front drift at grid size.
   it('master vs front: master_td grid pixels equal td idle fr0', () => {
     const dir = resolve(root, 'assets/knight_001');
     const masterPath = resolve(dir, 'master_td.svg');

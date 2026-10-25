@@ -88,3 +88,4 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 - 2026-10-07 M3 收官：轮 4 合并归档（0418a31，含归档事故自报与精确修复）；guardian_001 真实角色（40 视图，td=sd 占位测试钉死）+ tres 24/24 动画 + house/tree 128 档实测；主干 156/156；用户人工验收待做（Godot 载入 .tres）。
 - 2026-10-07 轮 4.5 bridge：web-cli-bridge 落库（67f47e1，本地桥服务器：上传导入 + 两段写 + 备份 + SSE）。
 - 2026-10-07 轮 5 UI 重设计：web-shell-v2 合并（3005e13）——四区 IA（资产库/导入/导出/Prompt）+ 像素复古主题（token 取自项目色板）+ 开发者面板折叠；web-bridge 成第 10 个 capability；用户"信息乱"反馈闭环，人工验收待做。
+- 2026-10-24 轮 6 欠账清理：debts-cleanup 归档——静态单帧表全资产覆盖（sword/crate 64 档、house/tree 128 档）、svg-engineering 母版条款降格（移除条件式）、Bayer 效果测试、verify-bridge 模块可达性审计（postmortem 预防项）、UI 深冷调（用户拍板）；主干 143/143。
