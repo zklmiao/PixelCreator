@@ -38,6 +38,17 @@
         </div>
         <div id="matrix-grid" class="matrix-grid"></div>
         <p id="export-hint" class="meta"></p>
+        <div id="img2img-panel" class="panel" hidden>
+          <h4>img2img 编排（AI 补帧 / 派生俯视角）</h4>
+          <p class="meta">已配置 provider：<span id="img2img-badges">检测中…</span></p>
+          <p class="meta">密钥仅存于服务端环境变量，页面永不接触密钥。</p>
+          <div class="row">
+            <button type="button" id="b-inbetween" disabled>AI 补帧（2→3 帧）</button>
+            <button type="button" id="b-derive-td" disabled>派生俯视角（td 真源）</button>
+          </div>
+          <p id="img2img-status" class="meta"></p>
+          <div id="confirm-slot-img2img" class="confirm-slot"></div>
+        </div>
       </div>
     </section>
 
@@ -49,10 +60,20 @@
         <li>预览量化对比 → 确认落槽（写前自动备份）</li>
       </ol>
       <div class="panel">
-        <label class="filelabel">选择 PNG 原型图
-          <input type="file" id="b-import-file" accept="image/png" />
+        <label class="filelabel">选择原型图（PNG / JPEG / WebP）
+          <input type="file" id="b-import-file" accept="image/png,image/jpeg,image/webp" />
         </label>
-        <p class="meta">仅支持 PNG；建议单物体、透明或纯色背景。Gemini 等 JPEG 原图请先裁出单体并转存 PNG。</p>
+        <p class="meta">PNG 走直传；JPEG/WebP 先在页内裁出单体（解码在浏览器，上传的恒为 PNG）。建议单物体、透明或纯色背景。</p>
+      </div>
+      <div id="crop-stage" class="panel" hidden>
+        <h4>框选要导入的区域</h4>
+        <canvas id="crop-canvas" class="crop-canvas"></canvas>
+        <p class="meta">在图上拖出矩形框选单体；不框选可整图导入。图片入参限 4096px / 8MB。</p>
+        <div class="row">
+          <button type="button" id="crop-upload" disabled>框选并上传</button>
+          <button type="button" id="crop-full">整图上传</button>
+          <button type="button" id="crop-cancel" class="minor">取消</button>
+        </div>
       </div>
       <figure id="import-compare" class="compare" hidden>
         <figcaption>导入预览 — 左原始 / 右量化（拖动分隔对比）</figcaption>
