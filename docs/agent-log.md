@@ -74,3 +74,13 @@
 - 主控修复（wt-B 移交）：img2img 路由 catch 的 `{ ...e }` 展开丢失 Error 原型上的 message → 三处统一改 `sendErr(res, e, 400)`（报文恢复正常描述；UNKNOWN_ASSET/普通错误语义不变）。根因确认时曾因旧进程占端口误判"修复无效"——kill 后重启即正常。
 - 簿记：勾 img2img-live tasks 全部；归档（CLI 同步 3 delta）；Mimosa 扫描 0 发现（两次封存）。
 - 遗留：真实 provider 生成待用户 env（PIXE_IMG_PROVIDER/KEY，升级路径已就绪：重跑 guardian-td/mid 编排即自动换代）；M3 的 Godot 载入人工验收仍待用户；M5 候选：页内资产向导、zhipu 原生适配器（CogView 原生 seed/size 优势）、verify-bridge 作业泄漏清理。
+
+## 轮 8 — polish-hardening（UI 打磨 10 项 + 工程加固 4 项，双轴并行）
+
+- Prep（main）：`529865d` chore(contract): freeze polish-hardening proposal, clip generate contract (r8-prep)（proposal/design/tasks/双卡/web-bridge delta；基线计数修正 143→175 并 amend，双分支重指；tasks.md 因 amend 链路意外未入库——已在归档位补回勾选态）。
+- wt-A 管线轴 `feat/hardening @ b0f976c`：单 commit，13 文件（kinds.mjs 新叶模块单一来源六消费方重接线【字节一致硬验收：knight synth 重生成 + guardian map 重导入 + 60 sheets 重导出全字节一致】+ server.mjs 作业生命周期/TOCTOU 备份时点收紧/clip-scoped generate//prototypes/ 服务 + verify-bridge 严格单次确认断言）。评审：范围 13 文件零越界（web 三文件零触碰、web/lib 仅 mirror 注释）；182/182；clip 端点契约实测（willWrite 恰 3 文件/UNKNOWN_CLIP 400）。结论：通过。
+- wt-B 呈现轴 `feat/ui-polish @ ecbd893`：单 commit，3 文件（校验结果可见化 + 导出内容化同一结果区、clip 参数按钮、/prototypes/ 接线、Prompt kind 选择、打磨包）。评审：红线 diff 空；175/175 + 7 verify；发现 f-vibe 字段在表单重写中丢失（模块顶层崩溃死页）——评审方定位（捕获阶段 error 监听）并修复（6e728a9）；kind 选择器"不可见"系探针时序误报（区切换后测量）。结论：通过（含评审方修复一笔）。
+- 合并：`4ff4205` merge(hardening) → `c7632ad` merge(ui-polish)（合后 182/182 + 7 verify + 7× manifest 全绿）。
+- 簿记：tasks 全勾（归档位补回——发现 openspec 归档 CLI 的 tasks.md 搬运缺漏征兆，已记观察项）；web-bridge 主 spec 同步（MODIFIED 单源服务清单 + TOCTOU 备份时点；ADDED clip-scoped regeneration）。
+- 事故两起如实申报（wt-A）：stash pop 因 && 短路未执行（已恢复无损失）；worktree remove --force 穿透 junction 误删主树 node_modules（npm ci 恢复，无 commit 影响）。
+- 遗留：backlog A/B/D1/D3 全清（docs/optimization-backlog.md 刷新）；M5 候选不变（向导/vectorize 拆分/GIF 导出）。
