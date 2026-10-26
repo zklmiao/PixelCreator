@@ -2,7 +2,7 @@
 // Zones: library / import / export / prompt. web/lib behavior contracts are
 // frozen (guarded by web/verify-*.mjs); this file only re-wires presentation.
 import { loadShell, ASSET_IDS, ASSET_URLS, assetUrlFor } from './lib/asset-shell.js';
-import { buildPrompt, validateFields, FIXED_NEGATIVE, KNIGHT_EXAMPLE } from './lib/prompt.js';
+import { buildPrompt, validateFields, validateStaticFields, STATIC_EXAMPLES, FIXED_NEGATIVE, KNIGHT_EXAMPLE } from './lib/prompt.js';
 import { buildMatrix, createPlayer, tickPlayer, canExport } from './lib/matrix.js';
 import {
   COMPARE_FIXTURES, prototypeCompareUrlFor, prototypeInputFor,
@@ -22,6 +22,11 @@ let cellStates = [];
 let playing = true;
 
 const isStaticKind = (k) => ['weapon', 'building', 'prop', 'scenery'].includes(k ?? 'character');
+const ACTION_ZH = { idle: '待机', walk: '行走', attack: '攻击' };
+const DIR_ZH = { fr: '前 ↓', bk: '后 ↑', lf: '左 ←', rt: '右 →' };
+function matrixTitle(action, dir) {
+  return `${ACTION_ZH[action] ?? action} · ${DIR_ZH[dir] ?? dir}`;
+}
 const kindOf = (asset) => asset?.kind ?? 'character';
 
 // ---------- nav ----------
@@ -34,9 +39,11 @@ function initNav() {
   for (const t of document.querySelectorAll('.tab')) {
     t.addEventListener('click', () => showZone(t.dataset.zone));
   }
-  for (const b of document.querySelectorAll('[data-goto]')) {
-    b.addEventListener('click', () => showZone(b.dataset.goto));
-  }
+  // delegate: result rows / dynamic content may add data-goto anytime
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-goto]');
+    if (b) showZone(b.dataset.goto);
+  });
 }
 
 // ---------- asset meta + dev panel ----------
@@ -121,6 +128,17 @@ async function initCards() {
       ph.textContent = `加载失败: ${e.message}`;
     }
   }
+  // A2: placeholder card closes the grid visually and hooks the M5 wizard.
+  const newCard = document.createElement('button');
+  newCard.type = 'button';
+  newCard.className = 'card new';
+  newCard.textContent = '+ 新建资产';
+  newCard.title = '跳转 Prompt 工作台（新建资产向导在 M5 规划中）';
+  newCard.addEventListener('click', () => {
+    showZone('prompt');
+    $('m5-hint').hidden = false;
+  });
+  grid.appendChild(newCard);
 }
 
 function markSelectedCard(id) {
@@ -200,7 +218,8 @@ function renderMatrix(persp) {
     el.dataset.action = cell.action;
     el.dataset.dir = cell.dir;
     const head = document.createElement('h4');
-    head.textContent = `${cell.action} · ${cell.dir}`;
+    head.textContent = matrixTitle(cell.action, cell.dir);
+    head.title = `${cell.action} · ${cell.dir}`;
     el.appendChild(head);
     if (cell.missing) {
       const ph = document.createElement('p');
@@ -210,7 +229,7 @@ function renderMatrix(persp) {
       const gen = document.createElement('button');
       gen.type = 'button';
       gen.textContent = '生成此格';
-      gen.title = `generate ${cell.clipId}`;
+      gen.title = `generate ${cell.clipId} —— 当前为整资产重生成（单格模式 wt-A 合并后自动生效）`;
       gen.dataset.clip = cell.clipId;
       el.appendChild(gen);
     } else {
@@ -248,7 +267,7 @@ function initMatrixControls() {
   $('matrix-grid')?.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-clip]');
     if (!btn) return;
-    startJob('/api/generate', { assetId: currentAssetId }, `重新生成 ${btn.dataset.clip}`);
+    startJob('/api/generate', { assetId: currentAssetId, clip: btn.dataset.clip }, `重新生成 ${btn.dataset.clip}`);
   });
 }
 
@@ -276,7 +295,14 @@ function makeCompareSlider(fig, url, size) {
     const w = cv.width, h = cv.height, srcW = w - size;
     const ctx = cv.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, w, h);
+    // checkerboard underlay so transparent pixels stay visible on dark theme
+    const chk = 8;
+    for (let yy = 0; yy < h; yy += chk) {
+      for (let xx = 0; xx < w; xx += chk) {
+        ctx.fillStyle = ((xx / chk | 0) + (yy / chk | 0)) % 2 ? '#9aa4b2' : '#dde3ea';
+        ctx.fillRect(xx, yy, Math.min(chk, w - xx), Math.min(chk, h - yy));
+      }
+    }
     // base: quantized right panel stretched to full canvas
     ctx.drawImage(comp.img, srcW, 0, size, h, 0, 0, w, h);
     // overlay: source left panel clipped to the divider
@@ -456,10 +482,7 @@ async function uploadImportFile(fileOrBlob, fallbackName) {
     $('import-compare').hidden = false;
     // paint the in-memory compare preview served by the bridge
     makeCompareSlider($('import-compare'), j.links.compare, assetSizeOf(importTargetId));
-    showConfirm(
-      `导入 ${name}（${p.srcW}×${p.srcH}）→ 将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`,
-      'confirm-slot',
-    );
+    addConfirmRow(bridgeJobId, `导入 ${name}（${p.srcW}×${p.srcH}）→ 将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`, 'confirm-slot');
     setBridgeBusy(false);
   } catch (err) {
     setBridgeBusy(false);
@@ -633,10 +656,7 @@ async function startImg2imgJob(path, label) {
     const j = await bridgePost(path, { assetId: currentAssetId });
     bridgeJobId = j.jobId ?? null;
     const p = j.preview ?? {};
-    showConfirm(
-      `${label}：将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`,
-      'confirm-slot-img2img',
-    );
+    addConfirmRow(bridgeJobId, `${label}：将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`, 'confirm-slot-img2img');
     setImg2imgStatus(`${label}：预览就绪，确认后落盘（AI 帧采纳前请过目三帧对比）`);
     setBridgeBusy(false);
   } catch (e) {
@@ -681,21 +701,11 @@ function bridgeLog(line) {
 
 function setBridgeBusy(busy) {
   bridgeBusy = busy;
-  const c = $('b-confirm');
-  if (c) c.disabled = busy || !bridgeJobId;
+  setAllConfirmButtons(busy);
   for (const id of ['b-validate', 'b-generate', 'b-sheets', 'b-tres', 'b-inbetween', 'b-derive-td']) {
     const el = $(id);
     if (el) el.disabled = busy;
   }
-}
-
-function showConfirm(text, slotId) {
-  const bar = $('confirm-bar');
-  $('confirm-text').textContent = text;
-  $(slotId).appendChild(bar);
-  bar.hidden = false;
-  const c = $('b-confirm');
-  c.disabled = bridgeBusy || !bridgeJobId;
 }
 
 async function bridgePost(path, body) {
@@ -720,31 +730,125 @@ async function startJob(path, body, label) {
     const j = await bridgePost(path, body);
     bridgeJobId = j.jobId ?? null;
     const p = j.preview ?? {};
+    const summary = exportSummary(label, p, body?.clip);
+    renderExportResult('preview', { label, p, summary });
     if (!bridgeJobId && j.ok !== undefined) {
       bridgeStatus(`${label}：完成（无写入）`);
       bridgeLog(JSON.stringify(j).slice(0, 300));
       setBridgeBusy(false);
       return;
     }
-    showConfirm(
-      `${label}：将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个（Δ${p.bytesDelta ?? 'n/a'} 字节）`,
-      'confirm-slot-export',
-    );
+    addConfirmRow(bridgeJobId, `${label}：将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`, 'confirm-slot-export');
     bridgeStatus(`${label}：预览就绪，确认后落盘`);
     setBridgeBusy(false);
   } catch (e) {
+    renderExportResult('error', { label, message: e.message });
     bridgeStatus(`${label} 失败：${e.message}（bridge 未运行？请先 node tools/server.mjs）`);
     setBridgeBusy(false);
   }
 }
 
-async function confirmJob() {
-  if (!bridgeJobId) return;
+async function runValidate() {
   try {
     setBridgeBusy(true);
-    await bridgePost(`/api/jobs/${bridgeJobId}/confirm`, {});
+    const j = await bridgePost('/api/validate', { assetId: currentAssetId });
+    renderExportResult('validate', j);
+    bridgeStatus(j.ok ? '校验：通过' : `校验：未通过（${(j.errors ?? []).length + (j.missing ?? []).length} 项，见结果区）`);
+    bridgeLog(`validate: ${JSON.stringify(j).slice(0, 300)}`);
+    setBridgeBusy(false);
+  } catch (e) {
+    renderExportResult('error', { label: '校验', message: e.message });
+    bridgeStatus(`校验 失败：${e.message}（bridge 未运行？请先 node tools/server.mjs）`);
+    setBridgeBusy(false);
+  }
+}
+
+// A3: fact-based summary lines from client-side asset data (no invention).
+function exportSummary(label, p, clip) {
+  if (!matrixAsset) return '';
+  if (label === '导出拼表') {
+    const isStatic = isStaticKind(kindOf(matrixAsset));
+    if (isStatic) {
+      const s = matrixAsset.size;
+      return `静态单帧表 ${4 * s}x${s}（td/sd 各一张）`;
+    }
+    const frames = { walk: matrixAsset.actions?.walk?.frames ?? 3, attack: matrixAsset.actions?.attack?.frames ?? 4 };
+    const s = matrixAsset.size;
+    return `walk ${frames.walk * s}x${4 * s} · attack ${frames.attack * s}x${4 * s}（Full+Maker × td/sd，行序 fr/bk/lf/rt）`;
+  }
+  if (label === '导出 .tres') return `${clipsTotal(matrixAsset)} 动画 → godot/${matrixAsset.id}.spriteframes.tres`;
+  if (label.startsWith('重新生成')) {
+    return clip ? `单格 ${clip}（wt-A 合并后真单格生效）` : `整资产 ${clipsTotal(matrixAsset)} 个视图文件`;
+  }
+  return '';
+}
+
+function renderExportResult(kind, data) {
+  const box = $('export-result');
+  if (!box) return;
+  box.hidden = false;
+  if (kind === 'validate') {
+    if (data.ok) {
+      box.className = 'result ok';
+      box.innerHTML = `<p>✅ 校验通过：${clipsTotal(matrixAsset)} clips 在位，asset.json 与磁盘文件均正常，可导出。</p>`;
+    } else {
+      const items = [
+        ...(data.errors ?? []).map((x) => `❌ ${x}`),
+        ...(data.missing ?? []).map((x) => `❌ 缺失 ${x}`),
+      ];
+      box.className = 'result bad';
+      box.innerHTML =
+        `<p>⛔ 校验未通过（${items.length} 项）——缺格资产不可导出：</p><ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>` +
+        `<p><button type="button" class="linklike" data-goto="library">去资产库查看/补齐</button></p>`;
+    }
+    return;
+  }
+  if (kind === 'preview') {
+    const files = data.p?.willWrite ?? [];
+    box.className = 'result info';
+    box.innerHTML =
+      `<p>${data.label}：将写入 ${files.length} 个文件${data.summary ? ` · ${data.summary}` : ''}</p><ul>` +
+      `${files.slice(0, 8).map((f) => `<li>${f}</li>`).join('')}${files.length > 8 ? `<li>…共 ${files.length} 项</li>` : ''}</ul>`;
+    return;
+  }
+  box.className = 'result bad';
+  box.innerHTML = `<p>⛔ ${data.label} 失败：${data.message}</p>`;
+}
+
+// B5: confirm rows — one row per jobId, multiple previews coexist, per-row
+// confirm/SSE; SSE 'error' with data = job failure (row turns red), builtin
+// error without data = stream close (row notes it, log keeps details).
+function addConfirmRow(jobId, text, slotId) {
+  const slot = $(slotId);
+  if (!slot) return;
+  const row = document.createElement('div');
+  row.className = 'confirm-row';
+  row.dataset.job = jobId;
+  const span = document.createElement('span');
+  span.className = 'confirm-text';
+  span.textContent = text;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'confirm-btn';
+  btn.textContent = '确认写入';
+  btn.dataset.job = jobId;
+  if (bridgeBusy) btn.disabled = true;
+  btn.addEventListener('click', () => confirmJob(jobId, row));
+  row.append(span, btn);
+  slot.appendChild(row);
+}
+
+function setAllConfirmButtons(busy) {
+  for (const b of document.querySelectorAll('.confirm-btn')) b.disabled = busy;
+}
+
+async function confirmJob(jobId, row) {
+  if (!jobId || !row || row.dataset.done) return;
+  try {
+    setBridgeBusy(true);
+    await bridgePost(`/api/jobs/${jobId}/confirm`, {});
     bridgeStatus('已确认——执行中…');
-    const src = new EventSource(`/api/jobs/${bridgeJobId}/events`);
+    const src = new EventSource(`/api/jobs/${jobId}/events`);
     src.addEventListener('progress', (e) => bridgeLog(`progress: ${e.data}`));
     src.addEventListener('log', (e) => bridgeLog(`log: ${e.data}`));
     src.addEventListener('done', async (e) => {
@@ -752,16 +856,28 @@ async function confirmJob() {
       bridgeLog(`done: ${e.data}`);
       src.close();
       setBridgeBusy(false);
-      bridgeJobId = null;
-      $('confirm-bar').hidden = true;
+      row.classList.add('done');
+      row.querySelector('.confirm-text').textContent = `✅ 完成：${e.data}`;
+      row.dataset.done = '1';
+      setTimeout(() => row.remove(), 8000);
       await reloadMatrixFor(currentAssetId);
       await initCards();
       markSelectedCard(currentAssetId);
     });
     src.addEventListener('error', (e) => {
-      bridgeLog(`error: ${e.data ?? 'stream closed'}`);
       src.close();
       setBridgeBusy(false);
+      if (e.data) {
+        // server-reported job failure: keep row, turn red (distinct from a
+        // plain stream close, which just re-enables the button).
+        row.classList.add('failed');
+        row.querySelector('.confirm-text').textContent = `⛔ 作业失败：${e.data}`;
+        bridgeLog(`job error: ${e.data}`);
+      } else {
+        row.classList.add('stream-closed');
+        row.querySelector('.confirm-btn').disabled = false;
+        bridgeLog('stream closed（作业可能仍在执行，结果以矩阵/日志为准）');
+      }
       bridgeJobId = null;
     });
   } catch (e) {
@@ -781,9 +897,7 @@ function initBridge() {
     }
   };
   hv();
-  $('b-validate')?.addEventListener('click', () =>
-    startJob('/api/validate', { assetId: currentAssetId }, '校验'),
-  );
+  $('b-validate')?.addEventListener('click', () => runValidate());
   $('b-generate')?.addEventListener('click', () =>
     startJob('/api/generate', { assetId: currentAssetId }, '重新生成 SVG'),
   );
@@ -793,12 +907,25 @@ function initBridge() {
   $('b-tres')?.addEventListener('click', () =>
     startJob('/api/tres/export', { assetId: currentAssetId }, '导出 .tres'),
   );
-  $('b-confirm')?.addEventListener('click', confirmJob);
 }
 
 // ---------- prompt workbench (behavior frozen) ----------
+const formKind = () => $('f-kind').value;
+
 function readForm() {
+  const kind = formKind();
+  if (isStaticKind(kind)) {
+    return {
+      kind,
+      object: $('f-sobject').value,
+      colors: $('f-scolors').value,
+      vibe: $('f-svibe').value,
+      perspective: $('f-persp').value,
+      seed: $('f-seed').value === '' ? '' : Number($('f-seed').value),
+    };
+  }
   return {
+    kind: 'character',
     charClass: $('f-class').value,
     body: $('f-body').value,
     outfit: $('f-outfit').value,
@@ -813,6 +940,18 @@ function readForm() {
 }
 
 function fillForm(v) {
+  if ((v.kind ?? 'character') !== 'character') {
+    $('f-kind').value = v.kind;
+    syncKindFields();
+    $('f-sobject').value = v.object ?? '';
+    $('f-scolors').value = v.colors ?? '';
+    $('f-svibe').value = v.vibe ?? '';
+    $('f-persp').value = v.perspective ?? 'td';
+    $('f-seed').value = v.seed ?? 2002;
+    return;
+  }
+  $('f-kind').value = 'character';
+  syncKindFields();
   $('f-class').value = v.charClass ?? '';
   $('f-body').value = v.body ?? '';
   $('f-outfit').value = v.outfit ?? '';
@@ -825,23 +964,34 @@ function fillForm(v) {
   $('f-seed').value = v.seed ?? 1234;
 }
 
+function syncKindFields() {
+  const staticMode = isStaticKind(formKind());
+  $('char-fields').hidden = staticMode;
+  $('static-fields').hidden = !staticMode;
+  // static assets are idle-only: lock action to idle
+  for (const o of $('f-action').options) o.disabled = staticMode && o.value !== 'idle';
+  if (staticMode) $('f-action').value = 'idle';
+}
+
 function renderPrompt() {
   const fields = readForm();
-  const v = validateFields({ ...fields, seed: fields.seed === '' ? '' : fields.seed });
+  const kind = fields.kind ?? 'character';
   const out = $('prompt-out');
+  const v = isStaticKind(kind) ? validateStaticFields(fields) : validateFields(fields);
   if (!v.ok) {
     out.textContent = `表单未完成：${v.errors.join('; ')}`;
     return;
   }
-  const perspective = $('f-persp').value;
+  const perspective = fields.perspective === '' ? 'td' : fields.perspective;
   const dir = $('f-dir').value;
-  const action = $('f-action').value;
+  const action = isStaticKind(kind) ? 'idle' : $('f-action').value;
   const seed = fields.seed === '' ? 1234 : fields.seed;
   try {
     const r = buildPrompt({ ...fields, seed }, { perspective, dir, action, seed });
     out.textContent =
       `positive:\n${r.positive}\n\nnegative:\n${r.negative}\n\n` +
-      `perspective=${r.perspective} dir=${r.dir} action=${r.action} denoise=${r.denoise} seed=${r.seed} hash=${r.prompt_hash}`;
+      `perspective=${r.perspective} dir=${r.dir} action=${r.action} denoise=${r.denoise} seed=${r.seed} hash=${r.prompt_hash}` +
+      (r.provider_note ? `\nprovider_note=${r.provider_note}` : '');
   } catch (e) {
     out.textContent = `FAIL: ${e.message}`;
   }
@@ -850,12 +1000,16 @@ function renderPrompt() {
 function initForm() {
   fillForm(KNIGHT_EXAMPLE);
   $('f-neg').value = FIXED_NEGATIVE;
-  for (const id of ['f-class', 'f-body', 'f-outfit', 'f-colors', 'f-weapon', 'f-hair', 'f-cape', 'f-vibe', 'f-persp', 'f-seed', 'f-dir', 'f-action']) {
+  const ids = ['f-class', 'f-body', 'f-outfit', 'f-colors', 'f-weapon', 'f-hair', 'f-cape', 'f-vibe', 'f-persp', 'f-seed', 'f-dir', 'f-action', 'f-kind', 'f-sobject', 'f-scolors', 'f-svibe'];
+  for (const id of ids) {
     $(id).addEventListener('input', renderPrompt);
-    $(id).addEventListener('change', renderPrompt);
+    $(id).addEventListener('change', () => {
+      if (id === 'f-kind') syncKindFields();
+      renderPrompt();
+    });
   }
   $('f-reset-knight').addEventListener('click', () => {
-    fillForm(KNIGHT_EXAMPLE);
+    fillForm(isStaticKind(formKind()) ? STATIC_EXAMPLES[formKind()] : KNIGHT_EXAMPLE);
     renderPrompt();
   });
   renderPrompt();

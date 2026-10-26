@@ -98,6 +98,7 @@
         <button type="button" id="b-tres">导出 .tres</button>
         <button type="button" id="b-generate">重新生成 SVG</button>
       </div>
+      <div id="export-result" class="result" hidden></div>
       <p id="bridge-status" class="meta">bridge: 检测中…</p>
       <p class="meta">产物位置：<a href="../sheets/" target="_blank" rel="noopener">sheets/</a>（拼表 PNG + map.json）· <a href="../godot/" target="_blank" rel="noopener">godot/</a>（.tres）</p>
       <div id="confirm-slot-export" class="confirm-slot"></div>
@@ -107,7 +108,19 @@
       <h2>Prompt 工作台</h2>
       <p class="lead">10 个字段拼出英文生图指令，贴给你的生图模型产出原型图；固定 negative 由管线保证。</p>
       <form id="prompt-form" onsubmit="return false">
-        <div class="grid">
+        <div class="row">
+          <label class="inline">资产类型
+            <select id="f-kind">
+              <option value="character">character（人物）</option>
+              <option value="weapon">weapon（武器）</option>
+              <option value="building">building（建筑）</option>
+              <option value="prop">prop（道具）</option>
+              <option value="scenery">scenery（景物）</option>
+            </select>
+          </label>
+          <span id="m5-hint" class="meta" hidden>新建资产向导在 M5 规划中——先用下方字段拼 prompt 产出原型。</span>
+        </div>
+        <div id="char-fields" class="grid">
           <label>class* <input id="f-class" /></label>
           <label>body* <input id="f-body" /></label>
           <label>outfit* <input id="f-outfit" /></label>
@@ -115,7 +128,13 @@
           <label>weapon* <input id="f-weapon" /></label>
           <label>hair* <input id="f-hair" /></label>
           <label>cape <input id="f-cape" /></label>
-          <label>vibe <input id="f-vibe" /></label>
+        </div>
+        <div id="static-fields" class="grid" hidden>
+          <label>object* <input id="f-sobject" /></label>
+          <label>colors* <input id="f-scolors" /></label>
+          <label>vibe <input id="f-svibe" /></label>
+        </div>
+        <div class="grid">
           <label>perspective
             <select id="f-persp"><option value="td">td</option><option value="sd">sd</option></select>
           </label>
@@ -179,11 +198,6 @@ node engine-placeholder/godot-atlas/verify-recipe.mjs</pre>
       </div>
     </div>
   </details>
-
-  <div id="confirm-bar" class="confirm-bar" hidden>
-    <span id="confirm-text"></span>
-    <button type="button" id="b-confirm">确认写入</button>
-  </div>
 
   <script type="module" src="./app.js"></script>
 </body>
