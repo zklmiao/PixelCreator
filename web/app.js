@@ -151,6 +151,7 @@ async function selectAsset(id) {
     $('m-persp').value = matrixPersp;
     renderMatrix(matrixPersp);
     updatePrototypeCompare();
+    await refreshImg2imgPanel();
   } catch (e) {
     $('detail-name').textContent = id;
     $('detail-kind').textContent = '—';
@@ -403,34 +404,261 @@ function assetSizeOf(id) {
 }
 
 // ---------- import flow (two-phase write via bridge) ----------
+// PNG keeps the direct-upload path (byte-identical to previous rounds).
+// JPEG/WebP decode in the browser, get a marquee crop stage, and only the
+// cropped region is re-encoded to PNG — the bridge keeps receiving PNG only
+// (tools stay pngjs-only).
 function initImportFlow() {
   $('b-import-file')?.addEventListener('change', async (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    if (f.type === 'image/png') {
+      await uploadImportFile(f);
+      return;
+    }
     try {
-      setBridgeBusy(true);
-      const fd = new FormData();
-      fd.append('assetId', importTargetId);
-      fd.append('file', f, f.name);
-      const res = await fetch('/api/import', { method: 'POST', body: fd });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.message ?? 'import failed');
-      bridgeJobId = j.jobId;
-      const p = j.preview ?? {};
-      $('import-compare').hidden = false;
-      // paint the in-memory compare preview served by the bridge
-      makeCompareSlider($('import-compare'), j.links.compare, assetSizeOf(importTargetId));
-      showConfirm(
-        `导入 ${f.name}（${p.srcW}×${p.srcH}）→ 将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`,
-        'confirm-slot',
-      );
-      setBridgeBusy(false);
+      await openCropStage(f);
     } catch (err) {
-      setBridgeBusy(false);
-      bridgeStatus(`导入失败：${err.message}`);
+      bridgeStatus(`无法解码 ${f.type}：${err.message}`);
     }
   });
+  $('crop-upload')?.addEventListener('click', async () => {
+    const blob = await cropSelectionToPng();
+    if (!blob) {
+      bridgeStatus('请先在图上拖出框选区域');
+      return;
+    }
+    await uploadImportFile(blob, 'crop.png');
+    closeCropStage();
+  });
+  $('crop-full')?.addEventListener('click', async () => {
+    const blob = await cropWholeToPng();
+    if (!blob) return;
+    await uploadImportFile(blob, 'full.png');
+    closeCropStage();
+  });
+  $('crop-cancel')?.addEventListener('click', closeCropStage);
   $('proto-refresh')?.addEventListener('click', () => updatePrototypeCompare());
+}
+
+async function uploadImportFile(fileOrBlob, fallbackName) {
+  const name = fileOrBlob.name ?? fallbackName ?? 'upload.png';
+  try {
+    setBridgeBusy(true);
+    const fd = new FormData();
+    fd.append('assetId', importTargetId);
+    fd.append('file', fileOrBlob, name);
+    const res = await fetch('/api/import', { method: 'POST', body: fd });
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.message ?? 'import failed');
+    bridgeJobId = j.jobId;
+    const p = j.preview ?? {};
+    $('import-compare').hidden = false;
+    // paint the in-memory compare preview served by the bridge
+    makeCompareSlider($('import-compare'), j.links.compare, assetSizeOf(importTargetId));
+    showConfirm(
+      `导入 ${name}（${p.srcW}×${p.srcH}）→ 将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`,
+      'confirm-slot',
+    );
+    setBridgeBusy(false);
+  } catch (err) {
+    setBridgeBusy(false);
+    bridgeStatus(`导入失败：${err.message}`);
+  }
+}
+
+// ---------- crop stage (JPEG/WebP -> marquee -> PNG blob) ----------
+let cropState = null;
+
+async function openCropStage(file) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  await new Promise((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('browser decode failed'));
+    img.src = url;
+  });
+  URL.revokeObjectURL(url);
+  cropState = { img, rect: null, scale: 1, drag: null };
+  $('import-compare').hidden = true;
+  $('crop-stage').hidden = false;
+  $('crop-upload').disabled = true;
+  drawCropBase();
+}
+
+function closeCropStage() {
+  cropState = null;
+  $('crop-stage').hidden = true;
+}
+
+function drawCropBase() {
+  const cv = $('crop-canvas');
+  const img = cropState.img;
+  const maxW = Math.min(960, img.width);
+  cropState.scale = Math.min(maxW / img.width, 1);
+  cv.width = Math.round(img.width * cropState.scale);
+  cv.height = Math.round(img.height * cropState.scale);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0, cv.width, cv.height);
+  paintMarquee(ctx, cv);
+}
+
+function paintMarquee(ctx, cv) {
+  if (!cropState.rect) return;
+  const r = cropState.rect;
+  ctx.save();
+  ctx.fillStyle = '#00000088';
+  ctx.fillRect(0, 0, cv.width, r.y);
+  ctx.fillRect(0, r.y + r.h, cv.width, cv.height - r.y - r.h);
+  ctx.fillRect(0, r.y, r.x, r.h);
+  ctx.fillRect(r.x + r.w, r.y, cv.width - r.x - r.w, r.h);
+  ctx.strokeStyle = '#6ac8e8';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  ctx.restore();
+}
+
+function initCropStage() {
+  const cv = $('crop-canvas');
+  const toImg = (ev) => {
+    const r = cv.getBoundingClientRect();
+    const x = Math.round((ev.clientX - r.left) / cropState.scale);
+    const y = Math.round((ev.clientY - r.top) / cropState.scale);
+    return {
+      x: Math.max(0, Math.min(cropState.img.width, x)),
+      y: Math.max(0, Math.min(cropState.img.height, y)),
+    };
+  };
+  cv.addEventListener('pointerdown', (e) => {
+    if (!cropState) return;
+    e.preventDefault();
+    cropState.drag = toImg(e);
+    cropState.rect = { x: cropState.drag.x, y: cropState.drag.y, w: 0, h: 0 };
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!cropState?.drag) return;
+    const p = toImg(e);
+    cropState.rect = {
+      x: Math.min(cropState.drag.x, p.x),
+      y: Math.min(cropState.drag.y, p.y),
+      w: Math.abs(p.x - cropState.drag.x),
+      h: Math.abs(p.y - cropState.drag.y),
+    };
+    drawCropBase();
+  });
+  cv.addEventListener('pointerup', (e) => {
+    if (!cropState?.drag) return;
+    const p = toImg(e);
+    cropState.rect = {
+      x: Math.min(cropState.drag.x, p.x),
+      y: Math.min(cropState.drag.y, p.y),
+      w: Math.abs(p.x - cropState.drag.x),
+      h: Math.abs(p.y - cropState.drag.y),
+    };
+    cropState.drag = null;
+    if (cropState.rect.w < 8 || cropState.rect.h < 8) cropState.rect = null;
+    $('crop-upload').disabled = !cropState.rect;
+    drawCropBase();
+  });
+}
+
+async function cropSelectionToPng() {
+  if (!cropState?.rect) return null;
+  return cropToPng(cropState.rect);
+}
+
+async function cropWholeToPng() {
+  if (!cropState) return null;
+  return cropToPng({ x: 0, y: 0, w: cropState.img.width, h: cropState.img.height });
+}
+
+function cropToPng(rect) {
+  const cv = document.createElement('canvas');
+  cv.width = rect.w;
+  cv.height = rect.h;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(cropState.img, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+  return new Promise((resolve) => cv.toBlob(resolve, 'image/png'));
+}
+
+// ---------- img2img orchestration panel (guardian only; 501/未配显式降级) ----------
+const DERIVE_GATE = (asset) => kindOf(asset) === 'character' && asset.id !== 'knight_001';
+
+function setImg2imgStatus(text) {
+  const el = $('img2img-status');
+  if (el) el.textContent = text;
+}
+
+function setOrchestrationEnabled(on) {
+  for (const id of ['b-inbetween', 'b-derive-td']) {
+    const el = $(id);
+    if (el) el.disabled = !on || bridgeBusy;
+  }
+}
+
+async function refreshImg2imgPanel() {
+  const panel = $('img2img-panel');
+  const gate = DERIVE_GATE(matrixAsset);
+  if (panel) panel.hidden = !gate;
+  if (!gate) return;
+  try {
+    const r = await fetch('/api/img2img/status');
+    if ([404, 405, 501].includes(r.status)) {
+      throw Object.assign(new Error('编排端点未上线（wt-A 合并后可用）'), { soft: true });
+    }
+    if (!r.ok) throw new Error(`status ${r.status}`);
+    const j = await r.json();
+    const names = j.configured ?? [];
+    $('img2img-badges').textContent = names.length ? names.join('、') : '未配置';
+    setOrchestrationEnabled(names.length > 0);
+    setImg2imgStatus(
+      names.length === 0
+        ? '未配置 provider——在服务端环境变量配置后刷新（配置指引见 docs/img2img.md）'
+        : '选择上方编排动作：先预览将写入的文件，确认后落盘',
+    );
+  } catch (e) {
+    $('img2img-badges').textContent = '—';
+    setOrchestrationEnabled(false);
+    setImg2imgStatus(`img2img 不可用：${e.message}`);
+  }
+}
+
+async function startImg2imgJob(path, label) {
+  if (bridgeBusy) return;
+  try {
+    setBridgeBusy(true);
+    const j = await bridgePost(path, { assetId: currentAssetId });
+    bridgeJobId = j.jobId ?? null;
+    const p = j.preview ?? {};
+    showConfirm(
+      `${label}：将写入 ${p.willWrite?.length ?? '?'} 个文件，备份 ${p.willBackup ?? '?'} 个`,
+      'confirm-slot-img2img',
+    );
+    setImg2imgStatus(`${label}：预览就绪，确认后落盘（AI 帧采纳前请过目三帧对比）`);
+    setBridgeBusy(false);
+  } catch (e) {
+    // server img2img route garbles Error.message via object spread — map by
+    // code so the user always sees an explicit reason (dev panel keeps raw).
+    const friendly = {
+      PROVIDER_NOT_CONFIGURED: 'provider 未配置：在服务端环境变量设置 PIXE_IMG_PROVIDER（gemini|openai|sd-webui），详见 docs/img2img.md',
+      NO_ORCHESTRATION_MAP: '目标资产没有已入库的编排 map（当前仅 guardian_001 支持编排）',
+    }[e.code];
+    setImg2imgStatus(`${label} 失败：${friendly ?? `${e.message}${[404, 405, 501].includes(e.status) ? '（编排端点未上线，wt-A 合并后可用）' : ''}`}`);
+    bridgeLog(`error: ${e.code ?? ''} ${e.message}`);
+    setBridgeBusy(false);
+  }
+}
+
+function initImg2imgPanel() {
+  $('b-inbetween')?.addEventListener('click', () =>
+    startImg2imgJob('/api/img2img/inbetween', 'AI 补帧（2→3 帧）'),
+  );
+  $('b-derive-td')?.addEventListener('click', () =>
+    startImg2imgJob('/api/img2img/derive-td', '派生俯视角（td 真源）'),
+  );
 }
 
 // ---------- export center + bridge (two-phase, SSE) ----------
@@ -455,7 +683,7 @@ function setBridgeBusy(busy) {
   bridgeBusy = busy;
   const c = $('b-confirm');
   if (c) c.disabled = busy || !bridgeJobId;
-  for (const id of ['b-validate', 'b-generate', 'b-sheets', 'b-tres']) {
+  for (const id of ['b-validate', 'b-generate', 'b-sheets', 'b-tres', 'b-inbetween', 'b-derive-td']) {
     const el = $(id);
     if (el) el.disabled = busy;
   }
@@ -477,7 +705,12 @@ async function bridgePost(path, body) {
     body: JSON.stringify(body ?? {}),
   });
   const j = await res.json();
-  if (!res.ok) throw new Error(j.message ?? `${res.status} ${path}`);
+  if (!res.ok) {
+    const err = new Error(j.message ?? `${res.status} ${path}`);
+    err.code = j.code;
+    err.status = res.status;
+    throw err;
+  }
   return j;
 }
 
@@ -634,6 +867,8 @@ initForm();
 initMatrixControls();
 initBridge();
 initImportFlow();
+initCropStage();
+initImg2imgPanel();
 initCards()
   .then(() => selectAsset(currentAssetId))
   .then(() => {
