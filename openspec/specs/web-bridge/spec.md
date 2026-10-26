@@ -7,12 +7,17 @@ Local bridge server contract that serves the repo read-only views and exposes th
 
 ### Requirement: Single-origin static plus API
 
-The system SHALL serve `GET /web/ /assets/* /sheets/* /palettes/* /fixtures/* /godot/* /tools/*` and `POST /api/*` from one `node tools/server.mjs` process bound to loopback, so the Web needs no separate static server (`/tools/` is required because `web/lib/matrix.js` imports `tools/clips.mjs` for timing; loopback-only).
+The system SHALL serve `GET /web/ /assets/* /sheets/* /palettes/* /fixtures/* /godot/* /tools/* /prototypes/*` and `POST /api/*` from one `node tools/server.mjs` process bound to loopback, so the Web needs no separate static server (`/tools/` serves `web/lib/matrix.js`'s timing import; `/prototypes/` serves the gitignored user prototype workspace so the compare flow can display local files; loopback-only).
 
 #### Scenario: One command serves all
 
 - **WHEN** running the bridge and opening `/web/`
 - **THEN** asset JSON, sheets, and API share one origin and the matrix refreshes after a write without manual copy
+
+#### Scenario: Local prototype workspace reachable
+
+- **WHEN** a user places files under `prototypes/<id>/`
+- **THEN** they are reachable from the compare flow on the same origin (missing files still degrade gracefully)
 
 ### Requirement: Serial job queue with SSE progress
 
@@ -25,12 +30,17 @@ The system SHALL run write jobs serially (one at a time, extras queue) and expos
 
 ### Requirement: Preview then confirm with backup
 
-The system SHALL split every write into preview (`POST /api/*` returns `jobId` plus `willWrite[]/willBackup/bytesDelta` computed by a real in-memory dry run) and commit (`POST /api/jobs/:id/confirm`), copying affected files to `.backup/<assetId>/<timestamp>/` before writing; confirm tokens are single-use and expire after 10 minutes.
+The system SHALL split every write into preview (`POST /api/*` returns `jobId` plus `willWrite[]/willBackup/bytesDelta` computed by a real in-memory dry run) and commit (`POST /api/jobs/:id/confirm`), backing up each will-write path that exists **at execution time** (re-checked per path, not from the preview snapshot) to `.backup/<assetId>/<timestamp>/` before writing; confirm tokens are single-use and expire after 10 minutes.
 
 #### Scenario: Overwrite guarded
 
 - **WHEN** importing into an asset with landed SVGs
 - **THEN** the UI shows the will-write list for confirmation, and commit backs up then writes; identical input committed twice yields zero changes on the second run
+
+#### Scenario: Late-created files are backed up too
+
+- **WHEN** a will-write path comes into existence between preview and confirm
+- **THEN** the execution pass backs it up before overwriting
 
 ### Requirement: Allowlist safety and error contract
 
@@ -51,3 +61,12 @@ The bridge SHALL expose `GET /api/img2img/status` returning configured provider 
 #### Scenario: Orchestration writes are guarded
 - **WHEN** an inbetween or derive job is previewed but not confirmed
 - **THEN** no asset file changes on disk
+
+### Requirement: Clip-scoped regeneration
+
+The system SHALL support `POST /api/generate` with an optional `clip` field (`"<persp>/<action>/<dir>"`): the preview `willWrite[]` SHALL list exactly the frame files of that clip, and confirm SHALL write only those files; omitting `clip` SHALL regenerate the whole asset (existing behavior).
+
+#### Scenario: Single-clip willWrite
+
+- **WHEN** generating `knight_001` with clip `td/walk/fr`
+- **THEN** willWrite lists exactly the 3 frame SVGs of `td/walk` and no other asset file
