@@ -64,3 +64,13 @@
 - 回归：143/143（+1 Bayer 效果测试）；7 verify（verify-bridge 14→16 项）；7× manifest。
 - 教训沉淀：本轮 python 批量编辑两次被转义折叠（、
 ），改用 Edit 工具单点修——批量脚本里含正则/换行的字符串应写入文件而非 heredoc 内联。
+
+## 轮 7 — img2img-live（M4：三层 provider + JPEG 框选 + guardian 补帧/td 真源 + hash 语义）
+
+- Prep（main）：`3724e2f` chore(contract): freeze img2img-live schema, guardian frames, proposal (m4-prep)——schema 加可选 `source_hash`（12 hex）；guardian 3 帧结构**规格冻结**（落盘推迟到 A3 原子完成，prep 不造红基线）；9 文件工件 validate 绿。
+- wt-A 管线轴：`93a62f4` feat(m4)（154 文件 +2312/−563：provider 三适配层 + 桥端点 + guardian 3 帧 + td 真源 + hash 回填）+ `d3932dd` fix(m4)（gate 前三项整改：prototype-import MODIFIED delta 40→56、td 溯源标记 tdProvenance 四点接线、verify-real-import 所有权对账摘要）。评审：范围恰 8+8 文件零越界；175/175；delta 场景保全符合 CLI 规则；对账 4+1 处追认（web/verify-real-import 改动全部由契约事实变化驱动）。结论：通过。
+- wt-B 呈现轴：`d79d43e` + `4d7ddc9`（rebase 后两笔：JPEG/WebP 上传 + canvas 矩形框选 → PNG blob → 既有 /api/import；provider 状态面板 + 密钥边界说明；编排按钮降级显式报错；docs/img2img.md env 表按 wt-A 实现对齐）。评审：红线 diff 空；175/175 + 7 verify；降级路径浏览器实测（面板"编排端点未上线"显式报错不崩）。结论：通过。
+- 合并：`20f9cb5` merge(m4)（gate feat(m4) 触发）→ `06d835d` merge(present)（合后 175/175 + 7 verify 全绿）。
+- 主控修复（wt-B 移交）：img2img 路由 catch 的 `{ ...e }` 展开丢失 Error 原型上的 message → 三处统一改 `sendErr(res, e, 400)`（报文恢复正常描述；UNKNOWN_ASSET/普通错误语义不变）。根因确认时曾因旧进程占端口误判"修复无效"——kill 后重启即正常。
+- 簿记：勾 img2img-live tasks 全部；归档（CLI 同步 3 delta）；Mimosa 扫描 0 发现（两次封存）。
+- 遗留：真实 provider 生成待用户 env（PIXE_IMG_PROVIDER/KEY，升级路径已就绪：重跑 guardian-td/mid 编排即自动换代）；M3 的 Godot 载入人工验收仍待用户；M5 候选：页内资产向导、zhipu 原生适配器（CogView 原生 seed/size 优势）、verify-bridge 作业泄漏清理。

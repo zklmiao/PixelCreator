@@ -692,7 +692,7 @@ async function handle(req, res) {
       const r = validateAsset(asset, { checkFiles: true, baseDir: dirname(manifestPath), manifestPath });
       sendJson(res, 200, { ok: r.ok, errors: r.errors, missing: r.missing });
     } catch (e) {
-      sendErr(res, e.code === 'UNKNOWN_ASSET' ? e : { ...e, status: 400, code: e.code ?? 'BAD_REQUEST' });
+      sendErr(res, e, 400);
     }
     return;
   }
@@ -708,7 +708,7 @@ async function handle(req, res) {
       const job = createJob(op, assetId, preview, exec);
       sendJson(res, 202, { ok: true, jobId: job.id, status: 'preview', preview, links: { events: `/api/jobs/${job.id}/events`, confirm: `/api/jobs/${job.id}/confirm` } });
     } catch (e) {
-      sendErr(res, e.code === 'UNKNOWN_ASSET' ? e : { ...e, status: e.status ?? 400, code: e.code ?? 'BAD_REQUEST' });
+      sendErr(res, e, 400);
     }
     return;
   }
@@ -766,7 +766,7 @@ async function handle(req, res) {
       const job = createJob(op, assetId, preview, execImg2img);
       sendJson(res, 202, { ok: true, jobId: job.id, status: 'preview', preview, links: { events: `/api/jobs/${job.id}/events`, confirm: `/api/jobs/${job.id}/confirm` } });
     } catch (e) {
-      sendErr(res, e.code === 'UNKNOWN_ASSET' ? e : { ...e, status: e.status ?? 400, code: e.code ?? 'BAD_REQUEST' });
+      sendErr(res, e, 400);
     }
     return;
   }

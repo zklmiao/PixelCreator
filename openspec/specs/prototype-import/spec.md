@@ -19,11 +19,11 @@ The system SHALL import a real PNG into a frozen static skeleton via `node tools
 - **THEN** both perspective masters land on disk with fr-slot content marked data-master=true
 
 ### Requirement: Multi-slot manifest import
-The system SHALL support `node tools/import-prototype.mjs --asset <id> --map <manifest.json>` assigning one source PNG per clip slot for characters (idle/walk/attack × dirs × perspectives), with the manifest committed and reviewed.
+The system SHALL support `node tools/import-prototype.mjs --asset <id> --map <manifest.json>` assigning one source PNG per clip slot for characters (idle/walk/attack × dirs × perspectives), with the manifest committed and reviewed. For imported characters whose td sources are not yet AI-derived, the manifest SHALL carry a `tdProvenance` declaration (`mode` + `upgradedSlots`) so offline stand-in sources and AI-derived replacements stay machine-readable apart.
 
 #### Scenario: Guardian map
 - **WHEN** importing `guardian_001` via `fixtures/guardian/guardian-map.json`
-- **THEN** 40 view slots plus 2 masters land per the manifest and the reuse declaration matches landed bytes
+- **THEN** 56 view slots (idle 8 + walk 24 + attack 24) plus 2 masters land per the manifest, the reuse declaration idle=[f1] / walk=[f1, ai-mid, f2] / attack=[f2, ai-mid, f1] matches landed pixel sets (attack keeping its reverse-order difference), and the td views differ from their sd counterparts per the `tdProvenance` marker (mode `offline-standin-vertical-flip` with empty `upgradedSlots` until a configured provider re-run adopts AI sources)
 
 ### Requirement: Compare output contract
 

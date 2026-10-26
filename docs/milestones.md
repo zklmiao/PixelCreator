@@ -12,7 +12,7 @@
 | **M1** | 多类资产 + Godot 配方 + 感知色距 + web 多资产可看可切 | static-asset / spritesheet-export(配方) / pixel-quantize(OKLCH+Bayer) / prototype-prompt(kind-aware) / animation-keyframes(静态矩阵) | `2026-10-06-static-kinds-godot-adapter`（轮 1）+ `2026-10-07-perceptual-color-plus-static-web`（轮 2） | ✅ 已归档 |
 | **M2** | **真实素材导入 MVP：喂真图 → 出真资产 → 人工可看** | prototype-import(新) / spritesheet-export(静态单帧) / static-asset(导入实例) | `2026-10-07-real-import-mvp`（轮 3） | ✅ 已归档 |
 | **M3** | 引擎一键接入 + 大尺寸档 + 真实角色 24 格 | spritesheet-export(.tres) / pixel-quantize(128 档) / character-asset(真实全矩阵) | `2026-10-07-real-character-m3`（轮 4） | ✅ 已归档 |
-| **M4** | fuller motion + td 真源 + hash 语义 + img2img 实调 | animation-keyframes(补帧) / character-asset(占位移除) / prototype-prompt(hash 语义+实调) | 轮 5+（img2img 需用户拍板接入方式） | ⬜ |
+| **M4** | img2img 实调（三层 provider）+ JPEG/框选导入 + guardian 补帧 2→3 + td 真源替换 + hash 语义定案 | prototype-prompt(适配层) / web-bridge(端点) / character-asset(占位退役) | `2026-10-25-img2img-live`（轮 7） | ✅ 已归档（真实生成待用户 env） |
 
 ---
 
@@ -88,4 +88,8 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 - 2026-10-07 M3 收官：轮 4 合并归档（0418a31，含归档事故自报与精确修复）；guardian_001 真实角色（40 视图，td=sd 占位测试钉死）+ tres 24/24 动画 + house/tree 128 档实测；主干 156/156；用户人工验收待做（Godot 载入 .tres）。
 - 2026-10-07 轮 4.5 bridge：web-cli-bridge 落库（67f47e1，本地桥服务器：上传导入 + 两段写 + 备份 + SSE）。
 - 2026-10-07 轮 5 UI 重设计：web-shell-v2 合并（3005e13）——四区 IA（资产库/导入/导出/Prompt）+ 像素复古主题（token 取自项目色板）+ 开发者面板折叠；web-bridge 成第 10 个 capability；用户"信息乱"反馈闭环，人工验收待做。
+- 2026-10-24 轮 4.5 bridge：web-cli-bridge 落库（67f47e1，本地桥服务器：上传导入 + 两段写 + 备份 + SSE）。
 - 2026-10-24 轮 6 欠账清理：debts-cleanup 归档——静态单帧表全资产覆盖（sword/crate 64 档、house/tree 128 档）、svg-engineering 母版条款降格（移除条件式）、Bayer 效果测试、verify-bridge 模块可达性审计（postmortem 预防项）、UI 深冷调（用户拍板）；主干 143/143。
+- 2026-10-24 轮 6 欠账清理：debts-cleanup 归档——静态单帧表全资产覆盖（sword/crate 64 档、house/tree 128 档）、svg-engineering 母版条款降格（移除条件式）、Bayer 效果测试、verify-bridge 模块可达性审计（postmortem 预防项）、UI 深冷调（用户拍板）；主干 143/143。
+- 2026-10-25 M4 收官：轮 7 img2img-live 归档——三层 provider 适配层（Gemini/OpenAI 兼容/SD-WebUI，env-only，离线回落冻结）+ guardian walk/attack 2→3 帧（AI 中间帧槽就绪）+ td 真源（td==sd 占位退役）+ source_hash 语义（全库 pending 清零）+ JPEG/框选导入 + provider 面板；主干 175/175；修复 img2img 报文 [object Object]（wt-B 移交，三处 catch 统一）；Mimosa 0 发现。真实生成待用户 env（升级路径就绪）。
+- 2026-10-25 轮 5 UI 重设计补记：用户已人工使用新页面并触发 M4 立项（"信息乱"→ 四区 IA 落地后转 M4 立项讨论）。

@@ -40,3 +40,14 @@ The system SHALL allowlist `assetId` to the frozen 7 ids and `outDir` to fixed r
 
 - **WHEN** posting an assetId outside the allowlist or a path with traversal
 - **THEN** the server rejects with a typed error and writes nothing
+
+### Requirement: img2img endpoints with key boundary
+The bridge SHALL expose `GET /api/img2img/status` returning configured provider names only (never key material), plus `POST /api/img2img/inbetween` and `POST /api/img2img/derive-td` write jobs under the existing preview-then-confirm-with-backup semantics and serial queue.
+
+#### Scenario: Status never leaks secrets
+- **WHEN** calling status with a key configured via environment
+- **THEN** the response names the provider and contains no key substring
+
+#### Scenario: Orchestration writes are guarded
+- **WHEN** an inbetween or derive job is previewed but not confirmed
+- **THEN** no asset file changes on disk

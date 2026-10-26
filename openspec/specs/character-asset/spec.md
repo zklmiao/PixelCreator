@@ -26,16 +26,16 @@ The system SHALL mark a character asset complete only when 24 clips exist (2 per
 - **WHEN** `attack_bk` frames are missing
 - **THEN** export controls are disabled with the missing clip named
 
-### Requirement: Shared-perspective placeholder allowance
-A real-imported character asset MAY fill td slots with sd-identical pixels, provided a test pins td==sd byte equality as a placeholder and docs declare it; the allowance SHALL be removed with the placeholder test once a true top-down source lands.
-
-#### Scenario: Guardian td placeholder
-- **WHEN** listing `guardian_001` td views
-- **THEN** each td file is byte-identical to its sd counterpart and a placeholder test names the sharing
-
 ### Requirement: Asset directory layout
 The system SHALL organize one asset as one folder containing masters, view/action SVGs, `asset.json`, and a palette reference (never embedded palette values).
 
 #### Scenario: Folder inventory
 - **WHEN** opening `knight_001/`
 - **THEN** masters, per-view SVGs, `asset.json`, and palette reference are all present
+
+### Requirement: Top-down derivation for imported characters
+The system SHALL provide a derivation path (direction-tier img2img over side views, or any future true source) producing dedicated td sources for imported characters; td slots SHALL hold their own sources, never sd byte-copies.
+
+#### Scenario: Guardian holds dedicated td sources
+- **WHEN** comparing any guardian td view file with its sd counterpart
+- **THEN** they are pixel-derivative siblings from distinct sources, not byte-identical copies

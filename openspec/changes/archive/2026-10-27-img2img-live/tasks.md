@@ -15,10 +15,10 @@
 
 ## wt-B 呈现轴（`feat/m4-crop`；拥有 web/** + docs/** + verify 扩展；禁碰 tools/**（server.mjs 除外只读）、assets/**、fixtures/**、openspec/**）
 
-- [ ] B1 JPEG/框选：accept 扩 jpeg/webp；canvas 解码 + 矩形 marquee（指针事件零依赖）+ toBlob PNG → 既有 /api/import；降级路径（无框选直接传整图照旧）。
-- [ ] B2 provider 面板 + 编排按钮：状态面板读 /api/img2img/status（已配 provider 徽章 + 密钥边界说明）；guardian 详情区加"补帧/派生 td"按钮（调桥作业，两段写确认条复用）；docs 落 denoise/seed 局限披露。
-- [ ] B3 尾巴（gate 后）：rebase → 新端点/按钮可用性 verify（未配 provider 时显式报错不崩）→ 全套 DoD 重跑 → 补发尾巴报告。
+- [x] B1 JPEG/框选：accept 扩 jpeg/webp；canvas 解码 + 矩形 marquee（指针事件零依赖）+ toBlob PNG → 既有 /api/import；降级路径（无框选直接传整图照旧）。
+- [x] B2 provider 面板 + 编排按钮：状态面板读 /api/img2img/status（已配 provider 徽章 + 密钥边界说明）；guardian 详情区加"补帧/派生 td"按钮（调桥作业，两段写确认条复用）；docs 落 denoise/seed 局限披露。
+- [x] B3 尾巴（gate 后）：rebase → 新端点/按钮可用性 verify（未配 provider 时显式报错不崩）→ 全套 DoD 重跑 → 补发尾巴报告。
 
 ## 主控集成（不派工）
 
-- [ ] M1 评审双支（协议抽查：适配器请求形状 vs provider 官方文档；网络隔离抽查：单测 grep 无真实 URL 调用）→ 依次 --no-ff 合并 → 勾 tasks → agent-log 轮 7 → milestones M4 → sync/archive。web/verify-real-import.mjs 改动经对账追认归 wt-B 轴合并时审（wt-A 代行更新：td==sd 钉死断言与 character-asset REMOVED delta 冲突，对账见 wt-A 轮 7 整改报告）。
+- [x] M1 评审双支（协议抽查：适配器请求形状 vs provider 官方文档；网络隔离抽查：单测 grep 无真实 URL 调用）→ 依次 --no-ff 合并 → 勾 tasks → agent-log 轮 7 → milestones M4 → sync/archive。web/verify-real-import.mjs 改动经对账追认归 wt-B 轴合并时审（wt-A 代行更新：td==sd 钉死断言与 character-asset REMOVED delta 冲突，对账见 wt-A 轮 7 整改报告）。
