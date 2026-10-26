@@ -82,7 +82,7 @@ export function assertAssetId(assetId) {
 
 function sendJson(res, status, obj) {
   const body = JSON.stringify(obj);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body) });
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body), 'cache-control': 'no-cache' });
   res.end(body);
 }
 
@@ -119,7 +119,7 @@ function serveStatic(req, res, urlPath) {
   if (urlPath === '/' || urlPath === '/web' || urlPath === '/web/') {
     const idx = join(REPO_ROOT, 'web', 'index.html');
     const body = readFileSync(idx);
-    res.writeHead(200, { 'content-type': MIME['.html'], 'content-length': body.length });
+    res.writeHead(200, { 'content-type': MIME['.html'], 'content-length': body.length, 'cache-control': 'no-cache' });
     res.end(body);
     return;
   }
@@ -147,7 +147,7 @@ function serveStatic(req, res, urlPath) {
     return;
   }
   const body = readFileSync(file);
-  res.writeHead(200, { 'content-type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream', 'content-length': body.length });
+  res.writeHead(200, { 'content-type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream', 'content-length': body.length, 'cache-control': 'no-cache' });
   res.end(body);
 }
 
