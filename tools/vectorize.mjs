@@ -11,6 +11,7 @@
 //   (`<g data-part>` outer, `<g data-color>` inner, five parts always present).
 import { getMappableColors, ALPHA_THRESHOLD } from './palette.mjs';
 import { quantizeGeometry } from './quantize.mjs';
+import { STATIC_KINDS, frameNumFromFile } from './kinds.mjs';
 
 export const SEMANTIC_GROUPS = ['body', 'limb-l', 'limb-r', 'outfit', 'weapon-slot'];
 
@@ -569,7 +570,7 @@ export async function roundTripAsset(assetDir) {
   const { resolve } = await import('node:path');
   const dir = String(assetDir);
   const asset = JSON.parse(readFileSync(resolve(dir, 'asset.json'), 'utf8'));
-  const staticOnly = ['weapon', 'building', 'prop', 'scenery'].includes(asset.kind);
+  const staticOnly = STATIC_KINDS.includes(asset.kind);
   const root = resolve(dir, '..', '..');
   const pm = String(asset.palette ?? '').match(/^palette_(\w+)@v(\d+)$/);
   if (!pm) throw new Error(`asset palette ref malformed: ${JSON.stringify(asset.palette)}`);
@@ -1034,13 +1035,16 @@ export function synthStaticPixels({ kind, perspective, dir, frameNum = 0, mappab
   }
 }
 
-function frameNumFromFile(file) {
-  const m = String(file).match(/(\d+)\.svg$/);
-  return m ? Number(m[1]) : 0;
-}
 
 export async function generateKnightSvgs(assetId = 'knight_001', opts = {}) {
   const onProgress = typeof opts?.onProgress === 'function' ? opts.onProgress : null;
+  // Clip-scoped regeneration (polish-hardening B2): opts.clipFilter limits the
+  // run to one clip's frame files ({ perspective, action, dir }); masters are
+  // not part of a clip's frame set and are skipped in scoped runs.
+  const clipFilter = opts?.clipFilter ?? null;
+  const matchClip = (persp, act, d) =>
+    !clipFilter ||
+    (clipFilter.perspective === persp && clipFilter.action === act && clipFilter.dir === d);
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname, resolve } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -1082,6 +1086,7 @@ export async function generateKnightSvgs(assetId = 'knight_001', opts = {}) {
     const clips = asset.actions[act].clips;
     for (const persp of asset.perspectives) {
       for (const d of asset.views) {
+        if (!matchClip(persp, act, d)) continue;
         const list = clips?.[persp]?.[d] ?? [];
         for (const clip of list) {
           const frameNum = frameNumFromFile(clip.file);
@@ -1101,6 +1106,10 @@ export async function generateKnightSvgs(assetId = 'knight_001', opts = {}) {
   // Masters reuse the idle-fr-0 synthesis per perspective so their pixel sets
   // equal the front view at grid size (master keeps data-master=true marker).
   let masters = 0;
+  if (clipFilter) {
+    console.log(`OK: generated ${views} views (clip-scoped ${clipFilter.perspective}/${clipFilter.action}/${clipFilter.dir}, masters skipped) for ${assetId} -> ${assetDir}`);
+    return { views, masters, assetDir };
+  }
   for (const persp of asset.perspectives) {
     const ref = asset.actions.idle.clips[persp].fr[0];
     const frameNum = frameNumFromFile(ref.file);
@@ -1121,6 +1130,12 @@ export async function generateKnightSvgs(assetId = 'knight_001', opts = {}) {
 
 export async function generateStaticSvgs(assetId, opts = {}) {
   const onProgressStatic = typeof opts?.onProgress === 'function' ? opts.onProgress : null;
+  // Clip-scoped regeneration (polish-hardening B2) — same contract as
+  // generateKnightSvgs: one clip's frame files only, masters skipped.
+  const clipFilter = opts?.clipFilter ?? null;
+  const matchClip = (persp, act, d) =>
+    !clipFilter ||
+    (clipFilter.perspective === persp && clipFilter.action === act && clipFilter.dir === d);
   const { readFileSync, writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname, resolve } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -1129,7 +1144,7 @@ export async function generateStaticSvgs(assetId, opts = {}) {
   const assetDir = resolve(moduleDir, '..', 'assets', assetId);
   const asset = JSON.parse(readFileSync(resolve(assetDir, 'asset.json'), 'utf8'));
   const kind = asset.kind;
-  if (!['weapon', 'building', 'prop', 'scenery'].includes(kind)) {
+  if (!STATIC_KINDS.includes(kind)) {
     throw new Error(`generateStaticSvgs: ${assetId} kind must be weapon|building|prop|scenery, got ${JSON.stringify(kind)}`);
   }
   const pm = String(asset.palette ?? '').match(/^palette_(\w+)@v(\d+)$/);
@@ -1166,6 +1181,7 @@ export async function generateStaticSvgs(assetId, opts = {}) {
     const clips = asset.actions[act].clips;
     for (const persp of asset.perspectives) {
       for (const d of asset.views) {
+        if (!matchClip(persp, act, d)) continue;
         const list = clips?.[persp]?.[d] ?? [];
         for (const clip of list) {
           const frameNum = frameNumFromFile(clip.file);
@@ -1183,6 +1199,10 @@ export async function generateStaticSvgs(assetId, opts = {}) {
     }
   }
   let masters = 0;
+  if (clipFilter) {
+    console.log(`OK: generated ${views} views (clip-scoped ${clipFilter.perspective}/${clipFilter.action}/${clipFilter.dir}, masters skipped) for ${assetId} -> ${assetDir}`);
+    return { views, masters, assetDir };
+  }
   for (const persp of asset.perspectives) {
     const ref = asset.actions.idle.clips[persp].fr[0];
     const frameNum = frameNumFromFile(ref.file);

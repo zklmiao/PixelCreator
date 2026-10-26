@@ -13,18 +13,15 @@
 // svgToPixels 解码后传入,复用 3.3 解析器,禁止另起解析器);fs 只出现在
 // loadActionFrames/exportSheets(CLI/批量脚本,动态 import)与 main()。
 import { PNG } from 'pngjs';
+import { STATIC_KINDS, frameNumFromFile } from './kinds.mjs';
 
 export const SHEET_DIRS = ['fr', 'bk', 'lf', 'rt'];
 export const SHEET_ROWS = SHEET_DIRS.length; // 4
 export const MAKER_COLS = 3;
 export const SHEET_ACTIONS = ['idle', 'walk', 'attack'];
 export const SHEET_MODES = ['maker', 'full'];
-export const STATIC_SHEET_KINDS = ['weapon', 'building', 'prop', 'scenery'];
-
-function frameNumFromFile(file) {
-  const m = String(file).match(/(\d+)\.svg$/);
-  return m ? Number(m[1]) : 0;
-}
+// Single source: tools/kinds.mjs (polish-hardening D1).
+export const STATIC_SHEET_KINDS = STATIC_KINDS;
 
 function assertCell(cell) {
   if (!Number.isInteger(cell) || cell <= 0) {

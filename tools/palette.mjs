@@ -2,10 +2,12 @@
 // Zero dependencies so the Web app can import it directly later.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { ALPHA_THRESHOLD } from './kinds.mjs';
 
 export const PALETTE_ID_RE = /^palette_(character|weapon|building|prop|scenery)@v[0-9]+$/;
 export const PALETTE_KINDS = ['character', 'weapon', 'building', 'prop', 'scenery'];
-export const ALPHA_THRESHOLD = 128;
+// Single source: tools/kinds.mjs (polish-hardening D1); re-exported unchanged.
+export { ALPHA_THRESHOLD };
 
 const HEX_SHORT_RE = /^#([0-9a-fA-F]{3})$/;
 const HEX_RGB_RE = /^#([0-9a-fA-F]{6})$/;

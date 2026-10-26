@@ -10,6 +10,7 @@ export const MATRIX_ACTIONS = ['idle', 'walk', 'attack'];
 export const MATRIX_DIRS = ['fr', 'bk', 'lf', 'rt'];
 export const MATRIX_PERSPS = ['td', 'sd'];
 
+// mirror of tools/kinds.mjs — frozen contract, keep in sync
 export const STATIC_KINDS = ['weapon', 'building', 'prop', 'scenery'];
 
 const kindOf = (asset) => asset?.kind ?? 'character';
