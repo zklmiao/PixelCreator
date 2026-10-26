@@ -41,7 +41,7 @@
 //   sd-webui: POST {base}/sdapi/v1/img2img JSON {init_images,prompt,
 //           negative_prompt,denoising_strength,seed,width,height},
 //           response {images:[b64]}.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DIR_DENOISE_RANGE, FRAME_DENOISE_RANGE } from '../web/lib/img2img.js';
@@ -503,9 +503,53 @@ export const TD_DERIVE_PLAN = [
   { action: 'attack', frames: { 1: 1, 2: 2 } },
 ];
 
+// Machine-readable provenance for the td view sources (gate remediation): the
+// committed map records how td sources were produced. `offline-standin-
+// vertical-flip` = deterministic stand-ins (2x-upscaled vertical flips of sd
+// fixtures); `ai-derived` once a configured provider run replaces them.
+// `upgradedSlots` names exactly which td slot files hold AI-derived content.
+export const TD_PROVENANCE_NOTE =
+  'td sources are 2x-upscaled vertical flips of sd fixtures; re-run derive-td with a configured provider to replace them with AI-derived sources';
+
+export function tdSlotFilesFromPlan(dirs = GUARDIAN_DIRS, plan = TD_DERIVE_PLAN) {
+  return dirs.flatMap((d) =>
+    plan.flatMap(({ action, frames }) => Object.keys(frames).map((n) => `guardian_td_${action}_${d}${n}.svg`)),
+  );
+}
+
+export function tdMidSlotFiles(dirs = GUARDIAN_DIRS) {
+  return dirs.flatMap((d) => [`guardian_td_walk_${d}2.svg`, `guardian_td_attack_${d}3.svg`]);
+}
+
+// Read-modify-write the map's tdProvenance declaration. Callers pass either
+// `reset` (offline stand-in branch: the whole set is stand-ins again) or
+// explicit `mode` + `addSlots` (live AI branch), or `removeSlots` (an offline
+// re-run demoting previously upgraded slots). Sorted arrays, idempotent.
+// A missing map (bare temp staging without one) skips the marker write: the
+// marker lives IN the map, and the committed map always carries it.
+export function updateTdProvenance(mapPath, { mode = null, addSlots = [], removeSlots = [], reset = false } = {}) {
+  if (!existsSync(mapPath)) return null;
+  const map = JSON.parse(readFileSync(mapPath, 'utf8'));
+  const prior = map.tdProvenance ?? { mode: 'offline-standin-vertical-flip', upgradedSlots: [] };
+  let upgraded;
+  if (reset) {
+    upgraded = [];
+  } else {
+    const set = new Set(prior.upgradedSlots ?? []);
+    for (const s of addSlots) set.add(s);
+    for (const s of removeSlots) set.delete(s);
+    upgraded = [...set].sort();
+  }
+  const nextMode = mode ?? (upgraded.length === 0 ? 'offline-standin-vertical-flip' : prior.mode ?? 'ai-derived');
+  map.tdProvenance = { mode: nextMode, note: TD_PROVENANCE_NOTE, upgradedSlots: upgraded };
+  writeFileSync(mapPath, JSON.stringify(map));
+  return map.tdProvenance;
+}
+
 // Offline mid stand-ins: sd = blend of the direction's two endpoint fixtures;
 // td = flip of the sd mid (blend commutes with flip, so this equals blending
-// the flipped endpoints — consistent with the td stand-in convention).
+// the flipped endpoints — consistent with the td stand-in convention). The
+// td mid slots demote in tdProvenance: they are stand-ins again.
 export function deriveMidFixtures({ fixturesDir } = {}) {
   const out = [];
   for (const dir of GUARDIAN_DIRS) {
@@ -518,11 +562,13 @@ export function deriveMidFixtures({ fixturesDir } = {}) {
     writePng(tdPath, flipVertical(sdMid));
     out.push(sdPath, tdPath);
   }
+  updateTdProvenance(resolve(fixturesDir, 'guardian-map.json'), { removeSlots: tdMidSlotFiles() });
   return out;
 }
 
 // Offline td stand-ins: vertical flip of the 64px-upscaled sd source content,
-// one file per existing td slot (derive is per sd view, design.md).
+// one file per existing td slot (derive is per sd view, design.md). The map's
+// tdProvenance resets to the stand-in mode with an empty upgradedSlots list.
 export function deriveTdFixtures({ fixturesDir } = {}) {
   const out = [];
   for (const dir of GUARDIAN_DIRS) {
@@ -535,6 +581,10 @@ export function deriveTdFixtures({ fixturesDir } = {}) {
       }
     }
   }
+  updateTdProvenance(resolve(fixturesDir, 'guardian-map.json'), {
+    mode: 'offline-standin-vertical-flip',
+    reset: true,
+  });
   return out;
 }
 
@@ -598,6 +648,8 @@ export async function orchestrateGuardianMid({ offline = false, rootDir, onProgr
       await onProgress({ file: path, done: written.length });
     }
   }
+  // The live run also (re)produces the 4 td mid sources: mark those slots AI.
+  updateTdProvenance(resolve(fixtures, 'guardian-map.json'), { addSlots: tdMidSlotFiles() });
   return written;
 }
 
@@ -631,6 +683,11 @@ export async function orchestrateGuardianTd({ offline = false, rootDir, onProgre
       }
     }
   }
+  // AI-derived td sources: marker flips to ai-derived with the exact slot list.
+  updateTdProvenance(resolve(fixtures, 'guardian-map.json'), {
+    mode: 'ai-derived',
+    addSlots: tdSlotFilesFromPlan(),
+  });
   return written;
 }
 

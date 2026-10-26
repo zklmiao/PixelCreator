@@ -6,7 +6,7 @@
 
 ## What Changes
 
-- **三层提供商适配**（wt-A）：`tools/img2img-providers.mjs` 统一接口 `editImage({image, prompt, negative, tier, seed, size}) → PNG buffer`——Gemini（主）/ OpenAI 兼容（`base_url` 可配，通吃智谱/通义/OpenAI 等）/ 本地 SD-WebUI（`/sdapi/v1/img2img`，离线兜底）。key 全走环境变量（`PIXE_IMG_PROVIDER`、`PIXE_IMG_KEY`、`PIXE_OPENAI_BASE`），仓库零密钥；无配置时全部回落到 spec 冻结的手动导入流。调用只发生在桥服务端（页面永不接触 key）。
+- **三层提供商适配**（wt-A）：`tools/img2img-providers.mjs` 统一接口 `editImage({image, prompt, negative, tier, seed, size}) → PNG buffer`——Gemini（主）/ OpenAI 兼容（`base_url` 可配，通吃智谱/通义/OpenAI 等）/ 本地 SD-WebUI（`/sdapi/v1/img2img`，离线兜底）。key 全走环境变量（`PIXE_IMG_PROVIDER`、`PIXE_IMG_KEY`、`PIXE_OPENAI_BASE`、`PIXE_SD_URL`，可选 `PIXE_OPENAI_EXTRA` 按家字段覆盖），仓库零密钥；无配置时全部回落到 spec 冻结的手动导入流。调用只发生在桥服务端（页面永不接触 key）。
 - **桥端点扩展**（wt-A）：`GET /api/img2img/status`（报各 provider 已配/未配，不回显密钥）、`POST /api/img2img/inbetween`（guardian 补帧）、`POST /api/img2img/derive-td`（td 派生）——两段写语义照旧（预览 → 确认 → 备份落盘）。
 - **guardian 补帧**（wt-A）：walk/attack 每方向 2→3 帧——AI 中间帧（帧继承 tier 0.25–0.35 首次实战）落 `fixtures/guardian/mid/*.png` 入库后走既有导入管线；asset.json 帧结构更新（主控 prep 授权）；`guardian-map.json` 复用宣言更新为 [f1, ai-mid, f2]。
 - **td 真源替换**（wt-A）：sd 视图经方向派生 tier（0.5–0.6）生成 td 源图 → 量化落 32 个 td 槽 → **删除 td==sd 占位测试**（character-asset 占位条款预留的移除路径）。

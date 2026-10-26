@@ -20,7 +20,14 @@ import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { loadPalette, getMappableColors } from './palette.mjs';
 import { decodePngFile } from './import-prototype.mjs';
-import { runGuardianImportSegment } from './img2img-providers.mjs';
+import {
+  runGuardianImportSegment,
+  deriveTdFixtures,
+  updateTdProvenance,
+  tdSlotFilesFromPlan,
+  tdMidSlotFiles,
+  TD_PROVENANCE_NOTE,
+} from './img2img-providers.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DIRS = ['fr', 'bk', 'lf', 'rt'];
@@ -107,6 +114,14 @@ describe('A3 guardian fixtures (8 amg1 + 8 mid + 20 td + map)', () => {
     for (const src of new Set(Object.values(map.slots))) {
       assert.ok(existsSync(resolve(root, 'fixtures/guardian', src)), `map source missing: ${src}`);
     }
+  });
+
+  it('tdProvenance marker: stand-in mode, exact note, empty upgradedSlots (committed state)', () => {
+    assert.deepEqual(map.tdProvenance, {
+      mode: 'offline-standin-vertical-flip',
+      note: TD_PROVENANCE_NOTE,
+      upgradedSlots: [],
+    });
   });
 });
 
@@ -310,6 +325,60 @@ describe('A4 validator branches (img2img-live hash semantics)', () => {
     const { validateAsset } = await import('./asset-manifest.mjs');
     const r = validateAsset(withClip((c) => { delete c.source_hash; c.prompt_hash = '1a2b3c4d'; }), {});
     assert.equal(r.ok, true, r.errors.join('; '));
+  });
+});
+
+describe('A3 td provenance marker (tdProvenance lifecycle, no network)', () => {
+  it('offline derive-td rerun writes 20 fixtures and resets the marker', async () => {
+    const { mkdirSync, copyFileSync, readdirSync } = await import('node:fs');
+    const temp = mkdtempSync(join(tmpdir(), 'pixe-td-prov-'));
+    mkdirSync(join(temp, 'td'), { recursive: true });
+    copyFileSync(resolve(root, 'fixtures/guardian/guardian-map.json'), join(temp, 'guardian-map.json'));
+    for (const f of readdirSync(resolve(root, 'fixtures/guardian'))) {
+      if (/^amg1_.*\.png$/.test(f)) copyFileSync(resolve(root, 'fixtures/guardian', f), join(temp, f));
+    }
+    const written = deriveTdFixtures({ fixturesDir: temp });
+    assert.equal(written.length, 20);
+    const map2 = JSON.parse(readFileSync(join(temp, 'guardian-map.json'), 'utf8'));
+    assert.deepEqual(map2.tdProvenance, {
+      mode: 'offline-standin-vertical-flip',
+      note: TD_PROVENANCE_NOTE,
+      upgradedSlots: [],
+    });
+  });
+
+  it('provenance lifecycle: AI td run unions 20 slots -> mid run completes 28 -> offline reruns demote', async () => {
+    const { copyFileSync } = await import('node:fs');
+    const temp = mkdtempSync(join(tmpdir(), 'pixe-td-prov-union-'));
+    copyFileSync(resolve(root, 'fixtures/guardian/guardian-map.json'), join(temp, 'guardian-map.json'));
+    const mapPath = join(temp, 'guardian-map.json');
+    const slotNames = new Set(Object.keys(map.slots));
+    const slots20 = tdSlotFilesFromPlan();
+    assert.equal(slots20.length, 20);
+    for (const s of slots20) assert.ok(slotNames.has(s), `${s} must be a real td slot`);
+    // configured derive-td rerun: mode flips to ai-derived, slots listed exactly
+    let tp = updateTdProvenance(mapPath, { mode: 'ai-derived', addSlots: slots20 });
+    assert.equal(tp.mode, 'ai-derived');
+    assert.deepEqual(tp.upgradedSlots, [...slots20].sort());
+    // idempotent double-run: union keeps the set stable
+    tp = updateTdProvenance(mapPath, { mode: 'ai-derived', addSlots: slots20 });
+    assert.deepEqual(tp.upgradedSlots, [...slots20].sort());
+    // configured guardian-mid rerun adds the 8 td mid slots (full AI cycle: 28)
+    const mid8 = tdMidSlotFiles();
+    assert.equal(mid8.length, 8);
+    for (const s of mid8) assert.ok(slotNames.has(s), `${s} must be a real td slot`);
+    tp = updateTdProvenance(mapPath, { addSlots: mid8 });
+    assert.deepEqual(tp.upgradedSlots, [...slots20, ...mid8].sort());
+    assert.equal(tp.upgradedSlots.length, 28);
+    // offline mid rerun demotes the 8 mid slots (stand-ins again), td subset stays
+    tp = updateTdProvenance(mapPath, { removeSlots: mid8 });
+    assert.deepEqual(tp.upgradedSlots, [...slots20].sort());
+    // offline td rerun resets the whole marker to the stand-in state
+    tp = updateTdProvenance(mapPath, { mode: 'offline-standin-vertical-flip', reset: true });
+    assert.deepEqual(tp.upgradedSlots, []);
+    // upgradedSlots non-empty => each named slot file must exist on disk
+    // (committed state is empty; the AI-subset names were skeleton-checked above)
+    for (const s of tp.upgradedSlots) assert.ok(existsSync(resolve(root, 'assets/guardian_001', s)), `${s} on disk`);
   });
 });
 

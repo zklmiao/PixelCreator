@@ -202,6 +202,22 @@ for (const id of ASSET_IDS) {
           }
         }
         if (!refMissing && !failed) ok('all map-referenced sources land on disk (top level + mid/ + td/)');
+        // tdProvenance marker (img2img-live remediation): machine-readable
+        // split between offline stand-in td sources and AI-derived replacements.
+        const tp = map.tdProvenance;
+        if (!tp || typeof tp.mode !== 'string' || typeof tp.note !== 'string' || !Array.isArray(tp.upgradedSlots)) {
+          fail('guardian-map.json must carry tdProvenance {mode, note, upgradedSlots}');
+        } else if (tp.mode !== 'offline-standin-vertical-flip' && tp.mode !== 'ai-derived') {
+          fail(`tdProvenance.mode must be offline-standin-vertical-flip or ai-derived, got ${JSON.stringify(tp.mode)}`);
+        } else {
+          if (tp.mode === 'offline-standin-vertical-flip' && tp.upgradedSlots.length !== 0) {
+            fail('offline-standin-vertical-flip mode must carry an empty upgradedSlots list');
+          }
+          for (const slot of tp.upgradedSlots) {
+            if (!existsSync(resolve(gAssetDir, slot))) fail(`tdProvenance.upgradedSlots names missing slot file: ${slot}`);
+          }
+          ok(`tdProvenance present: mode=${tp.mode}, upgraded=${tp.upgradedSlots.length}`);
+        }
       }
     }
     const srcFiles = have.filter((f) => /\.png$/i.test(f) && !/\.compare\.png$/i.test(f));
