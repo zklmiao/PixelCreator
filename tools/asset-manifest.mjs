@@ -1,15 +1,17 @@
 // asset-manifest.mjs — asset.json read/write + full-matrix validation (OpenSpec 3.2).
 // Zero dependencies so the Web app can import it directly later.
+// Kind/tier constants live in tools/kinds.mjs (polish-hardening D1 single
+// source); the re-exports below keep existing importer paths stable.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { ALL_KINDS, KIND_SIZES, STATIC_KINDS } from './kinds.mjs';
 
 export const PERSPECTIVES = ['td', 'sd'];
 export const DIRS = ['fr', 'bk', 'lf', 'rt'];
-export const CHARACTER_SIZES = [32, 48, 64];
-export const KINDS = ['character', 'weapon', 'building', 'prop', 'scenery'];
-export const STATIC_KINDS = ['weapon', 'building', 'prop', 'scenery'];
-export const SMALL_KIND_SIZES = [32, 48, 64];
-export const LARGE_KIND_SIZES = [32, 48, 64, 128];
+export const KINDS = ALL_KINDS;
+export { STATIC_KINDS };
+export const SMALL_KIND_SIZES = KIND_SIZES.weapon.tiers;
+export const LARGE_KIND_SIZES = KIND_SIZES.building.tiers;
 
 const FILE_RE = /^[a-z0-9_]+_(td|sd)_(idle|walk|attack)_(fr|bk|lf|rt)[0-9]+\.svg$/;
 
@@ -48,7 +50,7 @@ export function validateAsset(asset, opts = {}) {
   if (typeof asset.asset !== 'string' || !/^[a-z0-9]+$/.test(asset.asset)) {
     fail('asset must be a lowercase alphanumeric file prefix (e.g. "knight")');
   }
-  const allowedSizes = kind === 'building' || kind === 'scenery' ? LARGE_KIND_SIZES : SMALL_KIND_SIZES;
+  const allowedSizes = KIND_SIZES[kind].tiers;
   if (!allowedSizes.includes(asset.size)) {
     fail(`size must be one of ${allowedSizes} for kind ${JSON.stringify(kind)}, got ${JSON.stringify(asset.size)}`);
   }

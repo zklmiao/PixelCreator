@@ -6,6 +6,7 @@ export const PERSPECTIVES = ['td', 'sd'];
 export const DIRS = ['fr', 'bk', 'lf', 'rt'];
 export const ACTIONS = ['idle', 'walk', 'attack'];
 
+// mirror of tools/kinds.mjs — frozen contract, keep in sync
 export const KINDS = ['character', 'weapon', 'building', 'prop', 'scenery'];
 export const STATIC_KINDS = ['weapon', 'building', 'prop', 'scenery'];
 

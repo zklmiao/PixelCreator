@@ -73,7 +73,8 @@ try {
 
   const g = await postJSON(baseUrl, '/api/generate', { assetId: 'crate_001' });
   check('generate preview 202', g.status === 202 && g.json.preview?.willWrite?.length === 10);
-  await postJSON(baseUrl, `/api/jobs/${g.json.jobId}/confirm`, {});
+  const gConfirm = await postJSON(baseUrl, `/api/jobs/${g.json.jobId}/confirm`, {});
+  check('first confirm 202 queued', gConfirm.status === 202 && gConfirm.json.status === 'queued');
   const gDone = await sseUntilDone(baseUrl, g.json.jobId);
   check('generate SSE done + progress', gDone.done === true && gDone.sawProgress === true);
   restoreGit(['assets/crate_001']);
@@ -118,9 +119,24 @@ try {
   const j2 = await r2.json();
   check('import path-traversal assetId rejected', r2.status === 400 && j2.code === 'UNKNOWN_ASSET');
 
-  // Confirm is single-use: a confirmed job must not re-run.
+  // Confirm is single-use (polish-hardening D3-c): strictly 409 + typed code.
+  // A 202 here would mean the two-phase semantics broke — no escape hatch.
   const c2 = await postJSON(baseUrl, `/api/jobs/${g.json.jobId}/confirm`, {});
-  check('confirm single-use', (c2.status === 409 && c2.json.code === 'ALREADY_CONFIRMED') || c2.status === 202);
+  check('confirm single-use', c2.status === 409 && c2.json.code === 'ALREADY_CONFIRMED');
+
+  // B3: the gitignored user-prototype workspace is served on the same origin.
+  {
+    const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+    const protoDir = join(root, 'prototypes', 'verify-bridge-tmp');
+    mkdirSync(protoDir, { recursive: true });
+    writeFileSync(join(protoDir, 'probe.txt'), 'prototype-probe-bytes', 'utf8');
+    const probe = await fetch(`${baseUrl}/prototypes/verify-bridge-tmp/probe.txt`);
+    const body = await probe.text();
+    check('prototypes served (200 + exact bytes)', probe.status === 200 && body === 'prototype-probe-bytes');
+    const missing = await fetch(`${baseUrl}/prototypes/verify-bridge-tmp/nope.txt`);
+    check('prototypes missing file 404', missing.status === 404);
+    rmSync(join(root, 'prototypes', 'verify-bridge-tmp'), { recursive: true, force: true });
+  }
 
   // M4 img2img endpoints (img2img-live wt-A A2): status names only (never key
   // material), typed unconfigured errors, and preview-then-confirm semantics

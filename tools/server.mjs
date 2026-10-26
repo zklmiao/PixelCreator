@@ -27,6 +27,7 @@ import {
 } from './import-prototype.mjs';
 import { encodePng } from './sheet.mjs';
 import { ASSET_IDS } from '../web/lib/asset-shell.js';
+import { STATIC_KINDS } from './kinds.mjs';
 import {
   img2imgStatus,
   orchestrateGuardianMid,
@@ -46,7 +47,15 @@ const STATIC_PREFIXES = {
   '/fixtures/': 'fixtures',
   '/godot/': 'godot',
   '/tools/': 'tools',
+  // Gitignored user-prototype workspace (polish-hardening B3): user-supplied
+  // images stay local; the compare flow reads them on the same origin. When
+  // the directory does not exist yet, static serving 404s as usual.
+  '/prototypes/': 'prototypes',
 };
+
+// Hard cap for retained jobs (polish-hardening D3-a): beyond this, the oldest
+// finished (done/error) jobs are evicted first by sweepExpired.
+export const MAX_JOBS = 100;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -240,9 +249,48 @@ function loadAssetDoc(assetId) {
   return { doc: JSON.parse(readFileSync(p, 'utf8')), dir: dirname(p), manifestPath: p };
 }
 
-function previewGenerate(assetId) {
+function clipScopeError(clip) {
+  return Object.assign(
+    new Error(`unknown clip ${JSON.stringify(clip)} (want "<persp>/<action>/<dir>" within the asset)`),
+    { code: 'UNKNOWN_CLIP', status: 400 },
+  );
+}
+
+// Clip scope (polish-hardening B2): "<persp>/<action>/<dir>" limits preview and
+// the run to exactly that clip's frame files; null/empty = whole asset.
+function parseClipScope(doc, clip) {
+  if (clip === undefined || clip === null || clip === '') return null;
+  const parts = String(clip).split('/');
+  if (parts.length !== 3) throw clipScopeError(clip);
+  const [persp, action, dir] = parts;
+  const act = doc.actions?.[action];
+  if (
+    !(doc.perspectives ?? []).includes(persp) ||
+    !act ||
+    !(doc.views ?? []).includes(dir) ||
+    !Array.isArray(act.clips?.[persp]?.[dir])
+  ) {
+    throw clipScopeError(clip);
+  }
+  return { perspective: persp, action, dir };
+}
+
+function previewGenerate(assetId, clip) {
   const { doc } = loadAssetDoc(assetId);
+  const scope = parseClipScope(doc, clip);
   const willWrite = [];
+  if (scope) {
+    // Clip-scoped: exactly this clip's frame files, no masters (spec
+    // "Clip-scoped regeneration": willWrite lists the clip's frames and no
+    // other asset file).
+    for (const clipFile of doc.actions[scope.action].clips[scope.perspective][scope.dir] ?? []) {
+      willWrite.push(`assets/${assetId}/${clipFile.file}`);
+    }
+    return finishPreview(willWrite, {
+      kind: doc.kind,
+      clip: `${scope.perspective}/${scope.action}/${scope.dir}`,
+    });
+  }
   for (const act of Object.keys(doc.actions ?? {})) {
     for (const persp of doc.perspectives ?? []) {
       for (const d of doc.views ?? []) {
@@ -260,7 +308,7 @@ function previewSheet(assetId) {
   const { doc } = loadAssetDoc(assetId);
   const prefix = doc.asset;
   const willWrite = [];
-  const isStatic = ['weapon', 'building', 'prop', 'scenery'].includes(doc.kind);
+  const isStatic = STATIC_KINDS.includes(doc.kind);
   if (isStatic) {
     for (const persp of doc.perspectives ?? []) {
       const sheet = sheetFileName(prefix, persp, 'idle', 'full');
@@ -370,13 +418,18 @@ async function previewImport(assetId, buffer, srcBase, dir) {
 
 // ---- backup ----
 
-function backupFiles(assetId, relPaths) {
+// Exec-time backup (polish-hardening D3-b): every will-write path is
+// re-checked for existence HERE, at execution time — not from the preview
+// snapshot — so a file that comes into existence between preview and confirm
+// is backed up before being overwritten (web-bridge scenario
+// "Late-created files are backed up too"). Exported for direct unit tests.
+export function backupFiles(assetId, relPaths) {
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const dest = join(REPO_ROOT, '.backup', assetId, ts);
   let count = 0;
   for (const rel of relPaths) {
     const abs = join(REPO_ROOT, rel);
-    if (!existsSync(abs)) continue;
+    if (!existsSync(abs)) continue; // exec-time existence re-check, per path
     const target = join(dest, rel);
     mkdirSync(dirname(target), { recursive: true });
     copyFileSync(abs, target);
@@ -401,14 +454,49 @@ const queue = []; // jobIds awaiting execution
 let running = null;
 const sseClients = new Map(); // jobId -> Set<res>
 
-function sweepExpired() {
-  const now = Date.now();
+// Test/inspection hook (polish-hardening D3-a): direct access to the live
+// registry so unit tests can construct aged jobs without HTTP round-trips.
+export const __jobRegistry = { jobs, sseClients, queue };
+
+// Remove a job and every resource hanging off it (queue slot + SSE clients).
+function dropJob(id) {
+  if (!jobs.has(id)) return;
+  jobs.delete(id);
+  const i = queue.indexOf(id);
+  if (i !== -1) queue.splice(i, 1);
+  const clients = sseClients.get(id);
+  if (clients) {
+    for (const res of clients) {
+      try {
+        res.end();
+      } catch { /* client gone */ }
+    }
+    sseClients.delete(id);
+  }
+}
+
+// Sweeps expired previews/queued jobs, ages out finished jobs on the same TTL,
+// and enforces the MAX_JOBS hard cap. Exported for direct unit tests; the
+// request handler calls it with the wall clock.
+export function sweepExpired(now = Date.now()) {
   for (const [id, job] of jobs) {
     if ((job.status === 'preview' || job.status === 'queued') && job.expiresAt < now) {
-      jobs.delete(id);
-      const i = queue.indexOf(id);
-      if (i !== -1) queue.splice(i, 1);
+      dropJob(id);
+    } else if (
+      (job.status === 'done' || job.status === 'error') &&
+      job.finishedAt != null &&
+      job.finishedAt + JOB_TTL_MS < now
+    ) {
+      dropJob(id); // finished jobs age out on the same TTL as previews
     }
+  }
+  // Hard cap (D3-a): beyond MAX_JOBS, evict the oldest finished jobs first.
+  while (jobs.size > MAX_JOBS) {
+    const oldestFinished = [...jobs.values()]
+      .filter((j) => (j.status === 'done' || j.status === 'error') && j.finishedAt != null)
+      .sort((a, b) => a.finishedAt - b.finishedAt)[0];
+    if (!oldestFinished) break; // only live (preview/queued/running) jobs left
+    dropJob(oldestFinished.id);
   }
 }
 
@@ -465,10 +553,12 @@ async function pumpQueue() {
   try {
     const result = await job.exec(job, (type, data) => emit(job, type, data));
     job.status = 'done';
+    job.finishedAt = Date.now();
     job.result = result;
     emit(job, 'done', { result });
   } catch (e) {
     job.status = 'error';
+    job.finishedAt = Date.now();
     job.error = { code: e?.code ?? 'PIPELINE_ERROR', message: e?.message ?? String(e) };
     emit(job, 'error', job.error);
   } finally {
@@ -506,9 +596,13 @@ async function execGenerate(job, progress) {
   const { asset } = await loadImportAssetForKind(assetId);
   const isChar = asset.kind === 'character';
   const onProgress = async ({ file, done }) => progress('progress', { done, file });
+  const clipStr = job.params?.clip ?? null; // validated at preview time
+  const clipFilter = clipStr
+    ? (([perspective, action, dir]) => ({ perspective, action, dir }))(String(clipStr).split('/'))
+    : null;
   const r = isChar
-    ? await generateKnightSvgs(assetId, { onProgress })
-    : await generateStaticSvgs(assetId, { onProgress });
+    ? await generateKnightSvgs(assetId, { onProgress, clipFilter })
+    : await generateStaticSvgs(assetId, { onProgress, clipFilter });
   return { ...r, backedUp: backed.count, backupDir: backed.dir };
 }
 
@@ -700,12 +794,12 @@ async function handle(req, res) {
   if (req.method === 'POST' && (path === '/api/generate' || path === '/api/sheet/export' || path === '/api/tres/export')) {
     try {
       const buf = await readBody(req, 1024 * 1024);
-      const { assetId } = JSON.parse(buf.toString('utf8') ?? '{}');
+      const { assetId, clip } = JSON.parse(buf.toString('utf8') ?? '{}');
       assertAssetId(assetId);
       const op = path === '/api/generate' ? 'generate' : path === '/api/sheet/export' ? 'sheet' : 'tres';
-      const preview = op === 'generate' ? previewGenerate(assetId) : op === 'sheet' ? previewSheet(assetId) : previewTres(assetId);
+      const preview = op === 'generate' ? previewGenerate(assetId, clip) : op === 'sheet' ? previewSheet(assetId) : previewTres(assetId);
       const exec = op === 'generate' ? execGenerate : op === 'sheet' ? execSheet : execTres;
-      const job = createJob(op, assetId, preview, exec);
+      const job = createJob(op, assetId, preview, exec, { params: { clip: preview.clip ?? null } });
       sendJson(res, 202, { ok: true, jobId: job.id, status: 'preview', preview, links: { events: `/api/jobs/${job.id}/events`, confirm: `/api/jobs/${job.id}/confirm` } });
     } catch (e) {
       sendErr(res, e, 400);

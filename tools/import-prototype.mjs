@@ -13,15 +13,12 @@ import { quantizeGeometry } from './quantize.mjs';
 import { mapFrameToPalette, getMappableColors } from './palette.mjs';
 import { pixelsToSvg, staticRelabel, knightRelabel } from './vectorize.mjs';
 import { encodePng } from './sheet.mjs';
+import { STATIC_KINDS, frameNumFromFile } from './kinds.mjs';
 
-export const STATIC_IMPORT_KINDS = ['weapon', 'building', 'prop', 'scenery'];
+// Single source: tools/kinds.mjs (polish-hardening D1).
+export const STATIC_IMPORT_KINDS = STATIC_KINDS;
 export const IMPORT_PERSPS = ['td', 'sd'];
 export const IMPORT_DIRS = ['fr', 'bk', 'lf', 'rt'];
-
-function frameNumFromFile(file) {
-  const m = String(file).match(/(\d+)\.svg$/);
-  return m ? Number(m[1]) : 0;
-}
 
 function baseNameNoExt(p) {
   const b = String(p).split(/[\\/]/).pop();

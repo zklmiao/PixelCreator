@@ -44,6 +44,7 @@ export const FIXED_NEGATIVE =
 // Static kind-aware sentences (idle-only objects, no human-figure wording).
 // Character constants above frozen; static path never emits BARE_HANDS /
 // SINGLE_FIGURE / SWORD_SEP.
+// mirror of tools/kinds.mjs — frozen contract, keep in sync
 export const STATIC_KINDS = ['weapon', 'building', 'prop', 'scenery'];
 export const KIND_OBJECT_WORDS = { weapon: 'sword', building: 'house', prop: 'crate', scenery: 'tree' };
 export const STATIC_BASE_TEMPLATES = {

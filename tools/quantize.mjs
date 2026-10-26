@@ -3,9 +3,12 @@
 // Color mapping (nearest palette) is 2.2 and lives in palette.mjs; this module
 // intentionally stops at geometry so 2.1 is verifiable in isolation.
 // Zero dependencies so the Web app (canvas ImageData) can import it directly.
+import { ALPHA_THRESHOLD, KIND_SIZES } from './kinds.mjs';
+
 export const SUPPORTED_TIERS = [32, 48, 64, 128];
-export const CHARACTER_TIERS = [32, 48, 64];
-export const ALPHA_THRESHOLD = 128;
+// Tier rules from tools/kinds.mjs (polish-hardening D1 single source).
+export const CHARACTER_TIERS = KIND_SIZES.character.tiers;
+export { ALPHA_THRESHOLD };
 
 export function assertTier(size, kind = 'character') {
   if (!SUPPORTED_TIERS.includes(size)) {
