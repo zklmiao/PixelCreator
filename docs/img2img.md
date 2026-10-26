@@ -7,15 +7,17 @@
 - 密钥**只存在于服务端环境变量**；浏览器页面通过 `GET /api/img2img/status` 只能看到**已配置 provider 的名字**，永不接触密钥内容（frozen：web-bridge delta "Status never leaks secrets"）。
 - 所有 img2img 写操作走既有两段写：**预览（零落盘）→ 确认 → 自动备份 → 写入**；未确认时磁盘零变化。
 
-## 2. Provider 配置表
+## 2. Provider 配置表（已对齐 `tools/img2img-providers.mjs` 实现）
 
-| provider | 形态 | 环境变量（服务端注入） | denoise 档（direction 0.5–0.6 / frame 0.25–0.35） | seed |
+通用选择：`PIXE_IMG_PROVIDER` = `gemini` | `openai` | `sd-webui`（只设 key 不设 provider 不算已配置）。
+
+| provider | 形态 | 专属环境变量 | denoise 档（direction 0.5–0.6 / frame 0.25–0.35） | seed |
 |---|---|---|---|---|
-| SD-WebUI | 本地服务（自建） | 服务地址 + 端口（如 `SDWEBUI_URL`） | 直转 denoise 参数 | 原生整数，可锁 |
-| Gemini | 云端 API | `GEMINI_API_KEY`（+可选 JSON 覆盖 `GEMINI_CONFIG`） | 无原生参数 → 映射为编辑提示强度措辞 | 尽力传参，不支持则如实记录 |
-| OpenAI | 云端 API | `OPENAI_API_KEY`（+可选 JSON 覆盖 `OPENAI_CONFIG`） | 同上（提示强度层） | 尽力传参，不支持则如实记录 |
+| sd-webui | 本地服务（自建） | `PIXE_SD_URL`（本地服务地址；无 key，配置后才计入已配置） | 直转 denoise 参数 | 原生整数，可锁 |
+| gemini | 云端 API | `PIXE_IMG_KEY`（可选 `PIXE_OPENAI_BASE` / `PIXE_OPENAI_EXTRA` JSON 配置覆盖） | 无原生参数 → 映射为编辑提示强度措辞 | 尽力传参，不支持则如实记录 |
+| openai | 云端 API | `PIXE_IMG_KEY`（同上可选覆盖） | 同上（提示强度层） | 尽力传参，不支持则如实记录 |
 
-> 精确变量名以 `tools/img2img-providers.mjs`（wt-A 交付）为准——适配器允许每家一个 JSON 配置覆盖（env 注入），不逐家写代码。未配置任何 provider 时，`/api/img2img/status` 返回空列表，页面编排按钮显式禁用。
+`GET /api/img2img/status` 返回 `{ ok, active, configured: [已配置名], providers: [{name, configured}] }`——只有 provider 名，永不回显密钥与 URL。未配置时页面编排按钮显式禁用；POST 编排返回 400 `PROVIDER_NOT_CONFIGURED`（提示 set `PIXE_IMG_PROVIDER`）。
 
 ## 3. 能力边界与局限（如实披露，不假装）
 

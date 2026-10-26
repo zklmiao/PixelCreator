@@ -640,7 +640,14 @@ async function startImg2imgJob(path, label) {
     setImg2imgStatus(`${label}：预览就绪，确认后落盘（AI 帧采纳前请过目三帧对比）`);
     setBridgeBusy(false);
   } catch (e) {
-    setImg2imgStatus(`${label} 失败：${e.message}${[404, 405, 501].includes(e.status) ? '（编排端点未上线，wt-A 合并后可用）' : ''}`);
+    // server img2img route garbles Error.message via object spread — map by
+    // code so the user always sees an explicit reason (dev panel keeps raw).
+    const friendly = {
+      PROVIDER_NOT_CONFIGURED: 'provider 未配置：在服务端环境变量设置 PIXE_IMG_PROVIDER（gemini|openai|sd-webui），详见 docs/img2img.md',
+      NO_ORCHESTRATION_MAP: '目标资产没有已入库的编排 map（当前仅 guardian_001 支持编排）',
+    }[e.code];
+    setImg2imgStatus(`${label} 失败：${friendly ?? `${e.message}${[404, 405, 501].includes(e.status) ? '（编排端点未上线，wt-A 合并后可用）' : ''}`}`);
+    bridgeLog(`error: ${e.code ?? ''} ${e.message}`);
     setBridgeBusy(false);
   }
 }
@@ -698,7 +705,12 @@ async function bridgePost(path, body) {
     body: JSON.stringify(body ?? {}),
   });
   const j = await res.json();
-  if (!res.ok) throw new Error(j.message ?? `${res.status} ${path}`);
+  if (!res.ok) {
+    const err = new Error(j.message ?? `${res.status} ${path}`);
+    err.code = j.code;
+    err.status = res.status;
+    throw err;
+  }
   return j;
 }
 
