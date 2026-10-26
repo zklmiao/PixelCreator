@@ -93,3 +93,4 @@ knight_001 全 24 clips（idle 1f / walk 3f / attack 4f × 4 方向 × td/sd）�
 - 2026-10-24 轮 6 欠账清理：debts-cleanup 归档——静态单帧表全资产覆盖（sword/crate 64 档、house/tree 128 档）、svg-engineering 母版条款降格（移除条件式）、Bayer 效果测试、verify-bridge 模块可达性审计（postmortem 预防项）、UI 深冷调（用户拍板）；主干 143/143。
 - 2026-10-25 M4 收官：轮 7 img2img-live 归档——三层 provider 适配层（Gemini/OpenAI 兼容/SD-WebUI，env-only，离线回落冻结）+ guardian walk/attack 2→3 帧（AI 中间帧槽就绪）+ td 真源（td==sd 占位退役）+ source_hash 语义（全库 pending 清零）+ JPEG/框选导入 + provider 面板；主干 175/175；修复 img2img 报文 [object Object]（wt-B 移交，三处 catch 统一）；Mimosa 0 发现。真实生成待用户 env（升级路径就绪）。
 - 2026-10-25 轮 5 UI 重设计补记：用户已人工使用新页面并触发 M4 立项（"信息乱"→ 四区 IA 落地后转 M4 立项讨论）。
+- 2026-10-27 轮 8 polish-hardening：双轴合并（4ff4205/c7632ad）——backlog A1–A5/B1–B5/D1/D3 全清（对比图衬底、校验可见化、clip-scoped generate、/prototypes/ 服务、kinds.mjs 单一来源等 14 项）；主干 182/182。详见 docs/optimization-backlog.md。
