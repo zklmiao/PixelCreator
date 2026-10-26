@@ -6,29 +6,33 @@
           "bk": [
             {
               "file": "potion_sd_idle_bk0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ],
           "fr": [
             {
               "file": "potion_sd_idle_fr0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ],
           "lf": [
             {
               "file": "potion_sd_idle_lf0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ],
           "rt": [
             {
               "file": "potion_sd_idle_rt0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ]
         },
@@ -36,29 +40,33 @@
           "bk": [
             {
               "file": "potion_td_idle_bk0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ],
           "fr": [
             {
               "file": "potion_td_idle_fr0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ],
           "lf": [
             {
               "file": "potion_td_idle_lf0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ],
           "rt": [
             {
               "file": "potion_td_idle_rt0.svg",
-              "prompt_hash": "pending",
-              "seed": 2005
+              "prompt_hash": null,
+              "seed": 2005,
+              "source_hash": "e18119b62c67"
             }
           ]
         }

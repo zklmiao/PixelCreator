@@ -5,7 +5,7 @@
   "action": "walk",
   "size": 64,
   "cell": 64,
-  "cols": 2,
+  "cols": 3,
   "rows": 4,
   "sheet": "guardian_sd_walk.png",
   "fps": 6,
@@ -37,6 +37,18 @@
       "kind": "kept"
     },
     {
+      "file": "guardian_sd_walk_fr3.svg",
+      "dir": "fr",
+      "frame": 3,
+      "col": 2,
+      "row": 0,
+      "x": 128,
+      "y": 0,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
       "file": "guardian_sd_walk_bk1.svg",
       "dir": "bk",
       "frame": 1,
@@ -55,6 +67,18 @@
       "col": 1,
       "row": 1,
       "x": 64,
+      "y": 64,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_walk_bk3.svg",
+      "dir": "bk",
+      "frame": 3,
+      "col": 2,
+      "row": 1,
+      "x": 128,
       "y": 64,
       "w": 64,
       "h": 64,
@@ -85,6 +109,18 @@
       "kind": "kept"
     },
     {
+      "file": "guardian_sd_walk_lf3.svg",
+      "dir": "lf",
+      "frame": 3,
+      "col": 2,
+      "row": 2,
+      "x": 128,
+      "y": 128,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
       "file": "guardian_sd_walk_rt1.svg",
       "dir": "rt",
       "frame": 1,
@@ -107,18 +143,34 @@
       "w": 64,
       "h": 64,
       "kind": "kept"
+    },
+    {
+      "file": "guardian_sd_walk_rt3.svg",
+      "dir": "rt",
+      "frame": 3,
+      "col": 2,
+      "row": 3,
+      "x": 128,
+      "y": 192,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
     }
   ],
   "mapping": {
     "kept": [
       "guardian_sd_walk_fr1.svg",
       "guardian_sd_walk_fr2.svg",
+      "guardian_sd_walk_fr3.svg",
       "guardian_sd_walk_bk1.svg",
       "guardian_sd_walk_bk2.svg",
+      "guardian_sd_walk_bk3.svg",
       "guardian_sd_walk_lf1.svg",
       "guardian_sd_walk_lf2.svg",
+      "guardian_sd_walk_lf3.svg",
       "guardian_sd_walk_rt1.svg",
-      "guardian_sd_walk_rt2.svg"
+      "guardian_sd_walk_rt2.svg",
+      "guardian_sd_walk_rt3.svg"
     ],
     "dropped": [],
     "padded": []

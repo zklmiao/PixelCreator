@@ -37,16 +37,16 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_sd_idle_fr0.svg",
+      "file": "guardian_sd_walk_fr3.svg",
       "dir": "fr",
-      "frame": 0,
+      "frame": 3,
       "col": 2,
       "row": 0,
       "x": 128,
       "y": 0,
       "w": 64,
       "h": 64,
-      "kind": "padded"
+      "kind": "kept"
     },
     {
       "file": "guardian_sd_walk_bk1.svg",
@@ -73,16 +73,16 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_sd_idle_bk0.svg",
+      "file": "guardian_sd_walk_bk3.svg",
       "dir": "bk",
-      "frame": 0,
+      "frame": 3,
       "col": 2,
       "row": 1,
       "x": 128,
       "y": 64,
       "w": 64,
       "h": 64,
-      "kind": "padded"
+      "kind": "kept"
     },
     {
       "file": "guardian_sd_walk_lf1.svg",
@@ -109,16 +109,16 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_sd_idle_lf0.svg",
+      "file": "guardian_sd_walk_lf3.svg",
       "dir": "lf",
-      "frame": 0,
+      "frame": 3,
       "col": 2,
       "row": 2,
       "x": 128,
       "y": 128,
       "w": 64,
       "h": 64,
-      "kind": "padded"
+      "kind": "kept"
     },
     {
       "file": "guardian_sd_walk_rt1.svg",
@@ -145,51 +145,34 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_sd_idle_rt0.svg",
+      "file": "guardian_sd_walk_rt3.svg",
       "dir": "rt",
-      "frame": 0,
+      "frame": 3,
       "col": 2,
       "row": 3,
       "x": 128,
       "y": 192,
       "w": 64,
       "h": 64,
-      "kind": "padded"
+      "kind": "kept"
     }
   ],
   "mapping": {
     "kept": [
       "guardian_sd_walk_fr1.svg",
       "guardian_sd_walk_fr2.svg",
+      "guardian_sd_walk_fr3.svg",
       "guardian_sd_walk_bk1.svg",
       "guardian_sd_walk_bk2.svg",
+      "guardian_sd_walk_bk3.svg",
       "guardian_sd_walk_lf1.svg",
       "guardian_sd_walk_lf2.svg",
+      "guardian_sd_walk_lf3.svg",
       "guardian_sd_walk_rt1.svg",
-      "guardian_sd_walk_rt2.svg"
+      "guardian_sd_walk_rt2.svg",
+      "guardian_sd_walk_rt3.svg"
     ],
     "dropped": [],
-    "padded": [
-      {
-        "col": 2,
-        "dir": "fr",
-        "file": "guardian_sd_idle_fr0.svg"
-      },
-      {
-        "col": 2,
-        "dir": "bk",
-        "file": "guardian_sd_idle_bk0.svg"
-      },
-      {
-        "col": 2,
-        "dir": "lf",
-        "file": "guardian_sd_idle_lf0.svg"
-      },
-      {
-        "col": 2,
-        "dir": "rt",
-        "file": "guardian_sd_idle_rt0.svg"
-      }
-    ]
+    "padded": []
   }
 }

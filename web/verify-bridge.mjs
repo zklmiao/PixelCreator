@@ -5,7 +5,8 @@
 // sheet + tres byte-parity vs CLI in a temp dir, multipart NOT_PNG,
 // and confirm token semantics (single-use, sync job). Zero new deps.
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, existsSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -120,6 +121,70 @@ try {
   // Confirm is single-use: a confirmed job must not re-run.
   const c2 = await postJSON(baseUrl, `/api/jobs/${g.json.jobId}/confirm`, {});
   check('confirm single-use', (c2.status === 409 && c2.json.code === 'ALREADY_CONFIRMED') || c2.status === 202);
+
+  // M4 img2img endpoints (img2img-live wt-A A2): status names only (never key
+  // material), typed unconfigured errors, and preview-then-confirm semantics
+  // where an unconfirmed preview writes NOTHING (fs hash snapshot + git status).
+  {
+    const hashTree = (dirs) => {
+      const out = [];
+      const walk = (abs, rel) => {
+        for (const e of readdirSync(abs, { withFileTypes: true })) {
+          const r = `${rel}/${e.name}`;
+          if (e.isDirectory()) walk(join(abs, e.name), r);
+          else out.push(`${r}:${createHash('sha256').update(readFileSync(join(abs, e.name))).digest('hex')}`);
+        }
+      };
+      for (const d of dirs) walk(join(root, d), d);
+      return out.sort().join('\n');
+    };
+    const gitStatus = () => spawnSync('git', ['status', '--porcelain'], { cwd: root }).stdout.toString();
+
+    const st0 = await (await fetch(`${baseUrl}/api/img2img/status`)).json();
+    check('img2img status ok + 3 named providers', st0.ok === true && Array.isArray(st0.providers) && st0.providers.length === 3);
+    check(
+      'img2img status shape: {name,configured} entries + active',
+      st0.providers.every((p) => typeof p.name === 'string' && typeof p.configured === 'boolean') &&
+        (st0.active === null || typeof st0.active === 'string'),
+    );
+    check('img2img status carries no key-ish field', !/key|token|secret/i.test(JSON.stringify(st0)));
+
+    process.env.PIXE_IMG_PROVIDER = 'gemini';
+    process.env.PIXE_IMG_KEY = 'verify-secret-0f9e8d-never-leak';
+    const st1 = await (await fetch(`${baseUrl}/api/img2img/status`)).json();
+    check('img2img status with key configured names the provider', st1.active === 'gemini' && st1.configured.includes('gemini'));
+    check('img2img status response contains no key substring', !JSON.stringify(st1).includes('verify-secret-0f9e8d-never-leak'));
+    delete process.env.PIXE_IMG_PROVIDER;
+    delete process.env.PIXE_IMG_KEY;
+
+    const inb0 = await postJSON(baseUrl, '/api/img2img/inbetween', { assetId: 'guardian_001' });
+    check(
+      'img2img inbetween unconfigured -> 400 PROVIDER_NOT_CONFIGURED',
+      inb0.status === 400 && inb0.json.code === 'PROVIDER_NOT_CONFIGURED',
+    );
+    const dt0 = await postJSON(baseUrl, '/api/img2img/derive-td', { assetId: 'knight_001' });
+    check('img2img derive-td non-guardian asset -> 400 NO_ORCHESTRATION_MAP', dt0.status === 400 && dt0.json.code === 'NO_ORCHESTRATION_MAP');
+
+    process.env.PIXE_IMG_PROVIDER = 'sd-webui';
+    process.env.PIXE_SD_URL = '127.0.0.1:9'; // unreachable loopback; preview must never dial out
+    const snapBefore = hashTree(['assets', 'fixtures', 'sheets', 'godot']);
+    const gitBefore = gitStatus();
+    const inb1 = await postJSON(baseUrl, '/api/img2img/inbetween', { assetId: 'guardian_001' });
+    check(
+      'img2img inbetween preview 202: exactly 102 willWrite (56 slots + 2 masters + 8 mid fixtures + 36 compares)',
+      inb1.status === 202 && inb1.json.preview?.willWrite?.length === 102,
+    );
+    const dt1 = await postJSON(baseUrl, '/api/img2img/derive-td', { assetId: 'guardian_001' });
+    check(
+      'img2img derive-td preview 202: exactly 114 willWrite (20 td fixtures instead of 8 mid)',
+      dt1.status === 202 && dt1.json.preview?.willWrite?.length === 114,
+    );
+    const snapAfter = hashTree(['assets', 'fixtures', 'sheets', 'godot']);
+    const gitAfter = gitStatus();
+    check('img2img preview without confirm: zero disk writes (fs hash snapshot)', snapBefore === snapAfter);
+    check('img2img preview without confirm: zero disk writes (git status 对照)', gitBefore === gitAfter);
+    delete process.env.PIXE_IMG_PROVIDER;
+  }
 } finally {
   server.close();
 }

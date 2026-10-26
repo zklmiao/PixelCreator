@@ -6,28 +6,32 @@
           "bk": [
             {
               "file": "guardian_sd_idle_bk0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "95453c6d8d02",
               "seed": 2006
             }
           ],
           "fr": [
             {
               "file": "guardian_sd_idle_fr0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "b3f51ec3d6e6",
               "seed": 2006
             }
           ],
           "lf": [
             {
               "file": "guardian_sd_idle_lf0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "670ec1a701e0",
               "seed": 2006
             }
           ],
           "rt": [
             {
               "file": "guardian_sd_idle_rt0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "600e38139f68",
               "seed": 2006
             }
           ]
@@ -36,28 +40,32 @@
           "bk": [
             {
               "file": "guardian_td_idle_bk0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "56d7f8712b71",
               "seed": 2006
             }
           ],
           "fr": [
             {
               "file": "guardian_td_idle_fr0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "281536d60bf1",
               "seed": 2006
             }
           ],
           "lf": [
             {
               "file": "guardian_td_idle_lf0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "190caff0bf43",
               "seed": 2006
             }
           ],
           "rt": [
             {
               "file": "guardian_td_idle_rt0.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "ad6acc50647b",
               "seed": 2006
             }
           ]
@@ -73,48 +81,80 @@
           "bk": [
             {
               "file": "guardian_sd_walk_bk1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "95453c6d8d02",
               "seed": 2006
             },
             {
               "file": "guardian_sd_walk_bk2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_walk_bk3.svg",
+              "prompt_hash": null,
+              "source_hash": "7057128f4443",
               "seed": 2006
             }
           ],
           "fr": [
             {
               "file": "guardian_sd_walk_fr1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "b3f51ec3d6e6",
               "seed": 2006
             },
             {
               "file": "guardian_sd_walk_fr2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_walk_fr3.svg",
+              "prompt_hash": null,
+              "source_hash": "cd04c7c9a631",
               "seed": 2006
             }
           ],
           "lf": [
             {
               "file": "guardian_sd_walk_lf1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "670ec1a701e0",
               "seed": 2006
             },
             {
               "file": "guardian_sd_walk_lf2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_walk_lf3.svg",
+              "prompt_hash": null,
+              "source_hash": "d7cd6d1a2b0e",
               "seed": 2006
             }
           ],
           "rt": [
             {
               "file": "guardian_sd_walk_rt1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "600e38139f68",
               "seed": 2006
             },
             {
               "file": "guardian_sd_walk_rt2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_walk_rt3.svg",
+              "prompt_hash": null,
+              "source_hash": "c3767f8efbcd",
               "seed": 2006
             }
           ]
@@ -123,55 +163,87 @@
           "bk": [
             {
               "file": "guardian_td_walk_bk1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "56d7f8712b71",
               "seed": 2006
             },
             {
               "file": "guardian_td_walk_bk2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_walk_bk3.svg",
+              "prompt_hash": null,
+              "source_hash": "628da60cd0fd",
               "seed": 2006
             }
           ],
           "fr": [
             {
               "file": "guardian_td_walk_fr1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "281536d60bf1",
               "seed": 2006
             },
             {
               "file": "guardian_td_walk_fr2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_walk_fr3.svg",
+              "prompt_hash": null,
+              "source_hash": "67946e0b9595",
               "seed": 2006
             }
           ],
           "lf": [
             {
               "file": "guardian_td_walk_lf1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "190caff0bf43",
               "seed": 2006
             },
             {
               "file": "guardian_td_walk_lf2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_walk_lf3.svg",
+              "prompt_hash": null,
+              "source_hash": "e91af59c2e5e",
               "seed": 2006
             }
           ],
           "rt": [
             {
               "file": "guardian_td_walk_rt1.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": "ad6acc50647b",
               "seed": 2006
             },
             {
               "file": "guardian_td_walk_rt2.svg",
-              "prompt_hash": "pending",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_walk_rt3.svg",
+              "prompt_hash": null,
+              "source_hash": "13cb583de07f",
               "seed": 2006
             }
           ]
         }
       },
       "fps": 6,
-      "frames": 2,
+      "frames": 3,
       "loop": true
     },
     "attack": {
@@ -179,49 +251,81 @@
         "sd": {
           "bk": [
             {
-              "file": "guardian_sd_attack_bk1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_bk2.svg",
+              "prompt_hash": null,
+              "source_hash": "7057128f4443",
               "seed": 2006
             },
             {
-              "file": "guardian_sd_attack_bk2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_bk3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_attack_bk1.svg",
+              "prompt_hash": null,
+              "source_hash": "95453c6d8d02",
               "seed": 2006
             }
           ],
           "fr": [
             {
-              "file": "guardian_sd_attack_fr1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_fr2.svg",
+              "prompt_hash": null,
+              "source_hash": "cd04c7c9a631",
               "seed": 2006
             },
             {
-              "file": "guardian_sd_attack_fr2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_fr3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_attack_fr1.svg",
+              "prompt_hash": null,
+              "source_hash": "b3f51ec3d6e6",
               "seed": 2006
             }
           ],
           "lf": [
             {
-              "file": "guardian_sd_attack_lf1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_lf2.svg",
+              "prompt_hash": null,
+              "source_hash": "d7cd6d1a2b0e",
               "seed": 2006
             },
             {
-              "file": "guardian_sd_attack_lf2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_lf3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_attack_lf1.svg",
+              "prompt_hash": null,
+              "source_hash": "670ec1a701e0",
               "seed": 2006
             }
           ],
           "rt": [
             {
-              "file": "guardian_sd_attack_rt1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_rt2.svg",
+              "prompt_hash": null,
+              "source_hash": "c3767f8efbcd",
               "seed": 2006
             },
             {
-              "file": "guardian_sd_attack_rt2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_sd_attack_rt3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_sd_attack_rt1.svg",
+              "prompt_hash": null,
+              "source_hash": "600e38139f68",
               "seed": 2006
             }
           ]
@@ -229,56 +333,88 @@
         "td": {
           "bk": [
             {
-              "file": "guardian_td_attack_bk1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_bk2.svg",
+              "prompt_hash": null,
+              "source_hash": "628da60cd0fd",
               "seed": 2006
             },
             {
-              "file": "guardian_td_attack_bk2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_bk3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_attack_bk1.svg",
+              "prompt_hash": null,
+              "source_hash": "56d7f8712b71",
               "seed": 2006
             }
           ],
           "fr": [
             {
-              "file": "guardian_td_attack_fr1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_fr2.svg",
+              "prompt_hash": null,
+              "source_hash": "67946e0b9595",
               "seed": 2006
             },
             {
-              "file": "guardian_td_attack_fr2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_fr3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_attack_fr1.svg",
+              "prompt_hash": null,
+              "source_hash": "281536d60bf1",
               "seed": 2006
             }
           ],
           "lf": [
             {
-              "file": "guardian_td_attack_lf1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_lf2.svg",
+              "prompt_hash": null,
+              "source_hash": "e91af59c2e5e",
               "seed": 2006
             },
             {
-              "file": "guardian_td_attack_lf2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_lf3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_attack_lf1.svg",
+              "prompt_hash": null,
+              "source_hash": "190caff0bf43",
               "seed": 2006
             }
           ],
           "rt": [
             {
-              "file": "guardian_td_attack_rt1.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_rt2.svg",
+              "prompt_hash": null,
+              "source_hash": "13cb583de07f",
               "seed": 2006
             },
             {
-              "file": "guardian_td_attack_rt2.svg",
-              "prompt_hash": "pending",
+              "file": "guardian_td_attack_rt3.svg",
+              "prompt_hash": null,
+              "source_hash": null,
+              "seed": 2006
+            },
+            {
+              "file": "guardian_td_attack_rt1.svg",
+              "prompt_hash": null,
+              "source_hash": "ad6acc50647b",
               "seed": 2006
             }
           ]
         }
       },
       "fps": 8,
-      "frames": 2,
+      "frames": 3,
       "loop": false,
       "next": "idle"
     }

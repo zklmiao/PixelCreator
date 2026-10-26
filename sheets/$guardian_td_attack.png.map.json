@@ -13,9 +13,9 @@
   "next": "idle",
   "frames": [
     {
-      "file": "guardian_td_attack_fr1.svg",
+      "file": "guardian_td_attack_fr2.svg",
       "dir": "fr",
-      "frame": 1,
+      "frame": 2,
       "col": 0,
       "row": 0,
       "x": 0,
@@ -25,9 +25,9 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_td_attack_fr2.svg",
+      "file": "guardian_td_attack_fr3.svg",
       "dir": "fr",
-      "frame": 2,
+      "frame": 3,
       "col": 1,
       "row": 0,
       "x": 64,
@@ -37,25 +37,13 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_td_idle_fr0.svg",
+      "file": "guardian_td_attack_fr1.svg",
       "dir": "fr",
-      "frame": 0,
+      "frame": 1,
       "col": 2,
       "row": 0,
       "x": 128,
       "y": 0,
-      "w": 64,
-      "h": 64,
-      "kind": "padded"
-    },
-    {
-      "file": "guardian_td_attack_bk1.svg",
-      "dir": "bk",
-      "frame": 1,
-      "col": 0,
-      "row": 1,
-      "x": 0,
-      "y": 64,
       "w": 64,
       "h": 64,
       "kind": "kept"
@@ -64,6 +52,18 @@
       "file": "guardian_td_attack_bk2.svg",
       "dir": "bk",
       "frame": 2,
+      "col": 0,
+      "row": 1,
+      "x": 0,
+      "y": 64,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_td_attack_bk3.svg",
+      "dir": "bk",
+      "frame": 3,
       "col": 1,
       "row": 1,
       "x": 64,
@@ -73,25 +73,13 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_td_idle_bk0.svg",
+      "file": "guardian_td_attack_bk1.svg",
       "dir": "bk",
-      "frame": 0,
+      "frame": 1,
       "col": 2,
       "row": 1,
       "x": 128,
       "y": 64,
-      "w": 64,
-      "h": 64,
-      "kind": "padded"
-    },
-    {
-      "file": "guardian_td_attack_lf1.svg",
-      "dir": "lf",
-      "frame": 1,
-      "col": 0,
-      "row": 2,
-      "x": 0,
-      "y": 128,
       "w": 64,
       "h": 64,
       "kind": "kept"
@@ -100,6 +88,18 @@
       "file": "guardian_td_attack_lf2.svg",
       "dir": "lf",
       "frame": 2,
+      "col": 0,
+      "row": 2,
+      "x": 0,
+      "y": 128,
+      "w": 64,
+      "h": 64,
+      "kind": "kept"
+    },
+    {
+      "file": "guardian_td_attack_lf3.svg",
+      "dir": "lf",
+      "frame": 3,
       "col": 1,
       "row": 2,
       "x": 64,
@@ -109,21 +109,21 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_td_idle_lf0.svg",
+      "file": "guardian_td_attack_lf1.svg",
       "dir": "lf",
-      "frame": 0,
+      "frame": 1,
       "col": 2,
       "row": 2,
       "x": 128,
       "y": 128,
       "w": 64,
       "h": 64,
-      "kind": "padded"
+      "kind": "kept"
     },
     {
-      "file": "guardian_td_attack_rt1.svg",
+      "file": "guardian_td_attack_rt2.svg",
       "dir": "rt",
-      "frame": 1,
+      "frame": 2,
       "col": 0,
       "row": 3,
       "x": 0,
@@ -133,9 +133,9 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_td_attack_rt2.svg",
+      "file": "guardian_td_attack_rt3.svg",
       "dir": "rt",
-      "frame": 2,
+      "frame": 3,
       "col": 1,
       "row": 3,
       "x": 64,
@@ -145,51 +145,34 @@
       "kind": "kept"
     },
     {
-      "file": "guardian_td_idle_rt0.svg",
+      "file": "guardian_td_attack_rt1.svg",
       "dir": "rt",
-      "frame": 0,
+      "frame": 1,
       "col": 2,
       "row": 3,
       "x": 128,
       "y": 192,
       "w": 64,
       "h": 64,
-      "kind": "padded"
+      "kind": "kept"
     }
   ],
   "mapping": {
     "kept": [
-      "guardian_td_attack_fr1.svg",
       "guardian_td_attack_fr2.svg",
-      "guardian_td_attack_bk1.svg",
+      "guardian_td_attack_fr3.svg",
+      "guardian_td_attack_fr1.svg",
       "guardian_td_attack_bk2.svg",
-      "guardian_td_attack_lf1.svg",
+      "guardian_td_attack_bk3.svg",
+      "guardian_td_attack_bk1.svg",
       "guardian_td_attack_lf2.svg",
-      "guardian_td_attack_rt1.svg",
-      "guardian_td_attack_rt2.svg"
+      "guardian_td_attack_lf3.svg",
+      "guardian_td_attack_lf1.svg",
+      "guardian_td_attack_rt2.svg",
+      "guardian_td_attack_rt3.svg",
+      "guardian_td_attack_rt1.svg"
     ],
     "dropped": [],
-    "padded": [
-      {
-        "col": 2,
-        "dir": "fr",
-        "file": "guardian_td_idle_fr0.svg"
-      },
-      {
-        "col": 2,
-        "dir": "bk",
-        "file": "guardian_td_idle_bk0.svg"
-      },
-      {
-        "col": 2,
-        "dir": "lf",
-        "file": "guardian_td_idle_lf0.svg"
-      },
-      {
-        "col": 2,
-        "dir": "rt",
-        "file": "guardian_td_idle_rt0.svg"
-      }
-    ]
+    "padded": []
   }
 }

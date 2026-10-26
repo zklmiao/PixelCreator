@@ -102,9 +102,21 @@ export function validateAsset(asset, opts = {}) {
             fail(`${where}: file ${f.file} does not belong to ${asset.asset} ${p}/${action}/${d}`);
           }
           if (!Number.isInteger(f.seed)) fail(`${where}: seed must be an integer`);
-          if (typeof f.prompt_hash !== 'string' || f.prompt_hash.length < 6) {
-            fail(`${where}: prompt_hash must be a string of 6+ chars`);
+          // img2img-live hash semantics: prompt_hash is the template hash of
+          // prompt-derived frames (string) or null for imported/AI-adopted
+          // slots; "pending" placeholders are retired repo-wide.
+          if (f.prompt_hash === null) {
+            // imported/AI slot: source_hash carries provenance (12 hex) or is
+            // null while an AI slot awaits adoption.
+          } else if (typeof f.prompt_hash !== 'string' || f.prompt_hash.length < 6) {
+            fail(`${where}: prompt_hash must be null or a string of 6+ chars, got ${JSON.stringify(f.prompt_hash)}`);
           }
+          if (f.source_hash !== undefined) {
+            if (f.source_hash !== null && !/^[0-9a-f]{12}$/.test(f.source_hash)) {
+              fail(`${where}: source_hash must be null or 12 hex chars, got ${JSON.stringify(f.source_hash)}`);
+            }
+          }
+          if (f.prompt_hash === 'pending') fail(`${where}: "pending" placeholders are retired (img2img-live)`);
           if (opts.checkFiles) {
             const base = opts.baseDir ?? dirname(opts.manifestPath ?? '.');
             if (!existsSync(resolve(base, f.file))) fail(`${where}: file not on disk: ${f.file}`);
