@@ -207,11 +207,11 @@ for (const id of ASSET_IDS) {
         const tp = map.tdProvenance;
         if (!tp || typeof tp.mode !== 'string' || typeof tp.note !== 'string' || !Array.isArray(tp.upgradedSlots)) {
           fail('guardian-map.json must carry tdProvenance {mode, note, upgradedSlots}');
-        } else if (tp.mode !== 'offline-standin-vertical-flip' && tp.mode !== 'ai-derived') {
-          fail(`tdProvenance.mode must be offline-standin-vertical-flip or ai-derived, got ${JSON.stringify(tp.mode)}`);
+        } else if (tp.mode !== 'offline-standin-mirror' && tp.mode !== 'ai-derived') {
+          fail(`tdProvenance.mode must be offline-standin-mirror or ai-derived, got ${JSON.stringify(tp.mode)}`);
         } else {
-          if (tp.mode === 'offline-standin-vertical-flip' && tp.upgradedSlots.length !== 0) {
-            fail('offline-standin-vertical-flip mode must carry an empty upgradedSlots list');
+          if (tp.mode === 'offline-standin-mirror' && tp.upgradedSlots.length !== 0) {
+            fail('offline-standin-mirror mode must carry an empty upgradedSlots list');
           }
           for (const slot of tp.upgradedSlots) {
             if (!existsSync(resolve(gAssetDir, slot))) fail(`tdProvenance.upgradedSlots names missing slot file: ${slot}`);

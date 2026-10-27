@@ -367,7 +367,7 @@ async function openaiEdit({ image, prompt, negative, tier, seed, size }, cfg, do
 //
 // `--offline` is the no-network fallback used by tests/regression: committed
 // fixtures stand in for AI output via deterministic derivation (mid = union
-// blend of the direction's endpoint frames; td = vertical flip of the source
+// blend of the direction's endpoint frames; td = horizontal mirror of the source
 // view). Offline artifacts are stand-ins — the AI mid slots keep
 // prompt_hash/source_hash null until real provider output is adopted (card A3
 // hash rule).
@@ -466,6 +466,23 @@ export function flipVertical(img) {
   return { data: out, width: img.width, height: img.height };
 }
 
+// Left-right mirror: keeps the sprite upright (a vertical flip renders the
+// character upside down — r9 bug) while still differing from sd byte-wise.
+export function flipHorizontal(img) {
+  const out = new Uint8ClampedArray(img.data.length);
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const src = (y * img.width + (img.width - 1 - x)) * 4;
+      const dst = (y * img.width + x) * 4;
+      out[dst] = img.data[src];
+      out[dst + 1] = img.data[src + 1];
+      out[dst + 2] = img.data[src + 2];
+      out[dst + 3] = img.data[src + 3];
+    }
+  }
+  return { data: out, width: img.width, height: img.height };
+}
+
 // Deterministic side-by-side composite of the two endpoint frames (design.md
 // "对每方向 [f1, f2] 调 inbetween" through the frozen single-image adapter
 // interface): left panel = earlier frame, right panel = later frame; panels
@@ -505,11 +522,11 @@ export const TD_DERIVE_PLAN = [
 
 // Machine-readable provenance for the td view sources (gate remediation): the
 // committed map records how td sources were produced. `offline-standin-
-// vertical-flip` = deterministic stand-ins (2x-upscaled vertical flips of sd
+// mirror` = deterministic stand-ins (2x-upscaled horizontal mirrors of sd
 // fixtures); `ai-derived` once a configured provider run replaces them.
 // `upgradedSlots` names exactly which td slot files hold AI-derived content.
 export const TD_PROVENANCE_NOTE =
-  'td sources are 2x-upscaled vertical flips of sd fixtures; re-run derive-td with a configured provider to replace them with AI-derived sources';
+  'td sources are 2x-upscaled horizontal mirrors of sd fixtures (upright stand-ins); re-run derive-td with a configured provider to replace them with AI-derived sources';
 
 export function tdSlotFilesFromPlan(dirs = GUARDIAN_DIRS, plan = TD_DERIVE_PLAN) {
   return dirs.flatMap((d) =>
@@ -530,7 +547,7 @@ export function tdMidSlotFiles(dirs = GUARDIAN_DIRS) {
 export function updateTdProvenance(mapPath, { mode = null, addSlots = [], removeSlots = [], reset = false } = {}) {
   if (!existsSync(mapPath)) return null;
   const map = JSON.parse(readFileSync(mapPath, 'utf8'));
-  const prior = map.tdProvenance ?? { mode: 'offline-standin-vertical-flip', upgradedSlots: [] };
+  const prior = map.tdProvenance ?? { mode: 'offline-standin-mirror', upgradedSlots: [] };
   let upgraded;
   if (reset) {
     upgraded = [];
@@ -540,7 +557,7 @@ export function updateTdProvenance(mapPath, { mode = null, addSlots = [], remove
     for (const s of removeSlots) set.delete(s);
     upgraded = [...set].sort();
   }
-  const nextMode = mode ?? (upgraded.length === 0 ? 'offline-standin-vertical-flip' : prior.mode ?? 'ai-derived');
+  const nextMode = mode ?? (upgraded.length === 0 ? 'offline-standin-mirror' : prior.mode ?? 'ai-derived');
   map.tdProvenance = { mode: nextMode, note: TD_PROVENANCE_NOTE, upgradedSlots: upgraded };
   writeFileSync(mapPath, JSON.stringify(map));
   return map.tdProvenance;
@@ -559,14 +576,14 @@ export function deriveMidFixtures({ fixturesDir } = {}) {
     const sdPath = resolve(fixturesDir, 'mid', `guardian_sd_${dir}_mid.png`);
     writePng(sdPath, sdMid);
     const tdPath = resolve(fixturesDir, 'mid', `guardian_td_${dir}_mid.png`);
-    writePng(tdPath, flipVertical(sdMid));
+    writePng(tdPath, flipHorizontal(sdMid));
     out.push(sdPath, tdPath);
   }
   updateTdProvenance(resolve(fixturesDir, 'guardian-map.json'), { removeSlots: tdMidSlotFiles() });
   return out;
 }
 
-// Offline td stand-ins: vertical flip of the 64px-upscaled sd source content,
+// Offline td stand-ins: horizontal mirror of the 64px-upscaled sd source content,
 // one file per existing td slot (derive is per sd view, design.md). The map's
 // tdProvenance resets to the stand-in mode with an empty upgradedSlots list.
 export function deriveTdFixtures({ fixturesDir } = {}) {
@@ -576,13 +593,13 @@ export function deriveTdFixtures({ fixturesDir } = {}) {
       for (const [slotFrame, srcFrame] of Object.entries(frames)) {
         const src = decodePngImg(readFileSync(resolve(fixturesDir, `amg1_${dir}${srcFrame}.png`)));
         const path = resolve(fixturesDir, 'td', `guardian_${action}_${dir}${slotFrame}.png`);
-        writePng(path, flipVertical(nearestUpscale2x(src)));
+        writePng(path, flipHorizontal(nearestUpscale2x(src)));
         out.push(path);
       }
     }
   }
   updateTdProvenance(resolve(fixturesDir, 'guardian-map.json'), {
-    mode: 'offline-standin-vertical-flip',
+    mode: 'offline-standin-mirror',
     reset: true,
   });
   return out;

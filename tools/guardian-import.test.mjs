@@ -118,7 +118,7 @@ describe('A3 guardian fixtures (8 amg1 + 8 mid + 20 td + map)', () => {
 
   it('tdProvenance marker: stand-in mode, exact note, empty upgradedSlots (committed state)', () => {
     assert.deepEqual(map.tdProvenance, {
-      mode: 'offline-standin-vertical-flip',
+      mode: 'offline-standin-mirror',
       note: TD_PROVENANCE_NOTE,
       upgradedSlots: [],
     });
@@ -341,7 +341,7 @@ describe('A3 td provenance marker (tdProvenance lifecycle, no network)', () => {
     assert.equal(written.length, 20);
     const map2 = JSON.parse(readFileSync(join(temp, 'guardian-map.json'), 'utf8'));
     assert.deepEqual(map2.tdProvenance, {
-      mode: 'offline-standin-vertical-flip',
+      mode: 'offline-standin-mirror',
       note: TD_PROVENANCE_NOTE,
       upgradedSlots: [],
     });
@@ -374,7 +374,7 @@ describe('A3 td provenance marker (tdProvenance lifecycle, no network)', () => {
     tp = updateTdProvenance(mapPath, { removeSlots: mid8 });
     assert.deepEqual(tp.upgradedSlots, [...slots20].sort());
     // offline td rerun resets the whole marker to the stand-in state
-    tp = updateTdProvenance(mapPath, { mode: 'offline-standin-vertical-flip', reset: true });
+    tp = updateTdProvenance(mapPath, { mode: 'offline-standin-mirror', reset: true });
     assert.deepEqual(tp.upgradedSlots, []);
     // upgradedSlots non-empty => each named slot file must exist on disk
     // (committed state is empty; the AI-subset names were skeleton-checked above)

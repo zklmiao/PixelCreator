@@ -23,7 +23,7 @@ The system SHALL support `node tools/import-prototype.mjs --asset <id> --map <ma
 
 #### Scenario: Guardian map
 - **WHEN** importing `guardian_001` via `fixtures/guardian/guardian-map.json`
-- **THEN** 56 view slots (idle 8 + walk 24 + attack 24) plus 2 masters land per the manifest, the reuse declaration idle=[f1] / walk=[f1, ai-mid, f2] / attack=[f2, ai-mid, f1] matches landed pixel sets (attack keeping its reverse-order difference), and the td views differ from their sd counterparts per the `tdProvenance` marker (mode `offline-standin-vertical-flip` with empty `upgradedSlots` until a configured provider re-run adopts AI sources)
+- **THEN** 56 view slots (idle 8 + walk 24 + attack 24) plus 2 masters land per the manifest, the reuse declaration idle=[f1] / walk=[f1, ai-mid, f2] / attack=[f2, ai-mid, f1] matches landed pixel sets (attack keeping its reverse-order difference), and the td views differ from their sd counterparts per the `tdProvenance` marker (mode `offline-standin-mirror` with empty `upgradedSlots` until a configured provider re-run adopts AI sources)
 
 ### Requirement: Compare output contract
 
