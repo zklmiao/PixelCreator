@@ -84,3 +84,11 @@
 - 簿记：tasks 全勾（归档位补回——发现 openspec 归档 CLI 的 tasks.md 搬运缺漏征兆，已记观察项）；web-bridge 主 spec 同步（MODIFIED 单源服务清单 + TOCTOU 备份时点；ADDED clip-scoped regeneration）。
 - 事故两起如实申报（wt-A）：stash pop 因 && 短路未执行（已恢复无损失）；worktree remove --force 穿透 junction 误删主树 node_modules（npm ci 恢复，无 commit 影响）。
 - 遗留：backlog A/B/D1/D3 全清（docs/optimization-backlog.md 刷新）；M5 候选不变（向导/vectorize 拆分/GIF 导出）。
+
+## 热修 — guardian_001 td 倒立（人工验收发现）
+
+- 现象与根因：资产库卡片动图/预览图倒立。卡片预览 `idlePreviewUrl()` 取 `clips.td.fr[0]`、矩阵默认 `preview.perspective ?? 'td'`，两者都消费 td；而轮 7 的离线 td 占位源是 `flipVertical(sd 2x)`，故 td 整体上下颠倒（sd 正常）。管线内部自洽（fixtures 与槽一致），182 测试全绿也暴露不了——方向语义只能由像素探针/人眼判定。
+- 修复 `8b85810`：td/mid 离线占位改为水平镜像 `flipHorizontal`（保持正立、仍与 sd 可区分）；provenance mode 统一 `offline-standin-mirror`（tools/tests/verify/spec 同步）；顺序纪律：final `source_hash` 回填（40 非 mid=sha12(map 源)，16 mid=null/null）→ `runGuardianImportSegment` 重导入（SVG 元数据内嵌 final hash）→ 6 表重导出。`46bd3b3` 首笔"修复"提交实际落的是翻转槽（工作区振荡态下生成），由 HEAD 复核发现并纠正。
+- 验证：leather 腰带 y=2..29 正立（翻转态 34..61），HEAD 内文件复核同值；182/182 ×3；7 verify + recipe 全绿（verify-bridge 30/30）；guardian manifest --check-files OK；fixture sha12 `c2676d568558`。
+- 环境观察：排查期间清理 6 个游离 node 服务（3212/3213/3204–3206/3203），保留 3202 供页面验收；若另有会话/进程占用主工作区，请先停用，避免再次覆盖。
+- Mimosa 深度静态审计：0 发现，seal `sha256:2de3aafe…`（边界 static_only_no_runtime_execution，非运行时验证）。
