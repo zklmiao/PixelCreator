@@ -162,4 +162,5 @@ node tools/server.mjs --port 3000     # 默认 3000；可 --host 覆盖绑定位
 ## 下一步
 
 - 人工验收：Godot 4 载入 `godot/*.spriteframes.tres`（连 `sheets/` 一起拷）；真实 provider 环境下的 AI 补帧 / td 派生。
-- M5 候选（见 backlog）：页内资产向导、Zhipu/CogView 原生适配器、GIF 导出、`vectorize` 拆分、bridge 作业泄漏清理。
+- M5 已立项（文生像素素材，提案见 `openspec/changes/text-to-asset|text-to-character`）：txt2img 三适配 + 动态资产注册 + 页内向导（静态 8 视图 / 角色 56 视图四阶段门）。
+- 其后候选（见 backlog）：Zhipu/CogView 原生适配器（C2）、GIF 导出、`vectorize` 拆分。

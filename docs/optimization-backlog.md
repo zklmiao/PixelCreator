@@ -41,8 +41,8 @@
   三层 provider + JPEG/框选 + guardian 补帧/td 真源 + hash 语义。状态：wt-A 已交付待合并 gate，wt-B B3 尾巴待 rebase（见 docs/agent-log.md 轮 7）。
 - [ ] **C2 🟡 Zhipu 原生适配器** `[grilling+用户身份]` **建议并入 M4 收尾或 M4.5**
   CogView/GLM 图像 API 原生支持 `seed` 与精确 `size`（32/64/128 档 1:1 直出）——两者恰是 OpenAI 兼容路径做不到的；provider 注册表加一项 `zhipu` 即可。作为智谱，自家服务应为一等公民。注意：CogView images 端点是文生图 JSON，img2img 需走 chat-multimodal 路由或等图像编辑端点——适配器设计时按官方文档定。
-- [ ] **C3 ⚪ M5 候选（素材量到再议）** `[grilling]`
-  页内新建资产向导（Q6=B 决议：等 mage/boxer 真要变成资产时需求自清晰）；GIF/WebM 动画导出；SpriteFrames 页内试播。
+- [ ] **C3 ⚪ M5 拆分落地（向导已立项）** `[grilling]`
+  页内新建资产向导已立项为 M5 两笔 change（`text-to-asset` + `text-to-character`，m5-prep，2026-10-27 grilling 15 问拍板：静态 8 次独立文生 / 角色双 master 四阶段门 / gen manifest 双 hash / 动态注册）；GIF/WebM 动画导出、SpriteFrames 页内试播仍排队。
 
 ## D. 工程债（管线轴：wt-A，不影响用户但影响演进速度）
 
