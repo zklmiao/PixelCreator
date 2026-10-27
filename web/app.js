@@ -290,7 +290,10 @@ function makeCompareSlider(fig, url, size) {
   const bar = document.createElement('div');
   bar.className = 'divider';
   bar.hidden = true;
-  fig.append(cv, bar, img, ph);
+  const frame = document.createElement('div');
+  frame.className = 'compare-frame';
+  frame.append(cv, bar);
+  fig.append(frame, img, ph);
   const paint = (pct) => {
     const w = cv.width, h = cv.height, srcW = w - size;
     const ctx = cv.getContext('2d');
