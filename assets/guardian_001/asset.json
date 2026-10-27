@@ -41,7 +41,7 @@
             {
               "file": "guardian_td_idle_bk0.svg",
               "prompt_hash": null,
-              "source_hash": "56d7f8712b71",
+              "source_hash": "c2676d568558",
               "seed": 2006
             }
           ],
@@ -49,7 +49,7 @@
             {
               "file": "guardian_td_idle_fr0.svg",
               "prompt_hash": null,
-              "source_hash": "281536d60bf1",
+              "source_hash": "81c6a3706bb7",
               "seed": 2006
             }
           ],
@@ -57,7 +57,7 @@
             {
               "file": "guardian_td_idle_lf0.svg",
               "prompt_hash": null,
-              "source_hash": "190caff0bf43",
+              "source_hash": "2ee6d2a93053",
               "seed": 2006
             }
           ],
@@ -65,7 +65,7 @@
             {
               "file": "guardian_td_idle_rt0.svg",
               "prompt_hash": null,
-              "source_hash": "ad6acc50647b",
+              "source_hash": "5d6d788e4a2c",
               "seed": 2006
             }
           ]
@@ -164,7 +164,7 @@
             {
               "file": "guardian_td_walk_bk1.svg",
               "prompt_hash": null,
-              "source_hash": "56d7f8712b71",
+              "source_hash": "c2676d568558",
               "seed": 2006
             },
             {
@@ -176,7 +176,7 @@
             {
               "file": "guardian_td_walk_bk3.svg",
               "prompt_hash": null,
-              "source_hash": "628da60cd0fd",
+              "source_hash": "611ff825fa0c",
               "seed": 2006
             }
           ],
@@ -184,7 +184,7 @@
             {
               "file": "guardian_td_walk_fr1.svg",
               "prompt_hash": null,
-              "source_hash": "281536d60bf1",
+              "source_hash": "81c6a3706bb7",
               "seed": 2006
             },
             {
@@ -196,7 +196,7 @@
             {
               "file": "guardian_td_walk_fr3.svg",
               "prompt_hash": null,
-              "source_hash": "67946e0b9595",
+              "source_hash": "51e6e2ea79ef",
               "seed": 2006
             }
           ],
@@ -204,7 +204,7 @@
             {
               "file": "guardian_td_walk_lf1.svg",
               "prompt_hash": null,
-              "source_hash": "190caff0bf43",
+              "source_hash": "2ee6d2a93053",
               "seed": 2006
             },
             {
@@ -216,7 +216,7 @@
             {
               "file": "guardian_td_walk_lf3.svg",
               "prompt_hash": null,
-              "source_hash": "e91af59c2e5e",
+              "source_hash": "2c359ea26013",
               "seed": 2006
             }
           ],
@@ -224,7 +224,7 @@
             {
               "file": "guardian_td_walk_rt1.svg",
               "prompt_hash": null,
-              "source_hash": "ad6acc50647b",
+              "source_hash": "5d6d788e4a2c",
               "seed": 2006
             },
             {
@@ -236,7 +236,7 @@
             {
               "file": "guardian_td_walk_rt3.svg",
               "prompt_hash": null,
-              "source_hash": "13cb583de07f",
+              "source_hash": "5c4067837aec",
               "seed": 2006
             }
           ]
@@ -335,7 +335,7 @@
             {
               "file": "guardian_td_attack_bk2.svg",
               "prompt_hash": null,
-              "source_hash": "628da60cd0fd",
+              "source_hash": "611ff825fa0c",
               "seed": 2006
             },
             {
@@ -347,7 +347,7 @@
             {
               "file": "guardian_td_attack_bk1.svg",
               "prompt_hash": null,
-              "source_hash": "56d7f8712b71",
+              "source_hash": "c2676d568558",
               "seed": 2006
             }
           ],
@@ -355,7 +355,7 @@
             {
               "file": "guardian_td_attack_fr2.svg",
               "prompt_hash": null,
-              "source_hash": "67946e0b9595",
+              "source_hash": "51e6e2ea79ef",
               "seed": 2006
             },
             {
@@ -367,7 +367,7 @@
             {
               "file": "guardian_td_attack_fr1.svg",
               "prompt_hash": null,
-              "source_hash": "281536d60bf1",
+              "source_hash": "81c6a3706bb7",
               "seed": 2006
             }
           ],
@@ -375,7 +375,7 @@
             {
               "file": "guardian_td_attack_lf2.svg",
               "prompt_hash": null,
-              "source_hash": "e91af59c2e5e",
+              "source_hash": "2c359ea26013",
               "seed": 2006
             },
             {
@@ -387,7 +387,7 @@
             {
               "file": "guardian_td_attack_lf1.svg",
               "prompt_hash": null,
-              "source_hash": "190caff0bf43",
+              "source_hash": "2ee6d2a93053",
               "seed": 2006
             }
           ],
@@ -395,7 +395,7 @@
             {
               "file": "guardian_td_attack_rt2.svg",
               "prompt_hash": null,
-              "source_hash": "13cb583de07f",
+              "source_hash": "5c4067837aec",
               "seed": 2006
             },
             {
@@ -407,7 +407,7 @@
             {
               "file": "guardian_td_attack_rt1.svg",
               "prompt_hash": null,
-              "source_hash": "ad6acc50647b",
+              "source_hash": "5d6d788e4a2c",
               "seed": 2006
             }
           ]
