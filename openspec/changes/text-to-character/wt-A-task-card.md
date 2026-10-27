@@ -22,14 +22,14 @@ node tools/asset-manifest.mjs validate assets/guardian_001/asset.json --check-fi
 ## 4. 任务与验收（引用 spec delta）
 
 - [ ] **A1 编排泛化**。spec（prototype-prompt ADDED）：*"a reusable character orchestration (dual txt2img masters …, direction derivation …, endpoint pose derivation, and frame-tier in-betweens) parameterized by asset id …"*。做法：通用编排模块（id/结构/阶段参数化，每格 prompt/tier 按 design 决策表）；`orchestrateGuardianMid/Td` 保留签名委托通用实现——guardian 导入段（fixtures → 槽位）字节稳定回归为硬验收（fixtures/map 零改动 git diff 证明）。
-- [ ] **A2 角色创建 + 端点**。spec（character-asset ADDED + web-bridge ADDED）：*"creating a complete character asset … in one atomic step … validating the full parent chain server-side …"*。做法：asset-create character 变体（ID_EXISTS 拒）+ `POST /api/img2img/edit`（通用草稿，两段写）+ create 扩 character + PARENT_STALE。
+- [ ] **A2 角色创建 + 端点**。spec（character-asset ADDED + web-bridge ADDED）：*"creating a complete character asset … in one atomic step … validating the full parent chain server-side …"*。做法：asset-create character 变体（ID_EXISTS 拒）+ `POST /api/img2img/edit`（通用草稿，两段写，确认响应附 compare 链接同 M5a 模式）+ create 扩 character + PARENT_STALE。
 - [ ] **A3 hash/parent + 测试**。派生槽双真值（prompt_hash + 父图 sha12）；master 槽双真值（自身源图）；asset-create.test.mjs 角色全链（合成确定性草稿，不联网；含 stale parent 用例与 ID_EXISTS）；确定性重跑字节一致。
 - [ ] **A4 提交**：单 commit 含 `feat(m5b)`。
 
 ## 5. 拥有 / 禁改
 
-- 可写：`tools/*.mjs` + `tools/*.test.mjs`（placeholder 除外）、`tools/server.mjs`。
-- 禁碰：`web/**`、`docs/**`、`openspec/**`、`assets/**`（guardian/knight 存量字节不动）、`fixtures/**`、`palettes/**`、`package.json`、`tools/placeholder.test.mjs`。schema 零变更。
+- 可写：`tools/*.mjs` + `tools/*.test.mjs`（placeholder 除外）、`tools/server.mjs`、`web/verify-bridge.mjs`（仅桥相关断言）。
+- 禁碰：`web/**`（verify-bridge.mjs 除外）、`docs/**`、`openspec/**`、`assets/**`（guardian/knight 存量字节不动）、`fixtures/**`、`palettes/**`、`package.json`、`tools/placeholder.test.mjs`。schema 零变更。
 
 ## 6. 守则
 
@@ -40,8 +40,7 @@ node tools/asset-manifest.mjs validate assets/guardian_001/asset.json --check-fi
 ```
 node --test tools/*.test.mjs          # ≥ prep 基线
 node web/verify-bridge.mjs            # 含 edit/create 新断言
-node tools/asset-manifest.mjs validate assets/guardian_001/asset.json --check-files   # OK（字节稳定旁证）
-node tools/asset-manifest.mjs validate assets/knight_001/asset.json --check-files     # OK
+7× node tools/asset-manifest.mjs validate assets/<id>/asset.json --check-files   # 全 OK（guardian 字节稳定旁证在场）
 ```
 
 外加：guardian 导入段字节稳定输出（fixtures+map 零改动 diff）；临时目录角色创建重跑字节一致输出；PARENT_STALE 用例输出。

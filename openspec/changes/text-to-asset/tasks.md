@@ -6,11 +6,11 @@
 - [x] P2 提案/design/tasks/双卡 + 3 spec delta 入库（.openspec.yaml）。
 - [x] P3 docs：milestones M5 行 + backlog C3 状态刷新。
 
-## wt-A 管线轴（`feat/m5a-pipeline`；拥有 tools/** + tests（placeholder 除外）+ server.mjs；禁碰 web/**、docs/**、openspec/**、assets/**、fixtures/**、placeholder.test）
+## wt-A 管线轴（`feat/m5a-pipeline`；拥有 tools/** + tests（placeholder 除外）+ server.mjs + web/verify-bridge.mjs（仅桥断言）；禁碰 web/**（verify-bridge.mjs 除外）、docs/**、openspec/**、assets/**、fixtures/**、placeholder.test）
 
 - [ ] A1 txt2img 适配层：`generateImage` 三适配器（SD `/sdapi/v1/txt2img` / Gemini text-only+IMAGE / OpenAI images/generations）；共用 env/status/错误契约；单测注入 fetch mock 断言请求形状/响应解析/未配置报错/无密钥泄漏；grep 单测无真实网络调用。
 - [ ] A2 动态注册：server 注册表（扫描 ∩ validateAsset，confirm 后失效重扫）+ `GET /api/assets` + `assertAssetId` 改查表（UNKNOWN_ASSET 契约不变）；verify-bridge 扩展（列表形状、半成品目录不现身、unknown id 400）。
-- [ ] A3 创建管线 + 端点：`tools/asset-create.mjs`（gen manifest → 骨架/8 视图/2 母版/fixtures 源图/gen manifest/2 表 2 map；ID_EXISTS 拒覆盖）+ `POST /api/txt2img`、`POST /api/asset/create`（两段写）；import-prototype 公共段抽取（`--src`/`--map` 行为字节不变，既有 import 测试回归证明）；确定性：临时目录以提交 fixtures+manifest 重跑字节一致；asset-create.test.mjs（合成 8 张确定性草稿 PNG，不联网）。
+- [ ] A3 创建管线 + 端点：`tools/asset-create.mjs`（gen manifest → 骨架/8 视图/2 母版/fixtures 源图/gen manifest/2 表 2 map；ID_EXISTS 拒覆盖）+ `POST /api/txt2img`、`POST /api/asset/create`（两段写；txt2img 确认响应附 compare 链接——复用既有 `/api/jobs/:id/compare` 模式）；import-prototype 公共段抽取（`--src`/`--map` 行为字节不变，既有 import 测试回归证明）；确定性：同输入两次创建字节一致（8 张草稿由测试确定性合成，fixtures 零提交守禁碰）；asset-create.test.mjs 不联网。
 - [ ] A4 提交：单 commit 含 `feat(m5a)`（gate：`git log main --format=%s | grep -m1 "feat(m5a)"`）。
 
 ## wt-B 呈现轴（`feat/m5a-wizard`；拥有 web/** + docs/** + verify 扩展；禁碰 tools/**（server.mjs 只读）、assets/**、fixtures/**、openspec/**）

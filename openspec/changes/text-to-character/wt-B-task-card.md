@@ -28,7 +28,7 @@ node web/verify-static.mjs                        # OK（含 m5a 注册表断言
 ## 5. 拥有 / 禁改
 
 - 可写：`web/**`（app.js/index.html/styles.css/lib/**）、`docs/**`、`web/verify-*.mjs`。
-- 禁碰：`tools/**`（server.mjs 也只读）、`assets/**`、`fixtures/**`、`openspec/**`、`package.json`。web/lib 保持零第三方依赖。
+- 禁碰：`tools/**`（server.mjs 也只读）、`assets/**`、`fixtures/**`、`openspec/**`、`package.json`、`web/verify-bridge.mjs`（归 wt-A）。web/lib 保持零第三方依赖。
 
 ## 6. 守则
 

@@ -6,10 +6,10 @@
 - [x] P2 提案/design/tasks/双卡 + 4 spec delta 入库（.openspec.yaml）。
 - [x] P3 docs：milestones M5 状态刷新。
 
-## wt-A 管线轴（`feat/m5b-pipeline`；拥有 tools/** + tests（placeholder 除外）+ server.mjs；禁碰 web/**、docs/**、openspec/**、assets/**、fixtures/**、placeholder.test）
+## wt-A 管线轴（`feat/m5b-pipeline`；拥有 tools/** + tests（placeholder 除外）+ server.mjs + web/verify-bridge.mjs（仅桥断言）；禁碰 web/**（verify-bridge.mjs 除外）、docs/**、openspec/**、assets/**、fixtures/**、placeholder.test）
 
 - [ ] A1 编排泛化：通用角色编排（双 master txt2img → 方向派生 0.55 → 端点帧派生 → inbetween 0.3；id/结构参数化）；`orchestrateGuardianMid/Td` 委托通用实现——guardian 导入段（fixtures → 槽位）字节稳定回归为硬验收（fixtures/map 零改动证明）。
-- [ ] A2 角色创建 + 端点：asset-create character 变体（骨架 24 clips + 56 视图 + 2 母版 + 56 源图 + gen manifest + 6 Full + 4 Maker 表 + tres；ID_EXISTS 拒）+ `POST /api/img2img/edit`（通用草稿，两段写）+ `/api/asset/create` character 类型 + 服务端 parentSha12 全量校验（PARENT_STALE 400）。
+- [ ] A2 角色创建 + 端点：asset-create character 变体（骨架 24 clips + 56 视图 + 2 母版 + 56 源图 + gen manifest + 6 Full + 4 Maker 表 + tres；ID_EXISTS 拒）+ `POST /api/img2img/edit`（通用草稿，两段写，确认响应附 compare 链接同 M5a 模式）+ `/api/asset/create` character 类型 + 服务端 parentSha12 全量校验（PARENT_STALE 400）。
 - [ ] A3 hash/parent 语义 + 测试：派生槽双真值（prompt_hash + 父图 sha12）；asset-create.test.mjs 角色全链（合成确定性草稿，含 stale parent 用例）；确定性重跑字节一致。
 - [ ] A4 提交：单 commit 含 `feat(m5b)`（gate：`git log main --format=%s | grep -m1 "feat(m5b)"`）。
 
